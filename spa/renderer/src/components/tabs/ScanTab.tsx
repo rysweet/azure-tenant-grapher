@@ -75,38 +75,23 @@ const ScanTab: React.FC = () => {
     currentPhase: 'Initializing'
   });
 
-  // Database stats - currently unused but kept for future UI updates
-  const [_dbStats, setDbStats] = useState<DBStats | null>(null);
-  const [_loadingStats, setLoadingStats] = useState(false);
   const [dbPopulated, setDbPopulated] = useState(false);
   const [neo4jStatus, setNeo4jStatus] = useState<any>(null);
   const [startingNeo4j, setStartingNeo4j] = useState(false);
 
   // All useCallback function definitions (must come before useEffect hooks)
   const loadDatabaseStats = useCallback(async () => {
-    setLoadingStats(true);
     try {
       const response = await axios.get('http://localhost:3001/api/graph/stats');
       const stats = response.data;
-      setDbStats(stats);
       setDbPopulated(!stats.isEmpty);
       logger.info('Database stats loaded successfully', { nodeCount: stats.nodeCount, edgeCount: stats.edgeCount });
     } catch (err) {
-      // Log the error and set empty stats, but re-throw for the caller to handle
+      // Log the error but re-throw for the caller to handle
       logger.error('Failed to load database stats', { error: err });
-      setDbStats({
-        nodeCount: 0,
-        edgeCount: 0,
-        nodeTypes: [],
-        edgeTypes: [],
-        lastUpdate: null,
-        isEmpty: true
-      });
       setDbPopulated(false);
       // Re-throw the error so the caller can display it to the user
       throw err;
-    } finally {
-      setLoadingStats(false);
     }
   }, [logger]);
 
@@ -558,11 +543,6 @@ const ScanTab: React.FC = () => {
     }
   };
 
-  // Removed unused formatTimestamp function - formatting handled inline where needed
-
-  // const formatNumber = (num: number) => {
-  //   return num.toLocaleString();
-  // };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
