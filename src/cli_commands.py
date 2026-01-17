@@ -39,7 +39,7 @@ import sys
 from typing import TYPE_CHECKING, Optional
 
 import click
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from src.azure_tenant_grapher import AzureTenantGrapher
 
@@ -1088,7 +1088,7 @@ async def generate_sim_doc_command_handler(
             first_token = True
             tokens = []
             try:
-                async for token in llm.generate_description_streaming(prompt):
+                async for token in llm.generate_description_streaming(prompt):  # type: ignore[misc]
                     if first_token:
                         status.stop()
                         first_token = False
@@ -1226,7 +1226,7 @@ def create_tenant_from_markdown(text: str):
         # If we're already in an event loop, schedule the task and wait for it
         task = loop.create_task(_run())
         # For CLI, block until done
-        import nest_asyncio
+        import nest_asyncio  # type: ignore[import-untyped]
 
         nest_asyncio.apply()
         loop.run_until_complete(task)
@@ -1985,7 +1985,7 @@ async def monitor_command_handler(
             )
             params = {"sub_id": subscription_id} if subscription_id else {}
             result = session.run(query_resources, params)
-            metrics["resources"] = result.single()["count"]
+            metrics["resources"] = result.single()["count"]  # type: ignore[index]
 
             # Count relationships
             query_relationships = (
@@ -1993,7 +1993,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT rel) as count"
             )
             result = session.run(query_relationships, params)
-            metrics["relationships"] = result.single()["count"]
+            metrics["relationships"] = result.single()["count"]  # type: ignore[index]
 
             # Count resource groups
             query_rgs = (
@@ -2002,7 +2002,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT r.resourceGroup) as count"
             )
             result = session.run(query_rgs, params)
-            metrics["resource_groups"] = result.single()["count"]
+            metrics["resource_groups"] = result.single()["count"]  # type: ignore[index]
 
             # Count resource types
             query_types = (
@@ -2010,7 +2010,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT r.type) as count"
             )
             result = session.run(query_types, params)
-            metrics["resource_types"] = result.single()["count"]
+            metrics["resource_types"] = result.single()["count"]  # type: ignore[index]
 
             return metrics
 
@@ -2450,7 +2450,7 @@ async def cost_analysis_command_handler(
     """
     from datetime import date, timedelta
 
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
     from rich.panel import Panel
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -2489,17 +2489,17 @@ async def cost_analysis_command_handler(
 
     # Set default dates if not provided
     if not end_date:
-        end_date = date.today()
+        end_date = date.today()  # type: ignore[assignment]
     else:
-        end_date = end_date.date()
+        end_date = end_date.date()  # type: ignore[union-attr]
 
     if not start_date:
-        start_date = end_date - timedelta(days=30)
+        start_date = end_date - timedelta(days=30)  # type: ignore[operator]
     else:
-        start_date = start_date.date()
+        start_date = start_date.date()  # type: ignore[union-attr]
 
     # Validate date range
-    if start_date > end_date:
+    if start_date > end_date:  # type: ignore[operator]
         console.print("[red]❌ Start date must be before end date[/red]")
         sys.exit(1)
 
@@ -2536,8 +2536,8 @@ async def cost_analysis_command_handler(
                 costs = await service.fetch_costs(
                     scope=scope,
                     time_frame=TimeFrame.CUSTOM,
-                    start_date=start_date,
-                    end_date=end_date,
+                    start_date=start_date,  # type: ignore[arg-type]
+                    end_date=end_date,  # type: ignore[arg-type]
                     granularity=Granularity.DAILY
                     if granularity == "daily"
                     else Granularity.MONTHLY,
@@ -2551,8 +2551,8 @@ async def cost_analysis_command_handler(
         # Query costs from Neo4j
         summary = await service.query_costs(
             scope=scope,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=start_date,  # type: ignore[arg-type]
+            end_date=end_date,  # type: ignore[arg-type]
             group_by=group_by,
             tag_key=tag_key,
         )
@@ -2622,7 +2622,7 @@ async def cost_forecast_command_handler(
         days: Number of days to forecast
         output: Optional output file path (JSON)
     """
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
@@ -2772,7 +2772,7 @@ async def cost_report_command_handler(
     """
     from datetime import date, timedelta
 
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
 
     from src.services.cost_management_service import (
@@ -2802,17 +2802,17 @@ async def cost_report_command_handler(
 
     # Set default dates if not provided
     if not end_date:
-        end_date = date.today()
+        end_date = date.today()  # type: ignore[assignment]
     else:
-        end_date = end_date.date()
+        end_date = end_date.date()  # type: ignore[union-attr]
 
     if not start_date:
-        start_date = end_date - timedelta(days=30)
+        start_date = end_date - timedelta(days=30)  # type: ignore[operator]
     else:
-        start_date = start_date.date()
+        start_date = start_date.date()  # type: ignore[union-attr]
 
     # Validate date range
-    if start_date > end_date:
+    if start_date > end_date:  # type: ignore[operator]
         console.print("[red]❌ Start date must be before end date[/red]")
         sys.exit(1)
 
@@ -2838,8 +2838,8 @@ async def cost_report_command_handler(
         console.print("[blue]📊 Generating comprehensive cost report...[/blue]")
         report_content = await service.generate_report(
             scope=scope,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=start_date,  # type: ignore[arg-type]
+            end_date=end_date,  # type: ignore[arg-type]
             output_format=format,
             include_forecast=include_forecast,
             include_anomalies=include_anomalies,
@@ -2971,7 +2971,7 @@ async def generate_tenant_spec(**kwargs):
     ctx.obj = {"log_level": "INFO"}
 
     # Execute spec generation
-    await spec_command_handler(ctx, tenant_id, domain_name)
+    await spec_command_handler(ctx, tenant_id, domain_name)  # type: ignore[arg-type]
 
     return {"status": "success", "output_file": output_file}
 

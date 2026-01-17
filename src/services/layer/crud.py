@@ -336,7 +336,7 @@ class LayerCrudOperations:
         query = "\n".join(query_parts)
 
         with self.session_manager.session() as session:
-            result = session.run(query, params)
+            result = session.run(query, params)  # type: ignore[arg-type]
 
             layers = []
             for record in result:
@@ -365,7 +365,7 @@ class LayerCrudOperations:
         query = "MATCH (l:Layer {layer_id: $layer_id}) RETURN l"
 
         with self.session_manager.session() as session:
-            result = session.run(query, {"layer_id": layer_id})
+            result = session.run(query, {"layer_id": layer_id})  # type: ignore[arg-type]
             record = result.single()
 
             if not record:
@@ -396,7 +396,7 @@ class LayerCrudOperations:
         query = "\n".join(query_parts)
 
         with self.session_manager.session() as session:
-            result = session.run(query, params)
+            result = session.run(query, params)  # type: ignore[arg-type]
             record = result.single()
 
             if not record:
@@ -461,13 +461,13 @@ class LayerCrudOperations:
         if description is not None:
             updates_dict["description"] = description
         if tags is not None:
-            updates_dict["tags"] = tags
+            updates_dict["tags"] = tags  # type: ignore[arg-type]
         if metadata is not None:
             # Merge with existing metadata
             merged_metadata = {**layer.metadata, **metadata}
             updates_dict["metadata"] = json.dumps(merged_metadata)
         if is_locked is not None:
-            updates_dict["is_locked"] = is_locked
+            updates_dict["is_locked"] = is_locked  # type: ignore[arg-type]
 
         # Build safe SET clause (prevents injection via property names)
         set_clauses = []
@@ -594,7 +594,7 @@ class LayerCrudOperations:
         self.logger.info(str(f"Set active layer: {layer_id}"))
 
         # Return updated metadata
-        return await self.get_layer(layer_id)
+        return await self.get_layer(layer_id)  # type: ignore[misc]
 
 
 __all__ = ["LayerCrudOperations"]

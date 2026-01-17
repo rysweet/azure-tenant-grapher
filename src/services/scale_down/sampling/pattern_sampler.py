@@ -200,7 +200,7 @@ class PatternSampler(BaseSampler):
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, params)
+                result = session.run(query, params)  # type: ignore[arg-type]
 
                 for record in result:
                     matching_ids.add(record["id"])

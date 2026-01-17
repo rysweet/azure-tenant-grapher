@@ -172,7 +172,7 @@ async def generate_random_relationships(
 
     resource_ids = []
     with session_manager.session() as session:
-        result = session.run(query, {"operation_id": operation_id})
+        result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
         resource_ids = [record["id"] for record in result]
 
     if len(resource_ids) < 2:

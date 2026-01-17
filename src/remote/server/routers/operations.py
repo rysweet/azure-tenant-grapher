@@ -12,7 +12,7 @@ Endpoints:
     GET /api/v1/operations/{job_id}/download - Download results
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse
@@ -68,14 +68,14 @@ async def list_operations(
 
     # Map to response models
     return [
-        JobStatusResponse(
+        JobStatusResponse(  # type: ignore[misc]
             job_id=job["id"],
-            operation_type=job["operation_type"],
+            operation_type=job["operation_type"],  # type: ignore[misc]
             status=JobStatus(job["status"]),
             created_at=job["created_at"],
-            updated_at=job["updated_at"],
+            updated_at=job["updated_at"],  # type: ignore[misc]
             error=job.get("error"),
-            result=job.get("result"),
+            result=job.get("result"),  # type: ignore[misc]
         )
         for job in jobs
     ]
@@ -87,7 +87,7 @@ async def cancel_operation(
     request: Request,
     job_id: str,
     job_storage: JobStorage = Depends(get_job_storage),
-) -> dict:
+) -> Dict[str, Any]:
     """
     Cancel a running operation.
 

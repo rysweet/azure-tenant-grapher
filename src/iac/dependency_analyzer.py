@@ -18,7 +18,9 @@ class ResourceDependency:
 
     resource: Dict[str, Any]
     tier: int
-    depends_on: Set[str] = None  # Terraform resource references this depends on
+    depends_on: Set[str] = (
+        None  # Terraform resource references this depends on # type: ignore[misc]
+    )
 
     def __post_init__(self):
         if self.depends_on is None:

@@ -38,11 +38,11 @@ class TranslatorRegistry:
     """
 
     _lock = threading.RLock()
-    _translators: List[Type["BaseTranslator"]] = []
+    _translators: List[Type["BaseTranslator"]] = []  # type: ignore[misc]
     _registration_complete = False
 
     @classmethod
-    def register(cls, translator_class: Type["BaseTranslator"]) -> None:
+    def register(cls, translator_class: Type["BaseTranslator"]) -> None:  # type: ignore[misc]
         """
         Register a translator class.
 
@@ -87,7 +87,7 @@ class TranslatorRegistry:
             logger.info(str(f"Registered translator: {translator_class.__name__}"))
 
     @classmethod
-    def get_translator(cls, resource_type: str) -> Optional[Type["BaseTranslator"]]:
+    def get_translator(cls, resource_type: str) -> Optional[Type["BaseTranslator"]]:  # type: ignore[misc]
         """
         Get a translator class that can handle a specific resource type.
 
@@ -115,7 +115,7 @@ class TranslatorRegistry:
             return None
 
     @classmethod
-    def get_all_translators(cls) -> List[Type["BaseTranslator"]]:
+    def get_all_translators(cls) -> List[Type["BaseTranslator"]]:  # type: ignore[misc]
         """
         Get all registered translator classes.
 
@@ -127,8 +127,10 @@ class TranslatorRegistry:
 
     @classmethod
     def create_translator_instance(
-        cls, resource_type: str, context: "TranslationContext"
-    ) -> Optional["BaseTranslator"]:
+        cls,
+        resource_type: str,
+        context: "TranslationContext",  # type: ignore[misc]
+    ) -> Optional["BaseTranslator"]:  # type: ignore[misc]
         """
         Create a translator instance for a specific resource type.
 
@@ -153,8 +155,9 @@ class TranslatorRegistry:
 
     @classmethod
     def create_translators(
-        cls, context: "TranslationContext"
-    ) -> List["BaseTranslator"]:
+        cls,
+        context: "TranslationContext",  # type: ignore[misc]
+    ) -> List["BaseTranslator"]:  # type: ignore[misc]
         """
         Create instances of all registered translators.
 
@@ -256,8 +259,8 @@ class TranslatorRegistry:
 
 
 def register_translator(
-    translator_class: Type["BaseTranslator"],
-) -> Type["BaseTranslator"]:
+    translator_class: Type["BaseTranslator"],  # type: ignore[misc]
+) -> Type["BaseTranslator"]:  # type: ignore[misc]
     """
     Decorator to register a translator class.
 

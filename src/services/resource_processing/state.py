@@ -6,7 +6,7 @@ This module manages the state of resource processing.
 
 from typing import Any, Dict
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 

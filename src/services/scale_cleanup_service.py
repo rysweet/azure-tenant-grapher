@@ -176,11 +176,11 @@ class ScaleCleanupService(BaseScaleService):
         try:
             with self.session_manager.session() as session:
                 # Execute queries
-                result1 = session.run(resource_query, params)
+                result1 = session.run(resource_query, params)  # type: ignore[arg-type]
                 record1 = result1.single()
                 resource_count = record1["resource_count"] if record1 else 0
 
-                result2 = session.run(relationship_query, params)
+                result2 = session.run(relationship_query, params)  # type: ignore[arg-type]
                 relationship_count = 0
                 for record in result2:
                     if "outgoing_count" in record:
@@ -188,12 +188,12 @@ class ScaleCleanupService(BaseScaleService):
                     if "incoming_count" in record:
                         relationship_count += record["incoming_count"] or 0
 
-                result3 = session.run(session_query, params)
+                result3 = session.run(session_query, params)  # type: ignore[arg-type]
                 sessions_affected = [
                     record["session_id"] for record in result3 if record["session_id"]
                 ]
 
-                result4 = session.run(type_query, params)
+                result4 = session.run(type_query, params)  # type: ignore[arg-type]
                 resource_types = {
                     record["resource_type"]: record["count"]
                     for record in result4
@@ -332,7 +332,7 @@ class ScaleCleanupService(BaseScaleService):
         sessions_cleaned: List[str] = []
         try:
             with self.session_manager.session() as session:
-                result = session.run(session_query, params)
+                result = session.run(session_query, params)  # type: ignore[arg-type]
                 sessions_cleaned = [
                     record["session_id"] for record in result if record["session_id"]
                 ]
@@ -369,8 +369,9 @@ class ScaleCleanupService(BaseScaleService):
                 """
 
                 with self.session_manager.session() as session:
-                    result = session.run(
-                        delete_query, {**params, "batch_size": self.batch_size}
+                    result = session.run(  # type: ignore[arg-type]
+                        delete_query,  # type: ignore
+                        {**params, "batch_size": self.batch_size},
                     )
                     record = result.single()
 
@@ -512,7 +513,7 @@ class ScaleCleanupService(BaseScaleService):
             sessions: List[Dict[str, Any]] = []
 
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     sessions.append(

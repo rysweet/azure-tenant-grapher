@@ -328,8 +328,7 @@ body {
 /* Vis-network tooltip styles */
 .vis-tooltip {
   position: absolute;
-  visibility: hidden;
-  padding: 8px;
+  padding: 10px;
   white-space: normal;
   font-family: 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   font-size: 12px;
@@ -340,7 +339,15 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   z-index: 10000;
-  max-width: 300px;
+  max-width: 400px;
+  min-width: 250px;
+  width: max-content;
+  opacity: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 /* Tooltip content styles */
@@ -349,11 +356,31 @@ body {
   color: #4caf50;
   margin-bottom: 8px;
   font-size: 14px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .vis-tooltip-row {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.5;
+  max-width: 100%;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #ffffff !important;
+}
+
+.vis-tooltip-row strong {
+  color: #4caf50;
+  display: inline-block;
+  margin-right: 4px;
+  white-space: nowrap;
 }
 
 .vis-tooltip-hint {
@@ -363,4 +390,6 @@ body {
   font-size: 11px;
   font-style: italic;
   color: #888;
+  word-wrap: break-word;
+  word-break: break-word;
 }

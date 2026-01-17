@@ -116,8 +116,13 @@ class CosmosDBPlugin(DataPlanePlugin):
 
         try:
             # Import Azure Cosmos SDK
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
 
             # Get endpoint from resource properties
             properties = resource.get("properties", {})
@@ -375,7 +380,7 @@ class CosmosDBPlugin(DataPlanePlugin):
                     code_lines.append("")
 
                 # Add indexing policy comment
-                indexing_policy = item.metadata.get("indexingPolicy")
+                indexing_policy = item.metadata.get("indexingPolicy")  # type: ignore[union-attr]
                 if indexing_policy:
                     code_lines.extend(
                         [
@@ -484,9 +489,14 @@ class CosmosDBPlugin(DataPlanePlugin):
 
         try:
             # Import Azure Cosmos SDK
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.cosmos import PartitionKey
-            from azure.identity import DefaultAzureCredential
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.cosmos import PartitionKey  # type: ignore[import-untyped]
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
 
             # Get endpoints
             source_endpoint = source_resource.get("properties", {}).get(
@@ -756,7 +766,7 @@ class CosmosDBPlugin(DataPlanePlugin):
         Returns:
             CosmosClient instance
         """
-        from azure.cosmos import CosmosClient
+        from azure.cosmos import CosmosClient  # type: ignore[import-untyped]
 
         # Try to use credential provider for connection string
         if self.credential_provider:

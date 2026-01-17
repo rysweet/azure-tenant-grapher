@@ -12,7 +12,7 @@ Endpoints:
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 
@@ -66,7 +66,7 @@ async def submit_scan_job(
     """
     # Check Neo4j connectivity
     try:
-        is_healthy = await connection_manager.health_check()
+        is_healthy = await connection_manager.health_check()  # type: ignore[misc]
         if not is_healthy:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -96,7 +96,7 @@ async def submit_scan_job(
         background_tasks=background_tasks,
         job_id=job_id,
         tenant_id=scan_request.tenant_id,
-        subscription_id=scan_request.subscription_id,
+        subscription_id=scan_request.subscription_id,  # type: ignore[attr-defined]
         resource_limit=scan_request.resource_limit,
         user_id=getattr(request.state, "user_id", None),
     )
@@ -106,7 +106,7 @@ async def submit_scan_job(
     return JobResponse(
         job_id=job_id,
         status=JobStatus.QUEUED,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         websocket_url=websocket_url,
     )
 
@@ -150,14 +150,14 @@ async def get_scan_status(
         )
 
     # Map to response model
-    return JobStatusResponse(
+    return JobStatusResponse(  # type: ignore[misc]
         job_id=job["id"],
-        operation_type=job["operation_type"],
+        operation_type=job["operation_type"],  # type: ignore[misc]
         status=JobStatus(job["status"]),
         created_at=job["created_at"],
-        updated_at=job["updated_at"],
+        updated_at=job["updated_at"],  # type: ignore[misc]
         error=job.get("error"),
-        result=job.get("result"),
+        result=job.get("result"),  # type: ignore[misc]
     )
 
 

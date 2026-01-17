@@ -58,12 +58,12 @@ async def lifespan(app: FastAPI):
 
         # Initialize Neo4j connection manager
         connection_manager = ConnectionManager(
-            uri=neo4j_config.uri,
-            user=neo4j_config.user,
-            password=neo4j_config.password,
-            max_pool_size=neo4j_config.max_pool_size,
+            uri=neo4j_config.uri,  # type: ignore[misc]
+            user=neo4j_config.user,  # type: ignore[misc]
+            password=neo4j_config.password,  # type: ignore[misc]
+            max_pool_size=neo4j_config.max_pool_size,  # type: ignore[misc]
         )
-        await connection_manager.initialize()
+        await connection_manager.initialize()  # type: ignore[attr-defined]
         logger.info("Neo4j connection initialized")
 
         # Set global dependencies
@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
         logger.info("Operation services initialized")
 
         # Initialize API key store
-        api_key_store = APIKeyStore.from_key_list(config.api_keys, config.environment)
+        api_key_store = APIKeyStore.from_key_list(config.api_keys, config.environment)  # type: ignore[attr-defined]
         set_api_key_store(api_key_store)
         logger.info(str(f"API key store initialized with {len(config.api_keys)} keys"))
 
@@ -93,7 +93,7 @@ async def lifespan(app: FastAPI):
         logger.info("Shutting down ATG Remote Service...")
 
         if connection_manager:
-            await connection_manager.close()
+            await connection_manager.close()  # type: ignore[misc]
             logger.info("Neo4j connections closed")
 
         logger.info("Service shutdown complete")

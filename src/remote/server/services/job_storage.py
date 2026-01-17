@@ -13,7 +13,7 @@ Public API:
 
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ...db.connection_manager import ConnectionManager
 
@@ -43,9 +43,9 @@ class JobStorage:
         self,
         job_id: str,
         operation_type: str,
-        params: Dict,
+        params: Dict[str, Any],
         user_id: Optional[str] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """
         Create a new job record in Neo4j.
 
@@ -66,7 +66,7 @@ class JobStorage:
             ...     {"tenant_id": "tenant-123"}
             ... )
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             query = """
             CREATE (j:Job {
                 id: $job_id,
@@ -101,8 +101,8 @@ class JobStorage:
         job_id: str,
         status: str,
         error: Optional[str] = None,
-        result: Optional[Dict] = None,
-    ) -> Dict:
+        result: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Update job status.
 
@@ -118,7 +118,7 @@ class JobStorage:
         Raises:
             ValueError: If job not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             query = """
             MATCH (j:Job {id: $job_id})
             SET j.status = $status,
@@ -157,7 +157,7 @@ class JobStorage:
         Returns:
             Job record or None if not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(
                 """
                 MATCH (j:Job {id: $job_id})
@@ -220,7 +220,7 @@ class JobStorage:
         LIMIT $limit
         """
 
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(query, **params)
             records = await result.data()
 
@@ -237,7 +237,7 @@ class JobStorage:
         Returns:
             True if deleted, False if not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(
                 """
                 MATCH (j:Job {id: $job_id})
@@ -257,7 +257,7 @@ class JobStorage:
                 return True
             return False
 
-    def _format_job(self, job: Dict) -> Dict:
+    def _format_job(self, job: Dict[str, Any]) -> Dict[str, Any]:
         """
         Format job record for API response.
 

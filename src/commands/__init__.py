@@ -47,6 +47,8 @@ _COMMAND_MODULES: dict[str, str] = {
     "validate-deployment": "src.commands.validate_deployment",
     # Tenant management
     "create-tenant": "src.commands.tenant",
+    # Azure Lighthouse commands (Issue #588)
+    "lighthouse": "src.commands.lighthouse",
     # Agent/AI commands
     "agent-mode": "src.commands.agent",
     "threat-model": "src.commands.threat_model",

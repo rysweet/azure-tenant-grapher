@@ -6,7 +6,7 @@ This module handles creation of Neo4j relationships between nodes.
 
 from typing import Any, Dict
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from src.utils.session_manager import retry_neo4j_operation
 

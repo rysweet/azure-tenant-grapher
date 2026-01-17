@@ -844,7 +844,13 @@ class TestEventHubSanitization:
         sanitizer = AzureNameSanitizer()
         result = sanitizer.sanitize("EH-Prod-123", "Microsoft.EventHub/namespaces")
         # alphanum_hyphen allows uppercase, but sanitizer should handle consistently
-        assert result.replace("-", "").replace("123", "").replace("prod", "").replace("eh", "") == ""
+        assert (
+            result.replace("-", "")
+            .replace("123", "")
+            .replace("prod", "")
+            .replace("eh", "")
+            == ""
+        )
 
 
 class TestEventGridSanitization:
@@ -883,7 +889,9 @@ class TestSignalRSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("signalr-prod-east", "Microsoft.SignalRService/signalR")
+        result = sanitizer.sanitize(
+            "signalr-prod-east", "Microsoft.SignalRService/signalR"
+        )
         assert result == "signalr-prod-east"
         assert "-" in result
 
@@ -936,7 +944,9 @@ class TestTrafficManagerSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("tm-prod-east", "Microsoft.Network/trafficManagerProfiles")
+        result = sanitizer.sanitize(
+            "tm-prod-east", "Microsoft.Network/trafficManagerProfiles"
+        )
         assert result == "tm-prod-east"
         assert "-" in result
 
@@ -944,7 +954,9 @@ class TestTrafficManagerSanitization:
         """Test max length of 63 characters"""
         sanitizer = AzureNameSanitizer()
         long_name = "tm-" + "a" * 70
-        result = sanitizer.sanitize(long_name, "Microsoft.Network/trafficManagerProfiles")
+        result = sanitizer.sanitize(
+            long_name, "Microsoft.Network/trafficManagerProfiles"
+        )
         assert len(result) <= 63
 
 
@@ -965,14 +977,18 @@ class TestMariaDBServerSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("mariadb-a1b2c3d4", "Microsoft.DBforMariaDB/servers")
+        result = sanitizer.sanitize(
+            "mariadb-a1b2c3d4", "Microsoft.DBforMariaDB/servers"
+        )
         assert result == "mariadb-a1b2c3d4"
         assert "-" in result
 
     def test_lowercase_enforced(self):
         """Test lowercase enforcement"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("MariaDB-A1B2C3D4", "Microsoft.DBforMariaDB/servers")
+        result = sanitizer.sanitize(
+            "MariaDB-A1B2C3D4", "Microsoft.DBforMariaDB/servers"
+        )
         assert result == "mariadb-a1b2c3d4"
         assert result.replace("-", "").islower()
 
@@ -996,14 +1012,18 @@ class TestCosmosDBSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("cosmos-prod", "Microsoft.DocumentDB/databaseAccounts")
+        result = sanitizer.sanitize(
+            "cosmos-prod", "Microsoft.DocumentDB/databaseAccounts"
+        )
         assert result == "cosmos-prod"
         assert "-" in result
 
     def test_lowercase_enforced(self):
         """Test lowercase enforcement"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("Cosmos-PROD-123", "Microsoft.DocumentDB/databaseAccounts")
+        result = sanitizer.sanitize(
+            "Cosmos-PROD-123", "Microsoft.DocumentDB/databaseAccounts"
+        )
         assert result == "cosmos-prod-123"
         assert result.replace("-", "").islower()
 
@@ -1058,7 +1078,9 @@ class TestSearchServiceSanitization:
     def test_lowercase_enforced(self):
         """Test lowercase enforcement"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("Search-PROD-123", "Microsoft.Search/searchServices")
+        result = sanitizer.sanitize(
+            "Search-PROD-123", "Microsoft.Search/searchServices"
+        )
         assert result == "search-prod-123"
         assert result.replace("-", "").islower()
 
@@ -1130,7 +1152,9 @@ class TestDatabricksWorkspaceSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("databricks-prod", "Microsoft.Databricks/workspaces")
+        result = sanitizer.sanitize(
+            "databricks-prod", "Microsoft.Databricks/workspaces"
+        )
         assert result == "databricks-prod"
         assert "-" in result
 
@@ -1209,14 +1233,18 @@ class TestDataLakeAnalyticsSanitization:
     def test_hyphen_removal(self):
         """Test that hyphens are removed"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("dla-a1b2c3", "Microsoft.DataLakeAnalytics/accounts")
+        result = sanitizer.sanitize(
+            "dla-a1b2c3", "Microsoft.DataLakeAnalytics/accounts"
+        )
         assert result == "dlaa1b2c3"
         assert "-" not in result
 
     def test_lowercase_conversion(self):
         """Test lowercase enforcement"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("DLA-A1B2C3", "Microsoft.DataLakeAnalytics/accounts")
+        result = sanitizer.sanitize(
+            "DLA-A1B2C3", "Microsoft.DataLakeAnalytics/accounts"
+        )
         assert result == "dlaa1b2c3"
         assert result.islower()
 
@@ -1245,7 +1273,9 @@ class TestCognitiveServicesSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("cog-prod-east", "Microsoft.CognitiveServices/accounts")
+        result = sanitizer.sanitize(
+            "cog-prod-east", "Microsoft.CognitiveServices/accounts"
+        )
         assert result == "cog-prod-east"
         assert "-" in result
 
@@ -1269,7 +1299,9 @@ class TestMLWorkspaceSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("ml-prod-east", "Microsoft.MachineLearningServices/workspaces")
+        result = sanitizer.sanitize(
+            "ml-prod-east", "Microsoft.MachineLearningServices/workspaces"
+        )
         assert result == "ml-prod-east"
         assert "-" in result
 
@@ -1277,7 +1309,9 @@ class TestMLWorkspaceSanitization:
         """Test max length of 33 characters"""
         sanitizer = AzureNameSanitizer()
         long_name = "ml-workspace-" + "a" * 40
-        result = sanitizer.sanitize(long_name, "Microsoft.MachineLearningServices/workspaces")
+        result = sanitizer.sanitize(
+            long_name, "Microsoft.MachineLearningServices/workspaces"
+        )
         assert len(result) <= 33
 
 
@@ -1370,7 +1404,9 @@ class TestCommunicationServiceSanitization:
     def test_hyphens_preserved(self):
         """Test that hyphens are preserved"""
         sanitizer = AzureNameSanitizer()
-        result = sanitizer.sanitize("comm-prod-east", "Microsoft.Communication/communicationServices")
+        result = sanitizer.sanitize(
+            "comm-prod-east", "Microsoft.Communication/communicationServices"
+        )
         assert result == "comm-prod-east"
         assert "-" in result
 
@@ -1378,7 +1414,9 @@ class TestCommunicationServiceSanitization:
         """Test max length of 63 characters"""
         sanitizer = AzureNameSanitizer()
         long_name = "comm-" + "a" * 70
-        result = sanitizer.sanitize(long_name, "Microsoft.Communication/communicationServices")
+        result = sanitizer.sanitize(
+            long_name, "Microsoft.Communication/communicationServices"
+        )
         assert len(result) <= 63
 
 

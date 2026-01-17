@@ -295,7 +295,7 @@ async def build_resource_mapping(
     mapping: Dict[str, List[str]] = defaultdict(list)
 
     with session_manager.session() as session:
-        result = session.run(query, {"operation_id": operation_id})
+        result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
         for record in result:
             synthetic_id = record["id"]
             source_id = record.get("source_id")
@@ -384,7 +384,7 @@ async def _get_relationship_patterns_chunk(
 
     patterns = []
     with session_manager.session() as session:
-        result = session.run(query, {"base_ids": base_ids})
+        result = session.run(query, {"base_ids": base_ids})  # type: ignore[arg-type]
         for record in result:
             patterns.append(
                 {

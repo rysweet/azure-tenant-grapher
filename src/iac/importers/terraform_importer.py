@@ -21,9 +21,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from azure.core.exceptions import AzureError
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.resource import ResourceManagementClient
+from azure.core.exceptions import AzureError  # type: ignore[import-untyped]
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.mgmt.resource import ResourceManagementClient  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

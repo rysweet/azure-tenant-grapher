@@ -1,0 +1,48 @@
+targetScope = 'subscription'
+
+@description('Managing tenant ID (MSSP) - will be replaced by LighthouseManager')
+param managingTenantId string = '{{MANAGING_TENANT_ID}}'
+
+@description('Customer organization name')
+param customerName string = '{{CUSTOMER_NAME}}'
+
+@description('Customer tenant ID for documentation')
+param customerTenantId string = '{{CUSTOMER_TENANT_ID}}'
+
+@description('Subscription ID being delegated')
+param subscriptionId string = '{{SUBSCRIPTION_ID}}'
+
+@description('Delegation description')
+param delegationDescription string = 'Azure Lighthouse delegation for {{CUSTOMER_NAME}} - managed by MSSP'
+
+@description('RBAC authorizations (principal IDs + role definition IDs)')
+param authorizations array = {{AUTHORIZATIONS_JSON}}
+
+// Generate deterministic GUIDs based on subscription and managing tenant
+var registrationDefinitionName = guid(subscriptionId, managingTenantId, 'definition')
+var registrationAssignmentName = guid(subscriptionId, managingTenantId, 'assignment')
+
+resource lighthouseRegistrationDefinition 'Microsoft.ManagedServices/registrationDefinitions@2022-10-01' = {
+  name: registrationDefinitionName
+  properties: {
+    registrationDefinitionName: '${customerName} - Sentinel MSSP Delegation'
+    description: delegationDescription
+    managedByTenantId: managingTenantId
+    authorizations: authorizations
+  }
+}
+
+resource lighthouseRegistrationAssignment 'Microsoft.ManagedServices/registrationAssignments@2022-10-01' = {
+  name: registrationAssignmentName
+  properties: {
+    registrationDefinitionId: lighthouseRegistrationDefinition.id
+  }
+}
+
+output registrationDefinitionId string = lighthouseRegistrationDefinition.id
+output registrationAssignmentId string = lighthouseRegistrationAssignment.id
+output registrationDefinitionName string = registrationDefinitionName
+output registrationAssignmentName string = registrationAssignmentName
+output managingTenantId string = managingTenantId
+output customerName string = customerName
+output customerTenantId string = customerTenantId

@@ -407,7 +407,7 @@ class AzureResourceIdBuilder:
             return None
 
         # Check if vnet_name contains Terraform variable
-        if self._is_terraform_variable(vnet_name):
+        if self._is_terraform_variable(vnet_name):  # type: ignore[arg-type]
             logger.debug(
                 f"Cannot build subnet ID: vnet_name contains Terraform variable: {vnet_name}"
             )

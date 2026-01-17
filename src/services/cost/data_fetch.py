@@ -9,10 +9,12 @@ import json
 from datetime import date, datetime
 from typing import Any, Optional
 
-from azure.core.credentials import TokenCredential
-from azure.core.exceptions import HttpResponseError
-from azure.mgmt.costmanagement import CostManagementClient
-from azure.mgmt.costmanagement.models import (
+from azure.core.credentials import TokenCredential  # type: ignore[import-untyped]
+from azure.core.exceptions import HttpResponseError  # type: ignore[import-untyped]
+from azure.mgmt.costmanagement import (
+    CostManagementClient,  # type: ignore[import-untyped]
+)
+from azure.mgmt.costmanagement.models import (  # type: ignore[import-untyped]
     QueryAggregation,
     QueryDataset,
     QueryDefinition,
@@ -335,7 +337,7 @@ class CostDataFetcher:
         Returns:
             Query result
         """
-        return self.client.query.usage(scope=scope, parameters=query_def)
+        return self.client.query.usage(scope=scope, parameters=query_def)  # type: ignore[union-attr]
 
     def _parse_cost_data(self, result: Any, scope: str) -> list[CostData]:
         """Parse Azure Cost Management API response into CostData objects.

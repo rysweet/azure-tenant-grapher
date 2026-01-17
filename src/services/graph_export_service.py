@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import networkx as nx
-import structlog
+import structlog  # type: ignore[import-untyped] # type: ignore[import-untyped]
 
 from src.utils.session_manager import Neo4jSessionManager
 

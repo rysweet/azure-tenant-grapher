@@ -21,7 +21,7 @@ import threading
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 # Re-export everything from the new location for backward compatibility
 from src.services.resource_processing import (

@@ -65,7 +65,7 @@ def create_tenant_from_markdown(text: str):
         # If we're already in an event loop, schedule the task and wait for it
         task = loop.create_task(_run())
         # For CLI, block until done
-        import nest_asyncio
+        import nest_asyncio  # type: ignore[import-untyped]
 
         nest_asyncio.apply()
         loop.run_until_complete(task)

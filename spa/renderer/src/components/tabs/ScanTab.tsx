@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -29,7 +29,14 @@ import { useApp } from '../../context/AppContext';
 import { useBackgroundOperations } from '../../hooks/useBackgroundOperations';
 import { useWebSocketContext } from '../../context/WebSocketContext';
 import { useLogger } from '../../hooks/useLogger';
-import { isValidTenantId, isValidResourceLimit, isValidThreadCount } from '../../utils/validation';
+import {
+  isValidTenantId,
+  isValidResourceLimit,
+  isValidThreadCount,
+  isValidFilterList,
+  sanitizeErrorMessage,
+  hasErrorResponse
+} from '../../utils/validation';
 
 // DBStats interface - used for type safety
 interface DBStats {
@@ -48,6 +55,9 @@ const ScanTab: React.FC = () => {
   const { addBackgroundOperation, updateBackgroundOperation, removeBackgroundOperation } = useBackgroundOperations();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput, onProcessExit } = useWebSocketContext();
   const logger = useLogger('Scan');
+
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef<boolean>(true);
 
   // State declarations - safely access state.config
   const [tenantId, setTenantId] = useState(state?.config?.tenantId || '');
@@ -75,37 +85,25 @@ const ScanTab: React.FC = () => {
     currentPhase: 'Initializing'
   });
 
-  // Database stats - currently unused but kept for future UI updates
-  const [_dbStats, setDbStats] = useState<DBStats | null>(null);
-  const [_loadingStats, setLoadingStats] = useState(false);
   const [dbPopulated, setDbPopulated] = useState(false);
   const [neo4jStatus, setNeo4jStatus] = useState<any>(null);
   const [startingNeo4j, setStartingNeo4j] = useState(false);
 
   // All useCallback function definitions (must come before useEffect hooks)
   const loadDatabaseStats = useCallback(async () => {
-    setLoadingStats(true);
     try {
       const response = await axios.get('http://localhost:3001/api/graph/stats');
       const stats = response.data;
-      setDbStats(stats);
       setDbPopulated(!stats.isEmpty);
+      logger.info('Database stats loaded successfully', { nodeCount: stats.nodeCount, edgeCount: stats.edgeCount });
     } catch (err) {
-      // Handle database stats loading error silently
-      // Set empty stats when database is empty or error occurs
-      setDbStats({
-        nodeCount: 0,
-        edgeCount: 0,
-        nodeTypes: [],
-        edgeTypes: [],
-        lastUpdate: null,
-        isEmpty: true
-      });
+      // Log the error but re-throw for the caller to handle
+      logger.error('Failed to load database stats', { error: err });
       setDbPopulated(false);
-    } finally {
-      setLoadingStats(false);
+      // Re-throw the error so the caller can display it to the user
+      throw err;
     }
-  }, []);
+  }, [logger]);
 
   const checkNeo4jStatus = useCallback(async () => {
     try {
@@ -116,13 +114,22 @@ const ScanTab: React.FC = () => {
 
       // If Neo4j is running, load database stats
       if (response.data.running) {
-        await loadDatabaseStats();
+        try {
+          await loadDatabaseStats();
+        } catch (statsErr) {
+          // Log but don't fail Neo4j status check if stats loading fails
+          logger.warning('Failed to load database stats during Neo4j status check', { error: statsErr });
+        }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Handle Neo4j status check error
 
       // Check if it's a connection error (backend not running)
-      if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
+      const errorCode = typeof err === 'object' && err !== null && 'code' in err
+        ? (err as { code: string }).code
+        : '';
+
+      if (errorCode === 'ECONNREFUSED' || errorCode === 'ERR_NETWORK') {
         throw err; // Rethrow to trigger retry
       }
 
@@ -256,13 +263,27 @@ const ScanTab: React.FC = () => {
         setLogs((prev) => [...prev, '✅ Scan completed successfully!']);
         updateBackgroundOperation(event.processId, { status: 'completed' });
         dispatch({ type: 'ADD_LOG', payload: 'Scan completed successfully' });
-        // Reload stats after successful build
-        loadDatabaseStats();
+        // Reload stats after successful build - wrapped in async IIFE to handle promises
+        (async () => {
+          try {
+            if (!isMountedRef.current) return;
+            setLogs((prev) => [...prev, '🔄 Refreshing database statistics...']);
+            await loadDatabaseStats();
+            if (!isMountedRef.current) return;
+            setLogs((prev) => [...prev, '✅ Database statistics updated!']);
+          } catch (error: unknown) {
+            if (!isMountedRef.current) return;
+            const sanitizedError = sanitizeErrorMessage(error);
+            setError(`Failed to refresh database stats: ${sanitizedError}`);
+            setLogs((prev) => [...prev, `❌ Failed to refresh database stats: ${sanitizedError}`]);
+          }
+        })();
       } else {
-        setError(`Scan failed with exit code ${event.code}`);
-        setLogs((prev) => [...prev, `❌ Scan failed with exit code ${event.code}`]);
+        const errorMessage = `Scan process ended with exit code ${event.code}`;
+        setError(errorMessage);
+        setLogs((prev) => [...prev, `❌ ${errorMessage}`]);
         updateBackgroundOperation(event.processId, { status: 'error' });
-        dispatch({ type: 'ADD_LOG', payload: `Scan failed with exit code ${event.code}` });
+        dispatch({ type: 'ADD_LOG', payload: errorMessage });
       }
 
       // Clean up
@@ -278,10 +299,11 @@ const ScanTab: React.FC = () => {
   const handleProcessError = useCallback((event: { processId: string; error?: string; timestamp: string }) => {
     if (event.processId === currentProcessId) {
       setIsRunning(false);
-      setError(`Process error: ${event.error}`);
-      setLogs((prev) => [...prev, `❌ Process error: ${event.error}`]);
+      const sanitizedError = sanitizeErrorMessage(event.error || 'Process error occurred');
+      setError(`Process error: ${sanitizedError}`);
+      setLogs((prev) => [...prev, `❌ Process error: ${sanitizedError}`]);
       updateBackgroundOperation(event.processId, { status: 'error' });
-      dispatch({ type: 'ADD_LOG', payload: `Process error: ${event.error}` });
+      dispatch({ type: 'ADD_LOG', payload: `Process error: ${sanitizedError}` });
 
       // Clean up
       unsubscribeFromProcess(event.processId);
@@ -314,7 +336,9 @@ const ScanTab: React.FC = () => {
 
   // Cleanup when component unmounts
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (currentProcessId && isRunning) {
         unsubscribeFromProcess(currentProcessId);
       }
@@ -384,8 +408,11 @@ const ScanTab: React.FC = () => {
         await checkNeo4jStatus();
         setStartingNeo4j(false);
       }, 3000);
-    } catch (err: any) {
-      setError('Failed to start Neo4j: ' + (err.response?.data?.error || err.message));
+    } catch (err: unknown) {
+      const errorMessage = hasErrorResponse(err) && err.response.data?.error
+        ? err.response.data.error
+        : sanitizeErrorMessage(err);
+      setError('Failed to start Neo4j: ' + errorMessage);
       setStartingNeo4j(false);
     }
   };
@@ -412,6 +439,17 @@ const ScanTab: React.FC = () => {
 
       if (!isValidThreadCount(maxLlmThreads) || !isValidThreadCount(maxBuildThreads)) {
         setError('Thread counts must be between 1 and 100');
+        return;
+      }
+
+      // Validate filter inputs to prevent command injection
+      if (!isValidFilterList(filterBySubscriptions)) {
+        setError('Invalid subscription filter format. Use comma-separated alphanumeric values with hyphens/underscores only.');
+        return;
+      }
+
+      if (!isValidFilterList(filterByRgs)) {
+        setError('Invalid resource group filter format. Use comma-separated alphanumeric values with hyphens/underscores only.');
         return;
       }
 
@@ -512,10 +550,13 @@ const ScanTab: React.FC = () => {
       // Save config
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error in handleStart:', err);
-      dispatch({ type: 'ADD_LOG', payload: `Scan failed to start: ${err.message}` });
-      setError(err.response?.data?.error || err.message);
+      const sanitizedError = hasErrorResponse(err) && err.response.data?.error
+        ? err.response.data.error
+        : sanitizeErrorMessage(err);
+      dispatch({ type: 'ADD_LOG', payload: `Scan failed to start: ${sanitizedError}` });
+      setError(sanitizedError);
       setIsRunning(false);
     }
   };
@@ -534,17 +575,15 @@ const ScanTab: React.FC = () => {
         setIsRunning(false);
         setLogs((prev) => [...prev, 'Scan cancelled by user']);
         dispatch({ type: 'ADD_LOG', payload: 'Scan cancelled by user' });
-      } catch (err: any) {
-        setError(err.response?.data?.error || err.message);
+      } catch (err: unknown) {
+        const errorMessage = hasErrorResponse(err) && err.response.data?.error
+          ? err.response.data.error
+          : sanitizeErrorMessage(err);
+        setError(errorMessage);
       }
     }
   };
 
-  // Removed unused formatTimestamp function - formatting handled inline where needed
-
-  // const formatNumber = (num: number) => {
-  //   return num.toLocaleString();
-  // };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

@@ -239,7 +239,7 @@ class RichDashboard:
         key_handler: Optional[Callable[[], None]] = None,
         key_queue: Optional[Any] = None,
     ):
-        import readchar
+        import readchar  # type: ignore[import-untyped]
 
         stop_event = threading.Event()
         self._should_exit = False

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "managingTenantId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "authorizations": {
+      "value": [
+        {
+          "principalId": "11111111-1111-1111-1111-111111111111",
+          "roleDefinitionId": "ab8e14d6-4a74-4a29-9ba8-549422addade",
+          "principalIdDisplayName": "Sentinel Management SP"
+        },
+        {
+          "principalId": "22222222-2222-2222-2222-222222222222",
+          "roleDefinitionId": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
+          "principalIdDisplayName": "Security Operations Team"
+        }
+      ]
+    },
+    "registrationDefinitionName": {
+      "value": "Sentinel MSSP Management"
+    },
+    "registrationDefinitionDescription": {
+      "value": "Delegated access for Sentinel MSSP operations"
+    }
+  }
+}

@@ -12,7 +12,7 @@ Public API:
 """
 
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import BackgroundTasks
 
@@ -67,7 +67,7 @@ class BackgroundExecutor:
         subscription_id: Optional[str] = None,
         resource_limit: Optional[int] = None,
         user_id: Optional[str] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Submit scan operation to background.
 
@@ -128,7 +128,7 @@ class BackgroundExecutor:
         target_tenant_id: Optional[str] = None,
         auto_import: bool = False,
         user_id: Optional[str] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Submit IaC generation operation to background.
 
@@ -184,7 +184,7 @@ class BackgroundExecutor:
         tenant_id: str,
         output_path: Optional[str] = None,
         user_id: Optional[str] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Submit spec generation operation to background.
 

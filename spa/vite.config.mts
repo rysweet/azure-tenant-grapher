@@ -7,6 +7,7 @@ export default defineConfig({
   root: 'renderer',
   base: './',
   server: {
+    host: '0.0.0.0', // Listen on all network interfaces (IPv4 and IPv6)
     port: 5173,
     strictPort: true,
     proxy: {

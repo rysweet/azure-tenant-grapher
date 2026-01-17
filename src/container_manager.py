@@ -12,7 +12,7 @@ import uuid
 from typing import Optional
 
 import docker
-import structlog
+import structlog  # type: ignore[import-untyped]
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 
@@ -114,7 +114,7 @@ class Neo4jContainerManager:
                     volumes = self.docker_client.volumes.list(
                         filters={"name": self.volume_name}
                     )
-                    for v in volumes:
+                    for v in volumes:  # type: ignore[misc]
                         v.remove(force=True)
                         logger.info(event=f"Removed test volume {v.name}")
             except Exception as e:
@@ -416,7 +416,7 @@ class Neo4jContainerManager:
                 )
 
                 with driver.session() as session:
-                    result = session.run("RETURN 1 as test")
+                    result = session.run("RETURN 1 as test")  # type: ignore[arg-type]
                     record = result.single()
                     if record and record["test"] == 1:
                         driver.close()
@@ -531,7 +531,7 @@ class Neo4jContainerManager:
             )
 
             with driver.session() as session:
-                result = session.run("RETURN 1 as test")
+                result = session.run("RETURN 1 as test")  # type: ignore[arg-type]
                 record = result.single()
                 if record and record["test"] == 1:
                     driver.close()

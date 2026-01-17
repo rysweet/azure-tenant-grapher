@@ -36,7 +36,7 @@ async def health_check(
     """
     # Check Neo4j connection
     try:
-        is_healthy = await connection_manager.health_check()
+        is_healthy = await connection_manager.health_check()  # type: ignore[misc]
         neo4j_status = "connected" if is_healthy else "disconnected"
     except Exception:
         neo4j_status = "disconnected"

@@ -33,7 +33,7 @@ class ProgressEvent(BaseEvent):
     Sent periodically during job execution to report progress.
     """
 
-    type: Literal["progress"] = "progress"
+    type: Literal["progress"] = Field(default="progress", description="Event type")
     phase: str = Field(..., description="Current execution phase")
     message: str = Field(..., description="Human-readable progress message")
     percent: float = Field(..., description="Progress percentage (0-100)", ge=0, le=100)
@@ -58,7 +58,7 @@ class ErrorEvent(BaseEvent):
     Sent when a job encounters an error.
     """
 
-    type: Literal["error"] = "error"
+    type: Literal["error"] = Field(default="error", description="Event type")
     error_code: str = Field(..., description="Error code")
     error_message: str = Field(..., description="Error message")
     details: Optional[Dict[str, Any]] = Field(
@@ -85,7 +85,7 @@ class CompletionEvent(BaseEvent):
     Sent when a job completes successfully or fails.
     """
 
-    type: Literal["completion"] = "completion"
+    type: Literal["completion"] = Field(default="completion", description="Event type")
     status: str = Field(..., description="Final job status (completed/failed)")
     result: Optional[Dict[str, Any]] = Field(None, description="Job result summary")
 
@@ -112,7 +112,7 @@ class LogEvent(BaseEvent):
     Sent to stream log messages to the client.
     """
 
-    type: Literal["log"] = "log"
+    type: Literal["log"] = Field(default="log", description="Event type")
     level: str = Field(..., description="Log level (INFO, WARNING, ERROR)")
     message: str = Field(..., description="Log message")
 

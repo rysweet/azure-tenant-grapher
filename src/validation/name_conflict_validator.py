@@ -17,12 +17,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from azure.core.exceptions import AzureError, ResourceNotFoundError
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.keyvault import KeyVaultManagementClient
-from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.storage import StorageManagementClient
-from azure.mgmt.storage.models import StorageAccountCheckNameAvailabilityParameters
+from azure.core.exceptions import (  # type: ignore[import-untyped]
+    AzureError,
+    ResourceNotFoundError,
+)
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.mgmt.keyvault import KeyVaultManagementClient  # type: ignore[import-untyped]
+from azure.mgmt.resource import ResourceManagementClient  # type: ignore[import-untyped]
+from azure.mgmt.storage import StorageManagementClient  # type: ignore[import-untyped]
+from azure.mgmt.storage.models import (
+    StorageAccountCheckNameAvailabilityParameters,  # type: ignore[import-untyped]
+)
 
 logger = logging.getLogger(__name__)
 

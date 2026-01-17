@@ -3,15 +3,25 @@ import os
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 
-from azure.identity import ClientSecretCredential
-from kiota_abstractions.base_request_configuration import RequestConfiguration
-from msgraph.generated.groups.groups_request_builder import GroupsRequestBuilder
-from msgraph.generated.models.o_data_errors.o_data_error import ODataError
-from msgraph.generated.service_principals.service_principals_request_builder import (
+from azure.identity import ClientSecretCredential  # type: ignore[import-untyped]
+from kiota_abstractions.base_request_configuration import (
+    RequestConfiguration,  # type: ignore[import-untyped]
+)
+from msgraph.generated.groups.groups_request_builder import (
+    GroupsRequestBuilder,  # type: ignore[import-untyped]
+)
+from msgraph.generated.models.o_data_errors.o_data_error import (
+    ODataError,  # type: ignore[import-untyped]
+)
+from msgraph.generated.service_principals.service_principals_request_builder import (  # type: ignore[import-untyped]
     ServicePrincipalsRequestBuilder,
 )
-from msgraph.generated.users.users_request_builder import UsersRequestBuilder
-from msgraph.graph_service_client import GraphServiceClient
+from msgraph.generated.users.users_request_builder import (
+    UsersRequestBuilder,  # type: ignore[import-untyped]
+)
+from msgraph.graph_service_client import (
+    GraphServiceClient,  # type: ignore[import-untyped]
+)
 
 logger = logging.getLogger(__name__)
 

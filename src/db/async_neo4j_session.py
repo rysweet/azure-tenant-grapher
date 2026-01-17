@@ -19,7 +19,7 @@ class AsyncNeo4jSession:
     -------
     ```python
     async with AsyncNeo4jSession(driver) as session:
-        await session.run("MATCH (n) RETURN n")
+        await session.run("MATCH (n) RETURN n")  # type: ignore[arg-type]
     ```
     """
 

@@ -31,7 +31,7 @@ class CommunityDetector:
         with self.driver.session() as session:
             # Use Cypher to find weakly connected components
             # This groups resources that are connected by any path
-            result = session.run("""
+            result = session.run("""  # type: ignore[arg-type]
                 MATCH (r:Resource)
                 WHERE NOT r:Original  // Use abstracted nodes only
 

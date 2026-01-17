@@ -490,7 +490,7 @@ def setup_logging(config: LoggingConfig) -> None:
     _set_azure_http_log_level(config.level.upper())
 
     try:
-        import colorlog
+        import colorlog  # type: ignore[import-untyped]
 
         use_colorlog = True
         colorlog_available = colorlog

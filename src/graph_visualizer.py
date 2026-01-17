@@ -11,7 +11,7 @@ import webbrowser
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-import colorlog
+import colorlog  # type: ignore[import-untyped]
 from neo4j import Driver, GraphDatabase
 
 from .exceptions import HtmlTemplateGenerationError, Neo4jConnectionError
@@ -61,8 +61,8 @@ class GraphVisualizer:
             )
 
             # Test the connection
-            with self.driver.session() as session:
-                session.run("RETURN 1")
+            with self.driver.session() as session:  # type: ignore[union-attr]
+                session.run("RETURN 1")  # type: ignore[arg-type]
 
             logger.info(str(f"Connected to Neo4j at {self.neo4j_uri}"))
         except Exception as e:

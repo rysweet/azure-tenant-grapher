@@ -208,7 +208,7 @@ async def _handle_terraform_import(
         )
 
 
-async def generate_iac_command_handler(
+async def generate_iac_command_handler(  # type: ignore[misc]
     tenant_id: Optional[str] = None,
     format_type: str = "terraform",
     output_path: Optional[str] = None,
@@ -579,7 +579,7 @@ async def generate_iac_command_handler(
                 # 1. Scan target tenant
                 import os
 
-                from azure.identity import (
+                from azure.identity import (  # type: ignore[import-untyped]
                     ClientSecretCredential,
                     DefaultAzureCredential,
                 )
@@ -888,7 +888,9 @@ async def generate_iac_command_handler(
         if should_check_conflicts and subscription_id and not dry_run:
             import os
 
-            from azure.identity import ClientSecretCredential
+            from azure.identity import (
+                ClientSecretCredential,  # type: ignore[import-untyped]
+            )
 
             from .cleanup_integration import invoke_cleanup_script, parse_cleanup_result
             from .conflict_detector import ConflictDetector
@@ -1057,7 +1059,9 @@ async def generate_iac_command_handler(
                 # Create credential for TARGET tenant (not source)
                 import os
 
-                from azure.identity import ClientSecretCredential
+                from azure.identity import (
+                    ClientSecretCredential,  # type: ignore[import-untyped]
+                )
 
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
@@ -1186,7 +1190,9 @@ async def generate_iac_command_handler(
             # Create credential for TARGET tenant (not source)
             import os
 
-            from azure.identity import ClientSecretCredential
+            from azure.identity import (
+                ClientSecretCredential,  # type: ignore[import-untyped]
+            )
 
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
             # Use target tenant credentials if different from source
@@ -1402,7 +1408,9 @@ async def generate_iac_command_handler(
                     target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
 
                     if target_client_id and target_client_secret:
-                        from azure.identity import ClientSecretCredential
+                        from azure.identity import (
+                            ClientSecretCredential,  # type: ignore[import-untyped]
+                        )
 
                         provider_credential = ClientSecretCredential(
                             tenant_id=target_tenant_id,

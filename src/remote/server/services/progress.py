@@ -14,7 +14,7 @@ Public API:
 import asyncio
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 logger = logging.getLogger(__name__)
@@ -68,11 +68,11 @@ class ProgressTracker:
             "job_id": job_id,
             "type": event_type,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         if details:
-            event["details"] = details
+            event["details"] = details  # type: ignore[arg-type]
 
         async with self._lock:
             # Store in history

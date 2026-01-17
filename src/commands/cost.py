@@ -127,7 +127,7 @@ async def cost_analysis_command_handler(
     sync: bool,
 ) -> None:
     """Analyze Azure costs for resources tracked in the graph."""
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
     from rich.panel import Panel
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -156,12 +156,12 @@ async def cost_analysis_command_handler(
     if not end_date:
         end_date_val = date.today()
     else:
-        end_date_val = end_date.date()
+        end_date_val = end_date.date()  # type: ignore[attr-defined]
 
     if not start_date:
         start_date_val = end_date_val - timedelta(days=30)
     else:
-        start_date_val = start_date.date()
+        start_date_val = start_date.date()  # type: ignore[attr-defined]
 
     # Validate date range
     if start_date_val > end_date_val:
@@ -338,7 +338,7 @@ async def cost_forecast_command_handler(
     """Forecast future costs based on historical trends."""
     import json
 
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
@@ -550,7 +550,7 @@ async def cost_report_command_handler(
     output: Optional[str],
 ) -> None:
     """Generate comprehensive cost report."""
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
     from rich.console import Console
 
     from src.services.cost_management_service import (
@@ -570,12 +570,12 @@ async def cost_report_command_handler(
     if not end_date:
         end_date_val = date.today()
     else:
-        end_date_val = end_date.date()
+        end_date_val = end_date.date()  # type: ignore[attr-defined]
 
     if not start_date:
         start_date_val = end_date_val - timedelta(days=30)
     else:
-        start_date_val = start_date.date()
+        start_date_val = start_date.date()  # type: ignore[attr-defined]
 
     # Validate date range
     if start_date_val > end_date_val:

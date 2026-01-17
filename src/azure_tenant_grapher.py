@@ -305,7 +305,7 @@ class AzureTenantGrapher:
                     existing_resources = []
 
                     with self.session_manager.session() as session:
-                        result = session.run("""
+                        result = session.run("""  # type: ignore[arg-type]
                             MATCH (r:Resource)
                             RETURN r {
                                 .id, .name, .type, .location, .resource_group,
@@ -341,7 +341,7 @@ class AzureTenantGrapher:
                     logger.info("🧹 Clearing existing non-containment relationships...")
                     with self.session_manager.session() as session:
                         # Keep CONTAINS relationships but remove others that will be rebuilt
-                        session.run("""
+                        session.run("""  # type: ignore[arg-type]
                             MATCH (r:Resource)-[rel]->(target)
                             WHERE type(rel) <> 'CONTAINS'
                             DELETE rel

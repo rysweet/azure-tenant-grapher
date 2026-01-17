@@ -84,7 +84,8 @@ class PluginRegistry:
 
     @classmethod
     def get_plugin_for_resource(
-        cls, resource: Dict[str, any]
+        cls,
+        resource: Dict[str, any],  # type: ignore[misc]
     ) -> Optional[DataPlanePlugin]:
         """
         Get plugin for a resource dictionary.
@@ -165,7 +166,7 @@ class PluginRegistry:
             logger.warning(str(f"Could not import KeyVaultPlugin: {e}"))
 
         try:
-            from .storage_plugin import StoragePlugin
+            from .storage_plugin import StoragePlugin  # type: ignore[import-untyped]
 
             cls.register_plugin(StoragePlugin())
             logger.debug("Registered StoragePlugin")

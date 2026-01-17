@@ -8,7 +8,7 @@ Handles primitives, lists, dicts, and Azure SDK objects.
 import json
 from typing import Any
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 

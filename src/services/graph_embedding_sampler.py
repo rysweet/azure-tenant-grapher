@@ -11,7 +11,7 @@ import random
 from typing import Dict, List
 
 import networkx as nx
-import numpy as np
+import numpy as np  # type: ignore[import-untyped] # type: ignore[import-untyped]
 from neo4j import Driver
 
 from src.services.graph_abstraction_sampler import StratifiedSampler

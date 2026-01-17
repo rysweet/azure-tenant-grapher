@@ -66,13 +66,13 @@ class LayerStatsOperations:
         """
         # Check if layer exists
         if self.crud_operations:
-            layer = await self.crud_operations.get_layer(layer_id)
+            layer = await self.crud_operations.get_layer(layer_id)  # type: ignore[attr-defined]
             if not layer:
                 raise LayerNotFoundError(layer_id)
 
         with self.session_manager.session() as session:
             # Count nodes
-            node_count = session.run(
+            node_count = session.run(  # type: ignore[misc]
                 """
                 MATCH (r:Resource)
                 WHERE NOT r:Original AND r.layer_id = $layer_id
@@ -82,7 +82,7 @@ class LayerStatsOperations:
             ).single()["count"]
 
             # Count relationships
-            rel_count = session.run(
+            rel_count = session.run(  # type: ignore[misc]
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
                 WHERE NOT r1:Original AND NOT r2:Original
@@ -115,7 +115,7 @@ class LayerStatsOperations:
 
         # Return updated metadata if crud_operations available
         if self.crud_operations:
-            return await self.crud_operations.get_layer(layer_id)
+            return await self.crud_operations.get_layer(layer_id)  # type: ignore[attr-defined]
 
         # Otherwise create a minimal LayerMetadata with just the stats
         from datetime import datetime

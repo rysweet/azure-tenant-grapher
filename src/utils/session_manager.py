@@ -126,8 +126,8 @@ class Neo4jSessionManager:
             )
 
             # Test the connection
-            with self._driver.session() as session:
-                session.run("RETURN 1")
+            with self._driver.session() as session:  # type: ignore[union-attr]
+                session.run("RETURN 1")  # type: ignore[arg-type]
 
             self._is_connected = True
             logger.info(str(f"✅ Connected to Neo4j at {self.config.uri}"))
@@ -206,7 +206,7 @@ class Neo4jSessionManager:
         Example:
             ```python
             with session_manager.session() as session:
-                result = session.run("MATCH (n) RETURN n LIMIT 1")
+                result = session.run("MATCH (n) RETURN n LIMIT 1")  # type: ignore[arg-type]
                 # Session is automatically closed when exiting the context
             ```
         """
@@ -238,7 +238,7 @@ class Neo4jSessionManager:
 
         try:
             with self.session() as session:
-                result = session.run("RETURN 1 as test")
+                result = session.run("RETURN 1 as test")  # type: ignore[arg-type]
                 record = result.single()
                 return record is not None and record["test"] == 1
         except Exception as e:
@@ -375,7 +375,7 @@ def neo4j_session(
     Example:
         ```python
         with neo4j_session(config) as session:
-            result = session.run("MATCH (n) RETURN n LIMIT 1")
+            result = session.run("MATCH (n) RETURN n LIMIT 1")  # type: ignore[arg-type]
         ```
     """
     manager = None

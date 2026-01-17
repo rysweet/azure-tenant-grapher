@@ -394,6 +394,55 @@ export const GraphVisualization: React.FC = () => {
   const renderGraph = useCallback((data: GraphData, nodeFilter?: Set<string>, edgeFilter?: Set<string>) => {
     if (!containerRef.current) return;
 
+    // Style constants for tooltip elements
+    const TOOLTIP_STYLES = {
+      container: 'width: 400px; max-width: 400px; word-break: break-word; overflow-wrap: break-word; padding: 8px; box-sizing: border-box; overflow: hidden;',
+      title: 'display: block; font-weight: bold; margin-bottom: 8px; font-size: 16px; color: #4caf50; border-bottom: 1px solid rgba(76, 175, 80, 0.3); padding-bottom: 6px; max-width: 100%; word-break: break-word; overflow-wrap: break-word;',
+      row: 'display: block; margin: 6px 0; color: #ffffff; font-size: 14px; line-height: 1.5; max-width: 100%; word-break: break-word; overflow-wrap: break-word;',
+      strong: 'color: #4caf50; margin-right: 6px; white-space: nowrap;',
+      hint: 'display: block; margin-top: 10px; padding-top: 8px; border-top: 1px solid #555; font-size: 12px; font-style: italic; color: #888; max-width: 100%; word-break: break-word;'
+    } as const;
+
+    // Secure helper to build tooltip using DOM manipulation (prevents XSS)
+    const buildTooltip = (title: string, rows: Array<{ label: string; value: string }>, hint?: string): HTMLElement => {
+      const container = document.createElement('div');
+      container.style.cssText = TOOLTIP_STYLES.container;
+
+      // Title element
+      const titleDiv = document.createElement('div');
+      titleDiv.textContent = title;  // Safe - no HTML parsing
+      titleDiv.style.cssText = TOOLTIP_STYLES.title;
+      container.appendChild(titleDiv);
+
+      // Property rows
+      rows.forEach(row => {
+        if (row.value) {  // Only add if value exists
+          const rowDiv = document.createElement('div');
+          rowDiv.style.cssText = TOOLTIP_STYLES.row;
+
+          const strong = document.createElement('strong');
+          strong.textContent = row.label;  // Safe
+          strong.style.cssText = TOOLTIP_STYLES.strong;
+          rowDiv.appendChild(strong);
+
+          const textNode = document.createTextNode(row.value);  // Safe
+          rowDiv.appendChild(textNode);
+
+          container.appendChild(rowDiv);
+        }
+      });
+
+      // Hint
+      if (hint) {
+        const hintDiv = document.createElement('div');
+        hintDiv.textContent = hint;  // Safe
+        hintDiv.style.cssText = TOOLTIP_STYLES.hint;
+        container.appendChild(hintDiv);
+      }
+
+      return container;
+    };
+
     // Use provided filters or default to all types EXCEPT Subscription nodes
     const nodeTypes = nodeFilter || new Set(
       Object.keys(data.stats.nodeTypes).filter(type => type !== 'Subscription')
@@ -405,28 +454,44 @@ export const GraphVisualization: React.FC = () => {
       .filter(node => nodeTypes.has(node.type))
       .filter(nodeMatchesFilters)
       .map(node => {
-        // Create detailed HTML tooltip content using CSS classes
-        const tooltipContent = `
-          <div class="vis-tooltip-title">${node.label}</div>
-          <div class="vis-tooltip-row"><strong>Type:</strong> ${node.type}</div>
-          ${node.properties?.resourceGroup ? `<div class="vis-tooltip-row"><strong>Resource Group:</strong> ${node.properties.resourceGroup}</div>` : ''}
-          ${node.properties?.location ? `<div class="vis-tooltip-row"><strong>Location:</strong> ${node.properties.location}</div>` : ''}
-          ${node.properties?.subscriptionId ? `<div class="vis-tooltip-row"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
-          ${node.properties?.sku ? `<div class="vis-tooltip-row"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
-          ${node.properties?.status ? `<div class="vis-tooltip-row"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
-          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
-          <div class="vis-tooltip-hint">Click for more details</div>
-        `;
+        // Build tooltip rows securely using DOM manipulation
+        const tooltipRows: Array<{ label: string; value: string }> = [
+          { label: 'Type:', value: node.type }
+        ];
 
-        // Apply synthetic styling
+        // Add optional properties only if they exist
+        if (node.properties?.resourceGroup) {
+          tooltipRows.push({ label: 'Resource Group:', value: node.properties.resourceGroup });
+        }
+        if (node.properties?.location) {
+          tooltipRows.push({ label: 'Location:', value: node.properties.location });
+        }
+        if (node.properties?.subscriptionId) {
+          tooltipRows.push({ label: 'Subscription:', value: node.properties.subscriptionId });
+        }
+        if (node.properties?.sku) {
+          tooltipRows.push({ label: 'SKU:', value: node.properties.sku });
+        }
+        if (node.properties?.status) {
+          tooltipRows.push({ label: 'Status:', value: node.properties.status });
+        }
+        if (node.properties?.provisioningState) {
+          tooltipRows.push({ label: 'State:', value: node.properties.provisioningState });
+        }
+
+        // Add synthetic marker if applicable
         const isSynthetic = node.synthetic || node.properties?.synthetic;
+        if (isSynthetic) {
+          tooltipRows.push({ label: '🔶', value: 'SYNTHETIC NODE' });
+        }
+
         const nodeColor = isSynthetic ? NODE_COLORS.Synthetic : (NODE_COLORS[node.type] || NODE_COLORS.Default);
 
         return {
           ...node,
           id: node.id,
           label: node.label,
-          title: tooltipContent + (isSynthetic ? '<div class="vis-tooltip-row" style="color: #FFA500; font-weight: bold;">🔶 SYNTHETIC NODE</div>' : ''),
+          title: buildTooltip(node.label, tooltipRows, 'Click for more details'),
           color: {
             background: nodeColor,
             border: isSynthetic ? '#FFD700' : nodeColor,
@@ -458,19 +523,28 @@ export const GraphVisualization: React.FC = () => {
         const targetVisible = visNodes.some(n => n.id === edge.target);
         return sourceVisible && targetVisible;
       })
-      .map(edge => ({
-        id: edge.id,
-        from: edge.source,
-        to: edge.target,
-        label: edge.type,
-        title: edge.type,
-        font: {
-          size: 10,
-          align: 'middle',
-          background: 'white'
-        },
-        ...(EDGE_STYLES[edge.type] || EDGE_STYLES.Default)
-      }));
+      .map(edge => {
+        // Build secure edge tooltip
+        const edgeTooltip = buildTooltip(
+          edge.type,
+          [{ label: '', value: getEdgeDescription(edge.type) }],
+          undefined
+        );
+
+        return {
+          id: edge.id,
+          from: edge.source,
+          to: edge.target,
+          label: edge.type,
+          title: edgeTooltip,
+          font: {
+            size: 10,
+            align: 'middle',
+            background: 'white'
+          },
+          ...(EDGE_STYLES[edge.type] || EDGE_STYLES.Default)
+        };
+      });
 
     const nodes = new DataSet(visNodes);
     const edges = new DataSet(visEdges);

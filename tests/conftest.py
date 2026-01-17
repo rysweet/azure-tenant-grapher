@@ -1,10 +1,17 @@
 import os
+import sys
 from typing import Any, Dict, List
 from unittest.mock import Mock
 
 import pytest
 
 # from testcontainers.neo4j import Neo4jContainer  # Commented out - complex setup
+
+# Mock neo4j before importing modules that depend on it
+mock_neo4j = Mock()
+mock_neo4j.Driver = Mock
+mock_neo4j.GraphDatabase = Mock()
+sys.modules['neo4j'] = mock_neo4j
 
 
 # ============================================================================
@@ -385,3 +392,144 @@ def markdown_syntax_samples(temp_docs_dir):
     samples["bad_headings"] = bad_headings
 
     return samples
+
+
+# ============================================================================
+# Architectural Pattern Analysis Fixtures (PR #671)
+# ============================================================================
+
+
+@pytest.fixture
+def analyzer():
+    """Create ArchitecturalPatternAnalyzer instance with mock credentials."""
+    from src.architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
+
+    return ArchitecturalPatternAnalyzer(
+        neo4j_uri="bolt://localhost:7687",
+        neo4j_user="neo4j",
+        neo4j_password="password",
+    )
+
+
+@pytest.fixture
+def replicator():
+    """Create ArchitecturePatternReplicator instance with mock credentials."""
+    from src.architecture_based_replicator import ArchitecturePatternReplicator
+
+    return ArchitecturePatternReplicator(
+        neo4j_uri="bolt://localhost:7687",
+        neo4j_user="neo4j",
+        neo4j_password="password",
+    )
+
+
+@pytest.fixture
+def mock_neo4j_driver():
+    """Create mock Neo4j driver for testing."""
+    driver = Mock()
+    session = Mock()
+    driver.session.return_value.__enter__ = Mock(return_value=session)
+    driver.session.return_value.__exit__ = Mock(return_value=False)
+    return driver
+
+
+@pytest.fixture
+def sample_vm_workload_relationships():
+    """Sample relationships for VM workload pattern testing."""
+    return [
+        {
+            "source_labels": ["Resource"],
+            "source_type": "Microsoft.Compute/virtualMachines",
+            "rel_type": "DEPENDS_ON",
+            "target_labels": ["Resource"],
+            "target_type": "Microsoft.Compute/disks",
+        },
+        {
+            "source_labels": ["Resource"],
+            "source_type": "Microsoft.Compute/virtualMachines",
+            "rel_type": "DEPENDS_ON",
+            "target_labels": ["Resource"],
+            "target_type": "Microsoft.Network/networkInterfaces",
+        },
+        {
+            "source_labels": ["Resource"],
+            "source_type": "Microsoft.Network/networkInterfaces",
+            "rel_type": "DEPENDS_ON",
+            "target_labels": ["Resource"],
+            "target_type": "Microsoft.Network/virtualNetworks",
+        },
+    ]
+
+
+@pytest.fixture
+def sample_configuration_data():
+    """Sample configuration data for configuration similarity testing."""
+    return {
+        "id": "/subscriptions/sub-123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1",
+        "type": "Microsoft.Compute/virtualMachines",
+        "location": "eastus",
+        "tags": {"env": "prod", "app": "web"},
+        "properties": {
+            "hardwareProfile": {"vmSize": "Standard_D2s_v3"},
+            "storageProfile": {
+                "osDisk": {"osType": "Linux", "caching": "ReadWrite"}
+            },
+        },
+    }
+
+
+@pytest.fixture
+def sample_pattern_graph():
+    """Sample pattern graph for testing replication."""
+    import networkx as nx
+
+    graph = nx.MultiDiGraph()
+    graph.add_node("virtualMachines", count=10)
+    graph.add_node("disks", count=15)
+    graph.add_node("networkInterfaces", count=10)
+    graph.add_edge("virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10)
+    graph.add_edge("virtualMachines", "networkInterfaces", relationship="DEPENDS_ON", frequency=10)
+    return graph
+
+
+@pytest.fixture
+def sample_detected_patterns():
+    """Sample detected patterns for testing."""
+    return {
+        "Virtual Machine Workload": {
+            "matched_resources": ["virtualMachines", "disks", "networkInterfaces"],
+            "missing_resources": ["networkSecurityGroups"],
+            "completeness": 75.0,
+            "connection_count": 20,
+        },
+        "Web Application": {
+            "matched_resources": ["sites", "serverFarms", "storageAccounts"],
+            "missing_resources": [],
+            "completeness": 100.0,
+            "connection_count": 15,
+        },
+    }
+
+
+
+@pytest.fixture
+def sample_pattern_resources():
+    """Sample pattern resources for proportional selection testing."""
+    return {
+        "Virtual Machine Workload": [
+            [
+                {"id": "vm-1", "type": "virtualMachines", "location": "eastus"},
+                {"id": "disk-1", "type": "disks", "location": "eastus"},
+            ],
+            [
+                {"id": "vm-2", "type": "virtualMachines", "location": "westus"},
+                {"id": "disk-2", "type": "disks", "location": "westus"},
+            ],
+        ],
+        "Web Application": [
+            [
+                {"id": "site-1", "type": "sites", "location": "eastus"},
+                {"id": "farm-1", "type": "serverFarms", "location": "eastus"},
+            ],
+        ],
+    }

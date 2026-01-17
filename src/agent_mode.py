@@ -77,8 +77,13 @@ async def run_agent_mode(question: str | None = None):
 
     # Critical imports for agent mode
     try:
-        from autogen_agentchat.agents import AssistantAgent
-        from autogen_ext.tools.mcp import McpWorkbench, StdioServerParams
+        from autogen_agentchat.agents import (
+            AssistantAgent,  # type: ignore[import-untyped]
+        )
+        from autogen_ext.tools.mcp import (  # type: ignore[import-untyped]
+            McpWorkbench,
+            StdioServerParams,
+        )
 
         from src.llm_descriptions import LLMConfig
     except ModuleNotFoundError as error:
@@ -117,7 +122,9 @@ async def run_agent_mode(question: str | None = None):
             file=sys.stderr,
         )
         sys.exit(1)
-    from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+    from autogen_ext.models.openai import (
+        AzureOpenAIChatCompletionClient,  # type: ignore[import-untyped]
+    )
 
     model_client = AzureOpenAIChatCompletionClient(
         api_key=llm_config.api_key,
@@ -152,7 +159,7 @@ async def run_agent_mode(question: str | None = None):
 
 
 # Place this at the top level of the file, not inside run_agent_mode
-async def _interactive_chat_loop(assistant: any):
+async def _interactive_chat_loop(assistant: any):  # type: ignore[misc]
     """Run the interactive chat loop using the LLM-powered agent, with re-prompting for tool output."""
     try:
         while True:
@@ -303,7 +310,7 @@ async def _interactive_chat_loop(assistant: any):
         pass  # Cleanup is handled in run_agent_mode
 
 
-async def _process_question_manually(workbench: any, question: str):
+async def _process_question_manually(workbench: any, question: str):  # type: ignore[misc]
     """Process a question by manually orchestrating the multi-step workflow."""
     print("🔄 Step 1: Getting database schema...", flush=True)
 
@@ -379,7 +386,9 @@ Instructions:
 Cypher Query:"""
 
         # Call LLM to generate query
-        from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+        from autogen_ext.models.openai import (
+            AzureOpenAIChatCompletionClient,  # type: ignore[import-untyped]
+        )
 
         model_client = AzureOpenAIChatCompletionClient(
             api_key=llm_config.api_key,
@@ -388,7 +397,7 @@ Cypher Query:"""
             model=llm_config.model_chat,
         )
 
-        from autogen_core.models import SystemMessage
+        from autogen_core.models import SystemMessage  # type: ignore[import-untyped]
 
         response = await model_client.create([SystemMessage(content=query_prompt)])
 
@@ -450,7 +459,9 @@ Instructions:
 Answer:"""
 
             # Call LLM to generate answer
-            from autogen_core.models import SystemMessage
+            from autogen_core.models import (
+                SystemMessage,  # type: ignore[import-untyped]
+            )
 
             answer_response = await model_client.create(
                 [SystemMessage(content=answer_prompt)]
