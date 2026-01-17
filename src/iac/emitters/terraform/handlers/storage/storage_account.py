@@ -142,6 +142,16 @@ class StorageAccountHandler(ResourceHandler):
         if tls_version:
             config["min_tls_version"] = tls_version
 
+        # Optional: allow_blob_public_access (security)
+        allow_blob_public_access = properties.get("allowBlobPublicAccess")
+        if allow_blob_public_access is not None:
+            config["allow_blob_public_access"] = allow_blob_public_access
+
+        # Optional: default_to_oauth_authentication (security)
+        default_to_oauth = properties.get("defaultToOAuthAuthentication")
+        if default_to_oauth is not None:
+            config["default_to_oauth_authentication"] = default_to_oauth
+
         logger.debug(
             f"Storage Account '{resource_name}' emitted with "
             f"tier={account_tier}, replication={account_replication_type}"
