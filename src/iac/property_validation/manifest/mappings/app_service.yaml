@@ -1,0 +1,143 @@
+resource_type:
+  azure: Microsoft.Web/sites
+  terraform: azurerm_linux_web_app, azurerm_windows_web_app
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: App Service property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+  notes: |
+    Terraform has separate resources for Linux and Windows web apps
+    Handler emits azurerm_linux_web_app or azurerm_windows_web_app based on kind property
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: App Service name (globally unique, *.azurewebsites.net)
+    notes: |
+      Must be globally unique across Azure
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Hash suffix added for global uniqueness in handler
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for App Service
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Service plan
+  - azure_path: properties.serverFarmId
+    terraform_param: service_plan_id
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: App Service Plan ID
+    notes: |
+      Handler creates default service plan if not specified
+      Reference: ${azurerm_service_plan.<plan_safe_name>.id}
+
+  # HIGH properties - App type and kind
+  - azure_path: properties.kind
+    terraform_param: _resource_type_selector
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [app, linux, functionapp]
+    description: App Service kind (determines Linux vs Windows resource type)
+    transformation: |
+      "linux" in kind → azurerm_linux_web_app
+      Otherwise → azurerm_windows_web_app
+
+  # CRITICAL security properties - HTTPS and TLS (PR #712)
+  - azure_path: properties.httpsOnly
+    terraform_param: https_only
+    required: false
+    criticality: CRITICAL
+    type: boolean
+    default_value: true
+    description: Require HTTPS for app access
+    notes: Essential for protocol enforcement and data protection
+
+  - azure_path: properties.siteConfig.minTlsVersion
+    terraform_param: site_config.minimum_tls_version
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: ["1.0", "1.1", "1.2", "1.3"]
+    default_value: "1.2"
+    description: Minimum TLS version for connections
+
+  # MEDIUM security properties - Client certificates (PR #712)
+  - azure_path: properties.clientCertEnabled
+    terraform_param: client_certificate_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable client certificate authentication (mutual TLS)
+
+  - azure_path: properties.clientCertMode
+    terraform_param: client_certificate_mode
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [Required, Optional, OptionalInteractiveUser]
+    default_value: Required
+    description: Client certificate mode when enabled
+
+  # MEDIUM properties - Site configuration
+  - azure_path: properties.siteConfig.linuxFxVersion
+    terraform_param: site_config.application_stack.docker_image
+    required: false
+    criticality: MEDIUM
+    type: string
+    description: Linux runtime stack (Docker image specification)
+    notes: Only for Linux web apps
+
+  - azure_path: properties.siteConfig.windowsFxVersion
+    terraform_param: site_config.application_stack
+    required: false
+    criticality: MEDIUM
+    type: string
+    description: Windows runtime stack
+    notes: Only for Windows web apps
+
+  # MEDIUM properties - Managed identity
+  - azure_path: identity.type
+    terraform_param: identity.type
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [SystemAssigned, UserAssigned, SystemAssigned, UserAssigned]
+    description: Managed identity type
+
+  - azure_path: identity.userAssignedIdentities
+    terraform_param: identity.identity_ids
+    required: false
+    criticality: MEDIUM
+    type: array
+    description: User-assigned managed identity IDs
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

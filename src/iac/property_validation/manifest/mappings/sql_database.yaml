@@ -1,0 +1,104 @@
+resource_type:
+  azure: Microsoft.Sql/servers/databases
+  terraform: azurerm_mssql_database
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: SQL Database property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: SQL Database name
+    notes: |
+      Bug #43: Strip parent prefix from child resource names
+      Azure format: "server_name/database_name"
+      Terraform needs: "database_name" only
+
+  - azure_path: properties.serverId
+    terraform_param: server_id
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Parent SQL Server ID
+    notes: |
+      Extracted from database ID path
+      Terraform reference: ${azurerm_mssql_server.<server_safe>.id}
+
+  # CRITICAL properties - Database configuration
+  - azure_path: properties.sku.name
+    terraform_param: sku_name
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [Basic, S0, S1, S2, S3, P1, P2, P4, P6, P11, P15, GP_Gen5_2, BC_Gen5_2]
+    description: Database SKU name
+
+  - azure_path: properties.maxSizeBytes
+    terraform_param: max_size_gb
+    required: false
+    criticality: MEDIUM
+    type: integer
+    description: Maximum database size in GB
+    transformation: |
+      Azure: bytes (integer)
+      Terraform: gigabytes (integer)
+      Conversion: bytes // (1024 * 1024 * 1024)
+
+  # HIGH security properties - Encryption (PR #712)
+  - azure_path: properties.transparentDataEncryption.status
+    terraform_param: transparent_data_encryption_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable Transparent Data Encryption (TDE)
+    notes: |
+      TDE is typically enabled by default in newer Azure SQL versions
+      Encrypts data at rest
+
+  # MEDIUM security properties - Ledger and audit (PR #712)
+  - azure_path: properties.isLedgerDatabase
+    terraform_param: ledger_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable ledger database for immutable audit log
+    notes: Provides cryptographically verifiable transaction log
+
+  # MEDIUM properties - Availability and redundancy (PR #712)
+  - azure_path: properties.zoneRedundant
+    terraform_param: zone_redundant
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable zone redundancy for high availability
+
+  # MEDIUM properties - Backup and retention
+  - azure_path: properties.requestedBackupStorageRedundancy
+    terraform_param: storage_account_type
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [Local, Geo, Zone]
+    default_value: Geo
+    description: Backup storage redundancy type
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

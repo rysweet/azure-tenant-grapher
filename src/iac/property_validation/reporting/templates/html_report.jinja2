@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coverage Report - {{ handler_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .handler-name {
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+
+        .header .timestamp {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric {
+            padding: 30px;
+            text-align: center;
+            border-right: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:nth-child(2n) {
+            border-right: none;
+        }
+
+        .metric-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .metric-value.coverage {
+            color: {% if metrics.coverage_percentage >= 80 %}#28a745{% elif metrics.coverage_percentage >= 50 %}#ffc107{% else %}#dc3545{% endif %};
+        }
+
+        .metric-value.quality {
+            color: {% if quality_score >= 80 %}#28a745{% elif quality_score >= 50 %}#ffc107{% else %}#dc3545{% endif %};
+        }
+
+        .metric-label {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .gap-list {
+            list-style: none;
+        }
+
+        .gap-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .gap-item.critical {
+            background: #fff5f5;
+            border-color: #dc3545;
+        }
+
+        .gap-item.high {
+            background: #fff8f0;
+            border-color: #fd7e14;
+        }
+
+        .gap-item.medium {
+            background: #fffbf0;
+            border-color: #ffc107;
+        }
+
+        .gap-item.low {
+            background: #f8f9fa;
+            border-color: #6c757d;
+        }
+
+        .gap-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.critical {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge.high {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .badge.medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge.low {
+            background: #6c757d;
+            color: white;
+        }
+
+        .property-name {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .gap-reason {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .suggested-value {
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .no-gaps {
+            text-align: center;
+            padding: 40px;
+            color: #28a745;
+            font-size: 1.2em;
+        }
+
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .summary-label {
+            color: #666;
+        }
+
+        .summary-value {
+            font-weight: 600;
+        }
+
+        .footer {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Coverage Report</h1>
+            <div class="handler-name">{{ handler_name }}</div>
+            <div class="timestamp">{{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-value coverage">{{ metrics.coverage_percentage|format_percentage }}%</div>
+                <div class="metric-label">Coverage</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value quality">{{ quality_score|format_percentage }}</div>
+                <div class="metric-label">Quality Score</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">{{ metrics.covered_properties }}/{{ metrics.total_properties }}</div>
+                <div class="metric-label">Properties Covered</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">{{ metrics.critical_gaps + metrics.high_priority_gaps }}</div>
+                <div class="metric-label">Critical + High Gaps</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="summary">
+                <h3 style="margin-bottom: 15px;">📈 Gap Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">🔴 Critical</span>
+                        <span class="summary-value">{{ metrics.critical_gaps }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">🟠 High</span>
+                        <span class="summary-value">{{ metrics.high_priority_gaps }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">🟡 Medium</span>
+                        <span class="summary-value">{{ metrics.medium_priority_gaps }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">⚪ Low</span>
+                        <span class="summary-value">{{ metrics.low_priority_gaps }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if critical_gaps %}
+            <div class="section">
+                <h2>🔴 Critical Gaps</h2>
+                <ul class="gap-list">
+                    {% for gap in critical_gaps %}
+                    <li class="gap-item critical">
+                        <div class="gap-header">
+                            <span class="badge critical">{{ gap.criticality|criticality_badge }} Critical</span>
+                            <span class="property-name">{{ gap.property_name }}</span>
+                        </div>
+                        <div class="gap-reason">{{ gap.reason }}</div>
+                        {% if gap.suggested_value %}
+                        <div class="suggested-value">💡 Suggested: {{ gap.suggested_value }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if high_gaps %}
+            <div class="section">
+                <h2>🟠 High Priority Gaps</h2>
+                <ul class="gap-list">
+                    {% for gap in high_gaps %}
+                    <li class="gap-item high">
+                        <div class="gap-header">
+                            <span class="badge high">{{ gap.criticality|criticality_badge }} High</span>
+                            <span class="property-name">{{ gap.property_name }}</span>
+                        </div>
+                        <div class="gap-reason">{{ gap.reason }}</div>
+                        {% if gap.suggested_value %}
+                        <div class="suggested-value">💡 Suggested: {{ gap.suggested_value }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if medium_gaps %}
+            <div class="section">
+                <h2>🟡 Medium Priority Gaps</h2>
+                <ul class="gap-list">
+                    {% for gap in medium_gaps %}
+                    <li class="gap-item medium">
+                        <div class="gap-header">
+                            <span class="badge medium">{{ gap.criticality|criticality_badge }} Medium</span>
+                            <span class="property-name">{{ gap.property_name }}</span>
+                        </div>
+                        <div class="gap-reason">{{ gap.reason }}</div>
+                        {% if gap.suggested_value %}
+                        <div class="suggested-value">💡 Suggested: {{ gap.suggested_value }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if low_gaps %}
+            <div class="section">
+                <h2>⚪ Low Priority Gaps</h2>
+                <ul class="gap-list">
+                    {% for gap in low_gaps %}
+                    <li class="gap-item low">
+                        <div class="gap-header">
+                            <span class="badge low">{{ gap.criticality|criticality_badge }} Low</span>
+                            <span class="property-name">{{ gap.property_name }}</span>
+                        </div>
+                        <div class="gap-reason">{{ gap.reason }}</div>
+                        {% if gap.suggested_value %}
+                        <div class="suggested-value">💡 Suggested: {{ gap.suggested_value }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if not metrics.gaps %}
+            <div class="no-gaps">
+                ✅ No gaps found! Perfect coverage.
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            Generated by Property Validation System
+        </div>
+    </div>
+</body>
+</html>

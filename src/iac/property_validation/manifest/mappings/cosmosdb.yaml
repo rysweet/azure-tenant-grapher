@@ -1,0 +1,197 @@
+resource_type:
+  azure: Microsoft.DocumentDB/databaseAccounts
+  terraform: azurerm_cosmosdb_account
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: Cosmos DB Account property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Cosmos DB account name (globally unique)
+    notes: Must be globally unique across Azure
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for Cosmos DB account
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Account configuration
+  - azure_path: properties.databaseAccountOfferType
+    terraform_param: offer_type
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [Standard]
+    default_value: Standard
+    description: Cosmos DB offer type
+
+  # CRITICAL properties - Consistency policy
+  - azure_path: properties.consistencyPolicy.defaultConsistencyLevel
+    terraform_param: consistency_policy.consistency_level
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [BoundedStaleness, ConsistentPrefix, Eventual, Session, Strong]
+    default_value: Session
+    description: Default consistency level for Cosmos DB
+
+  - azure_path: properties.consistencyPolicy.maxIntervalInSeconds
+    terraform_param: consistency_policy.max_interval_in_seconds
+    required: false
+    criticality: MEDIUM
+    type: integer
+    default_value: 5
+    valid_values: [5-86400]
+    description: Maximum lag time for BoundedStaleness consistency
+
+  - azure_path: properties.consistencyPolicy.maxStalenessPrefix
+    terraform_param: consistency_policy.max_staleness_prefix
+    required: false
+    criticality: MEDIUM
+    type: integer
+    default_value: 100
+    valid_values: [10-2147483647]
+    description: Maximum stale requests for BoundedStaleness consistency
+
+  # CRITICAL properties - Geo-replication
+  - azure_path: properties.locations
+    terraform_param: geo_location
+    required: true
+    criticality: CRITICAL
+    type: array
+    description: Geographic locations for Cosmos DB replication
+    transformation: |
+      Azure: array of {locationName, failoverPriority}
+      Terraform: array of {location, failover_priority}
+      Extract locationName and failoverPriority from each location object
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to Cosmos DB
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - Authentication (PR #712)
+  - azure_path: properties.disableLocalAuth
+    terraform_param: local_authentication_disabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Disable local authentication (account keys)
+    notes: |
+      When true, only Azure AD authentication is allowed
+      Enhances security by forcing managed identity usage
+
+  # HIGH security properties - IP firewall (PR #712)
+  - azure_path: properties.ipRules
+    terraform_param: ip_range_filter
+    required: false
+    criticality: HIGH
+    type: string
+    description: Comma-separated list of IP addresses or CIDR ranges for firewall
+    transformation: |
+      Azure: array of {ipAddressOrRange}
+      Terraform: comma-separated string
+      Extract ipAddressOrRange from each rule and join with commas
+
+  # HIGH security properties - Virtual network (PR #712)
+  - azure_path: properties.virtualNetworkRules
+    terraform_param: virtual_network_rule
+    required: false
+    criticality: HIGH
+    type: array
+    description: Virtual network rules for Cosmos DB access
+    transformation: |
+      Azure: array of {id, ignoreMissingVNetServiceEndpoint}
+      Terraform: array of {id}
+      Extract id field from each rule object
+
+  # MEDIUM properties - Backup policy
+  - azure_path: properties.backupPolicy.type
+    terraform_param: backup.type
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [Continuous, Periodic]
+    default_value: Periodic
+    description: Backup policy type
+
+  - azure_path: properties.backupPolicy.periodicModeProperties.backupIntervalInMinutes
+    terraform_param: backup.interval_in_minutes
+    required: false
+    criticality: MEDIUM
+    type: integer
+    valid_values: [60, 120, 180, 240, 360, 480, 720, 1440]
+    default_value: 240
+    description: Backup interval for periodic backups
+
+  - azure_path: properties.backupPolicy.periodicModeProperties.backupRetentionIntervalInHours
+    terraform_param: backup.retention_in_hours
+    required: false
+    criticality: MEDIUM
+    type: integer
+    valid_values: [8-720]
+    default_value: 8
+    description: Backup retention period for periodic backups
+
+  # MEDIUM properties - Capabilities
+  - azure_path: properties.capabilities
+    terraform_param: capabilities
+    required: false
+    criticality: MEDIUM
+    type: array
+    description: Cosmos DB capabilities (e.g., EnableServerless, EnableTable)
+    transformation: Extract 'name' field from each capability object
+
+  # MEDIUM properties - Automatic failover
+  - azure_path: properties.enableAutomaticFailover
+    terraform_param: automatic_failover_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable automatic failover for multi-region accounts
+
+  # MEDIUM properties - Multi-region writes
+  - azure_path: properties.enableMultipleWriteLocations
+    terraform_param: enable_multiple_write_locations
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable multi-region writes
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

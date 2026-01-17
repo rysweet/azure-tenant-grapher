@@ -1,0 +1,34 @@
+# Property Validation Coverage Thresholds
+#
+# These thresholds enforce quality gates for IaC property coverage.
+# CI/CD will fail if any threshold is violated.
+
+thresholds:
+  # Overall minimum coverage across all handlers (percentage)
+  overall_minimum: 70
+
+  # Per-handler minimum coverage (percentage)
+  # Each handler must meet this threshold independently
+  per_handler_minimum: 60
+
+  # Maximum allowed CRITICAL gaps (should be 0)
+  # CRITICAL gaps block deployment and have no defaults
+  critical_gaps_allowed: 0
+
+  # Maximum allowed HIGH priority gaps
+  # HIGH gaps represent security/compliance issues
+  high_gaps_allowed: 2
+
+  # Regression tolerance (percentage points)
+  # Negative value means coverage must not decrease by more than this amount
+  # -5 means coverage can drop by at most 5 percentage points
+  regression_tolerance: -5
+
+# Documentation:
+# - overall_minimum: Fail if average coverage across all handlers < this value
+# - per_handler_minimum: Fail if any single handler coverage < this value
+# - critical_gaps_allowed: Fail if any CRITICAL gaps exist (typically 0)
+# - high_gaps_allowed: Fail if HIGH priority gaps exceed this count
+# - regression_tolerance: Fail if coverage decreased by more than this amount
+#
+# Adjust these values based on your project's maturity and risk tolerance.

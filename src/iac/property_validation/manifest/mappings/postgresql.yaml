@@ -1,0 +1,171 @@
+resource_type:
+  azure: Microsoft.DBforPostgreSQL/flexibleServers
+  terraform: azurerm_postgresql_flexible_server
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: PostgreSQL Flexible Server property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: PostgreSQL Flexible Server name
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for PostgreSQL Server
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Server configuration
+  - azure_path: properties.sku.name
+    terraform_param: sku_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [B_Standard_B1ms, B_Standard_B2s, GP_Standard_D2s_v3, GP_Standard_D4s_v3, MO_Standard_E4s_v3]
+    description: PostgreSQL Server SKU name
+    notes: Format is Tier_VMSize (e.g., GP_Standard_D2s_v3)
+
+  - azure_path: properties.version
+    terraform_param: version
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: ["11", "12", "13", "14", "15", "16"]
+    description: PostgreSQL version
+
+  - azure_path: properties.storage.storageSizeGB
+    terraform_param: storage_mb
+    required: false
+    criticality: HIGH
+    type: integer
+    description: Storage size in MB
+    transformation: |
+      Azure: storageSizeGB (gigabytes)
+      Terraform: storage_mb (megabytes)
+      Conversion: GB * 1024
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to PostgreSQL Server
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - Backup and redundancy (PR #712)
+  - azure_path: properties.backup.geoRedundantBackup
+    terraform_param: geo_redundant_backup_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable geo-redundant backup for disaster recovery
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  - azure_path: properties.backup.backupRetentionDays
+    terraform_param: backup_retention_days
+    required: false
+    criticality: MEDIUM
+    type: integer
+    default_value: 7
+    valid_values: [7-35]
+    description: Backup retention period in days
+
+  # HIGH security properties - Authentication (PR #712)
+  - azure_path: properties.authConfig.activeDirectoryAuth
+    terraform_param: authentication.active_directory_auth_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: false
+    description: Enable Azure Active Directory authentication
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  - azure_path: properties.authConfig.passwordAuth
+    terraform_param: authentication.password_auth_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable password authentication
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+    notes: Can disable password auth when Active Directory auth is enabled
+
+  # MEDIUM properties - Administrator credentials
+  - azure_path: properties.administratorLogin
+    terraform_param: administrator_login
+    required: false
+    criticality: MEDIUM
+    type: string
+    description: Administrator login name
+    notes: Required if password authentication is enabled
+
+  - azure_path: properties.administratorLoginPassword
+    terraform_param: administrator_password
+    required: false
+    criticality: CRITICAL
+    type: string
+    description: Administrator password
+    notes: Required if password authentication is enabled
+
+  # MEDIUM properties - High availability
+  - azure_path: properties.highAvailability.mode
+    terraform_param: high_availability.mode
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [ZoneRedundant, SameZone]
+    description: High availability mode
+
+  - azure_path: properties.highAvailability.standbyAvailabilityZone
+    terraform_param: high_availability.standby_availability_zone
+    required: false
+    criticality: MEDIUM
+    type: string
+    description: Standby availability zone for high availability
+
+  # MEDIUM properties - Maintenance window
+  - azure_path: properties.maintenanceWindow.customWindow
+    terraform_param: maintenance_window.enabled
+    required: false
+    criticality: LOW
+    type: boolean
+    default_value: false
+    description: Enable custom maintenance window
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

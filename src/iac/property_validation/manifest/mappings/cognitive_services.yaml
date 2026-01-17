@@ -1,0 +1,155 @@
+resource_type:
+  azure: Microsoft.CognitiveServices/accounts
+  terraform: azurerm_cognitive_account
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: Cognitive Services property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Cognitive Services account name (globally unique)
+    notes: |
+      Must be globally unique across Azure
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Cross-tenant: Tenant suffix added for uniqueness
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for Cognitive Services
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Account configuration
+  - azure_path: properties.kind
+    terraform_param: kind
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [OpenAI, CognitiveServices, ComputerVision, CustomVision.Training, CustomVision.Prediction, Face, FormRecognizer, LUIS, TextAnalytics, TextTranslation]
+    default_value: OpenAI
+    description: Cognitive Services account kind
+
+  - azure_path: properties.sku.name
+    terraform_param: sku_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [F0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9]
+    default_value: S0
+    description: Cognitive Services SKU
+
+  # MEDIUM properties - Custom subdomain
+  - azure_path: properties.customSubDomainName
+    terraform_param: custom_subdomain_name
+    required: false
+    criticality: MEDIUM
+    type: string
+    description: Custom subdomain for Cognitive Services endpoint
+    notes: Required for some services like OpenAI
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to Cognitive Services
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - Authentication (PR #712)
+  - azure_path: properties.disableLocalAuth
+    terraform_param: local_auth_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: true
+    description: Enable local authentication (API keys)
+    notes: |
+      Inverse logic transformation:
+      Azure: disableLocalAuth (true = disabled)
+      Terraform: local_auth_enabled (true = enabled)
+      Terraform value = NOT Azure value
+
+  # HIGH security properties - Network ACLs (PR #712)
+  - azure_path: properties.networkAcls.defaultAction
+    terraform_param: network_acls.default_action
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [Allow, Deny]
+    default_value: Allow
+    description: Default action for network ACLs
+
+  - azure_path: properties.networkAcls.ipRules
+    terraform_param: network_acls.ip_rules
+    required: false
+    criticality: HIGH
+    type: array
+    description: IP firewall rules for Cognitive Services
+    transformation: Extract 'value' field from each rule object
+
+  - azure_path: properties.networkAcls.virtualNetworkRules
+    terraform_param: network_acls.virtual_network_rules
+    required: false
+    criticality: HIGH
+    type: array
+    description: Virtual network rules for Cognitive Services
+    transformation: |
+      Extract 'id' field from each rule object
+      Terraform expects: [{subnet_id: "..."}]
+
+  # MEDIUM properties - API properties
+  - azure_path: properties.apiProperties
+    terraform_param: dynamic_throttling_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable dynamic throttling for API requests
+    notes: Only for certain Cognitive Services kinds
+
+  # MEDIUM properties - Managed identity
+  - azure_path: identity.type
+    terraform_param: identity.type
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [SystemAssigned, UserAssigned, SystemAssigned, UserAssigned]
+    description: Managed identity type
+
+  - azure_path: identity.userAssignedIdentities
+    terraform_param: identity.identity_ids
+    required: false
+    criticality: MEDIUM
+    type: array
+    description: User-assigned managed identity IDs
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

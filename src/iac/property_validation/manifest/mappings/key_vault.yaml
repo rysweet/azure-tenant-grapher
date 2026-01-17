@@ -1,0 +1,146 @@
+resource_type:
+  azure: Microsoft.KeyVault/vaults
+  terraform: azurerm_key_vault
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: Key Vault property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Key Vault name (globally unique, 3-24 chars)
+    notes: |
+      Must be globally unique across Azure (*.vault.azure.net)
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Cross-tenant: Hash suffix added for uniqueness
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for Key Vault
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Tenant and SKU
+  - azure_path: properties.tenantId
+    terraform_param: tenant_id
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure AD tenant ID
+    notes: |
+      Fix #604: Use target_tenant_id for cross-tenant deployment
+      Priority: target_tenant_id > properties.tenantId
+      Fallback: ${var.tenant_id} if not available
+
+  - azure_path: properties.sku.name
+    terraform_param: sku_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [standard, premium]
+    default_value: standard
+    description: Key Vault SKU
+    notes: |
+      Fix #596: Terraform requires lowercase
+      Azure accepts: Standard, Premium
+      Terraform requires: standard, premium
+
+  # HIGH security properties - Protection settings
+  - azure_path: properties.enableSoftDelete
+    terraform_param: soft_delete_retention_days
+    required: false
+    criticality: HIGH
+    type: integer
+    default_value: 90
+    description: Soft delete retention period in days
+    notes: Soft delete is enabled by default if this property is set
+
+  - azure_path: properties.enablePurgeProtection
+    terraform_param: purge_protection_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: false
+    description: Enable purge protection to prevent permanent deletion
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to Key Vault
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - Authorization (PR #712)
+  - azure_path: properties.enableRbacAuthorization
+    terraform_param: enable_rbac_authorization
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Use Azure RBAC for Key Vault authorization instead of access policies
+
+  # HIGH security properties - Network ACLs (PR #712)
+  - azure_path: properties.networkAcls.defaultAction
+    terraform_param: network_acls.default_action
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [Allow, Deny]
+    default_value: Allow
+    description: Default action for network ACLs
+
+  - azure_path: properties.networkAcls.bypass
+    terraform_param: network_acls.bypass
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [AzureServices, None]
+    default_value: AzureServices
+    description: Bypass network ACLs for Azure services
+
+  - azure_path: properties.networkAcls.ipRules
+    terraform_param: network_acls.ip_rules
+    required: false
+    criticality: HIGH
+    type: array
+    description: IP firewall rules for Key Vault
+    transformation: Extract 'value' field from each rule object
+
+  - azure_path: properties.networkAcls.virtualNetworkRules
+    terraform_param: network_acls.virtual_network_subnet_ids
+    required: false
+    criticality: HIGH
+    type: array
+    description: Virtual network subnet IDs allowed to access Key Vault
+    transformation: Extract 'id' field from each rule object
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

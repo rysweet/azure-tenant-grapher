@@ -1,0 +1,135 @@
+resource_type:
+  azure: Microsoft.ContainerRegistry/registries
+  terraform: azurerm_container_registry
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: Container Registry property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Container Registry name (globally unique, *.azurecr.io)
+    notes: |
+      Must be globally unique across Azure
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Hash suffix added for global uniqueness in handler
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for Container Registry
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - SKU configuration
+  - azure_path: properties.sku.name
+    terraform_param: sku
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [Basic, Standard, Premium]
+    default_value: Basic
+    description: Container Registry SKU
+
+  # MEDIUM properties - Admin access
+  - azure_path: properties.adminUserEnabled
+    terraform_param: admin_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable admin user for registry access
+    notes: For production, prefer managed identity or service principal authentication
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to Container Registry
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - Data endpoint (PR #712)
+  - azure_path: properties.dataEndpointEnabled
+    terraform_param: data_endpoint_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable dedicated data endpoint for registry operations
+    notes: Only available for Premium SKU
+
+  # HIGH security properties - Network rules (PR #712)
+  - azure_path: properties.networkRuleSet.defaultAction
+    terraform_param: network_rule_set.default_action
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [Allow, Deny]
+    default_value: Allow
+    description: Default action for network rule set
+    notes: Only available for Premium SKU
+
+  - azure_path: properties.networkRuleSet.ipRules
+    terraform_param: network_rule_set.ip_rule
+    required: false
+    criticality: HIGH
+    type: array
+    description: IP firewall rules for Container Registry
+    notes: Only available for Premium SKU
+
+  - azure_path: properties.networkRuleSet.virtualNetworkRules
+    terraform_param: network_rule_set.virtual_network
+    required: false
+    criticality: HIGH
+    type: array
+    description: Virtual network rules for Container Registry
+    notes: Only available for Premium SKU
+
+  # MEDIUM properties - Image retention and trust
+  - azure_path: properties.policies.retentionPolicy.status
+    terraform_param: retention_policy.enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable image retention policy
+    notes: Only available for Premium SKU
+
+  - azure_path: properties.policies.trustPolicy.status
+    terraform_param: trust_policy.enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable content trust policy
+    notes: Only available for Premium SKU
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

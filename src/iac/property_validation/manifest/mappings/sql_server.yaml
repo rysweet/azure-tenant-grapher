@@ -1,0 +1,130 @@
+resource_type:
+  azure: Microsoft.Sql/servers
+  terraform: azurerm_mssql_server
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+
+metadata:
+  description: SQL Server property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: SQL Server name (globally unique, servername.database.windows.net)
+    notes: |
+      Must be globally unique across Azure
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Hash suffix added for global uniqueness in handler
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for SQL Server
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Server configuration
+  - azure_path: properties.version
+    terraform_param: version
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: ["2.0", "12.0"]
+    default_value: "12.0"
+    description: SQL Server version
+
+  - azure_path: properties.administratorLogin
+    terraform_param: administrator_login
+    required: true
+    criticality: CRITICAL
+    type: string
+    default_value: sqladmin
+    description: Administrator login name
+
+  - azure_path: properties.administratorLoginPassword
+    terraform_param: administrator_login_password
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Administrator login password
+    notes: |
+      Handler generates random_password resource automatically
+      Reference: ${random_password.<resource>_password.result}
+
+  # HIGH security properties - Network access (PR #712)
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to SQL Server
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM security properties - TLS version (PR #712)
+  - azure_path: properties.minimalTlsVersion
+    terraform_param: minimum_tls_version
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: ["1.0", "1.1", "1.2", "1.3"]
+    default_value: "1.2"
+    description: Minimum TLS version for connections
+
+  # HIGH security properties - Azure AD authentication (PR #712)
+  - azure_path: properties.administrators.azureADOnlyAuthentication
+    terraform_param: azuread_administrator.azuread_authentication_only
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: false
+    description: Enable Azure AD only authentication
+    notes: |
+      When true, SQL authentication is disabled
+      Requires azuread_administrator block in Terraform
+
+  - azure_path: properties.administrators.login
+    terraform_param: azuread_administrator.login_username
+    required: false
+    criticality: HIGH
+    type: string
+    description: Azure AD administrator login name
+
+  - azure_path: properties.administrators.sid
+    terraform_param: azuread_administrator.object_id
+    required: false
+    criticality: HIGH
+    type: string
+    description: Azure AD administrator object ID (SID)
+
+  - azure_path: properties.administrators.tenantId
+    terraform_param: azuread_administrator.tenant_id
+    required: false
+    criticality: HIGH
+    type: string
+    description: Azure AD tenant ID for administrator
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing

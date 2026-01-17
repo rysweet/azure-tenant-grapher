@@ -1,0 +1,195 @@
+resource_type:
+  azure: Microsoft.Storage/storageAccounts
+  terraform: azurerm_storage_account
+
+provider_version:
+  min: "3.0.0"
+  max: "4.99.99"
+  notes: |
+    v4.0+ renamed https_traffic_only to https_traffic_only_enabled
+    v3.0+ renamed allow_blob_public_access to allow_nested_items_to_be_public
+
+metadata:
+  description: Storage account property mappings with complete security properties from PR #712
+  last_updated: "2026-01-17"
+  author: "ATG Property Validation System"
+
+properties:
+  # CRITICAL properties - Names and identifiers
+  - azure_path: name
+    terraform_param: name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Storage account name (globally unique, 3-24 chars, lowercase alphanumeric)
+    notes: |
+      Must be globally unique across Azure (*.core.windows.net)
+      Phase 5: ID Abstraction Service generates Azure-compliant names
+      Hash suffix added for global uniqueness in handler
+
+  - azure_path: location
+    terraform_param: location
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Azure region for storage account
+
+  - azure_path: properties.resourceGroup
+    terraform_param: resource_group_name
+    required: true
+    criticality: CRITICAL
+    type: string
+    description: Resource group name
+
+  # CRITICAL properties - Account configuration
+  - azure_path: properties.accountTier
+    terraform_param: account_tier
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [Standard, Premium]
+    default_value: Standard
+    description: Performance tier of storage account
+
+  - azure_path: sku.name
+    terraform_param: account_replication_type
+    required: true
+    criticality: CRITICAL
+    type: string
+    valid_values: [LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS]
+    default_value: LRS
+    description: Data replication strategy
+    transformation: |
+      SKU name format: "Tier_Replication" (e.g., "Standard_LRS")
+      Split on underscore: parts[0] = tier, parts[1:] = replication
+
+  - azure_path: properties.kind
+    terraform_param: account_kind
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [BlobStorage, BlockBlobStorage, FileStorage, Storage, StorageV2]
+    default_value: StorageV2
+    description: Storage account kind
+
+  - azure_path: properties.accessTier
+    terraform_param: access_tier
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [Hot, Cool]
+    description: Access tier for BlobStorage and StorageV2 accounts
+
+  # CRITICAL security properties - Protocol and encryption
+  - azure_path: properties.supportsHttpsTrafficOnly
+    terraform_param: https_traffic_only_enabled
+    required: false
+    criticality: CRITICAL
+    type: boolean
+    default_value: true
+    description: Require HTTPS for storage access
+    notes: |
+      Fix #596: Parameter renamed in provider v4+
+      v2.x: https_traffic_only
+      v3.0+: https_traffic_only_enabled
+
+  - azure_path: properties.minimumTlsVersion
+    terraform_param: min_tls_version
+    required: false
+    criticality: HIGH
+    type: string
+    valid_values: [TLS1_0, TLS1_1, TLS1_2, TLS1_3]
+    default_value: TLS1_2
+    description: Minimum TLS version for connections
+
+  # CRITICAL security properties - Authentication and access (PR #712)
+  - azure_path: properties.allowSharedKeyAccess
+    terraform_param: shared_access_key_enabled
+    required: false
+    criticality: CRITICAL
+    type: boolean
+    default_value: true
+    description: Enable shared key access (disable for zero-trust OAuth/Entra ID only)
+    notes: |
+      Zero-trust security: Set to false to force OAuth/Entra ID authentication
+      When false, shared key access is completely disabled
+
+  - azure_path: properties.defaultToOAuthAuthentication
+    terraform_param: default_to_oauth_authentication
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: false
+    description: Default to OAuth authentication for Azure services
+
+  # HIGH security properties - Public access control (PR #712)
+  - azure_path: properties.allowBlobPublicAccess
+    terraform_param: allow_nested_items_to_be_public
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: false
+    description: Allow public access to blobs and containers
+    notes: |
+      v3.0+ renamed from allow_blob_public_access
+      Set to false for private storage accounts
+
+  - azure_path: properties.publicNetworkAccess
+    terraform_param: public_network_access_enabled
+    required: false
+    criticality: HIGH
+    type: boolean
+    default_value: true
+    description: Enable public network access to storage account
+    transformation: |
+      Azure: "Enabled" or "Disabled" string
+      Terraform: boolean true/false
+
+  # MEDIUM properties - Network ACLs
+  - azure_path: properties.networkAcls.defaultAction
+    terraform_param: network_rules.default_action
+    required: false
+    criticality: MEDIUM
+    type: string
+    valid_values: [Allow, Deny]
+    default_value: Allow
+    description: Default network access rule
+
+  - azure_path: properties.networkAcls.ipRules
+    terraform_param: network_rules.ip_rules
+    required: false
+    criticality: MEDIUM
+    type: array
+    description: IP firewall rules for storage account
+
+  - azure_path: properties.networkAcls.virtualNetworkRules
+    terraform_param: network_rules.virtual_network_subnet_ids
+    required: false
+    criticality: MEDIUM
+    type: array
+    description: Virtual network subnet IDs allowed to access storage
+
+  # MEDIUM properties - Features
+  - azure_path: properties.isHnsEnabled
+    terraform_param: is_hns_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable hierarchical namespace (Data Lake Gen2)
+
+  - azure_path: properties.largeFileSharesState
+    terraform_param: large_file_share_enabled
+    required: false
+    criticality: MEDIUM
+    type: boolean
+    default_value: false
+    description: Enable large file shares
+
+  # LOW properties - Metadata
+  - azure_path: tags
+    terraform_param: tags
+    required: false
+    criticality: LOW
+    type: object
+    description: Resource tags for organization and billing
