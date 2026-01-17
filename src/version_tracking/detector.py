@@ -2,10 +2,16 @@
 
 This module detects version mismatches between the semaphore file (.atg_graph_version)
 and the Neo4j metadata node. Completes in < 100ms for fast startup checks.
+
+Includes hash-based validation to detect code changes even when version number
+is not updated.
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+from .hash_tracker import HashTracker
 
 
 class VersionDetector:
@@ -31,6 +37,9 @@ class VersionDetector:
         else:
             self.semaphore_path = semaphore_path
 
+        # Initialize hash tracker with same root
+        self.hash_tracker = HashTracker(self.semaphore_path.parent)
+
     def read_semaphore_version(self) -> Optional[str]:
         """Read version string from semaphore file.
 
@@ -42,16 +51,43 @@ class VersionDetector:
                 return None
 
             content = self.semaphore_path.read_text(encoding="utf-8")
-            version = content.strip()
 
-            # Return None for empty content
-            if not version:
-                return None
-
-            return version
+            # Try to parse as JSON first (new format)
+            try:
+                data = json.loads(content)
+                return data.get("version")
+            except json.JSONDecodeError:
+                # Fall back to plain text (old format)
+                version = content.strip()
+                return version if version else None
 
         except (OSError, UnicodeDecodeError):
             # Handle read errors and encoding errors
+            return None
+
+    def read_semaphore_data(self) -> Optional[Dict[str, Any]]:
+        """Read full semaphore data including hash and tracked paths.
+
+        Returns:
+            Dictionary with version data or None if file missing/unreadable.
+        """
+        try:
+            if not self.semaphore_path.exists():
+                return None
+
+            content = self.semaphore_path.read_text(encoding="utf-8")
+
+            # Try to parse as JSON
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # Fall back to plain text format
+                version = content.strip()
+                if version:
+                    return {"version": version}
+                return None
+
+        except (OSError, UnicodeDecodeError):
             return None
 
     def compare_versions(
@@ -99,21 +135,63 @@ class VersionDetector:
             return "Metadata node missing in Neo4j"
         return "Version mismatch detected"
 
+    def _validate_construction_hash(self) -> Optional[Dict[str, Any]]:
+        """Validate construction hash from semaphore file.
+
+        Returns:
+            None if hash matches (or no hash stored)
+            Dict with mismatch details if hash differs
+        """
+        # Read semaphore data
+        semaphore_data = self.read_semaphore_data()
+
+        if not semaphore_data:
+            return None
+
+        stored_hash = semaphore_data.get("construction_hash")
+        stored_files = semaphore_data.get("tracked_paths")
+
+        # No stored hash = first time = no mismatch
+        if not stored_hash:
+            return None
+
+        # Validate hash
+        result = self.hash_tracker.validate_hash(stored_hash, stored_files)
+
+        if result.matches:
+            return None
+
+        # Hash mismatch detected
+        return {
+            "type": "hash_mismatch",
+            "stored_hash": result.stored_hash,
+            "current_hash": result.current_hash,
+            "changed_files": result.changed_files,
+            "reason": "Graph construction files changed but version not updated",
+        }
+
     def detect_mismatch(self, metadata_service) -> Optional[Dict[str, Any]]:
         """Detect version mismatch between semaphore and metadata.
 
         This is the main entry point that orchestrates the complete mismatch check.
+        Checks both version number and construction hash.
 
         Args:
             metadata_service: GraphMetadataService instance for reading metadata
 
         Returns:
-            None if versions match
-            Dict with mismatch details if versions differ
+            None if versions match and hash matches
+            Dict with mismatch details if either differs
 
         Raises:
             Exception: If metadata service fails (re-raises exception)
         """
+        # Check hash first (faster than metadata query)
+        hash_mismatch = self._validate_construction_hash()
+
+        if hash_mismatch:
+            return hash_mismatch
+
         # Read semaphore version
         semaphore_version = self.read_semaphore_version()
 
@@ -122,4 +200,9 @@ class VersionDetector:
         metadata_version = metadata.get("version") if metadata else None
 
         # Compare versions
-        return self.compare_versions(semaphore_version, metadata_version)
+        version_mismatch = self.compare_versions(semaphore_version, metadata_version)
+
+        if version_mismatch:
+            version_mismatch["type"] = "version_mismatch"
+
+        return version_mismatch
