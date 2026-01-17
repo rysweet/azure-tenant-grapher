@@ -75,6 +75,41 @@ class SQLDatabaseHandler(ResourceHandler):
         if max_size:
             config["max_size_gb"] = max_size // (1024 * 1024 * 1024)
 
+        # Optional: transparent_data_encryption (security - HIGH for encryption at rest)
+        # Maps to Azure property: transparentDataEncryption (nested property)
+        # Note: This may be in a separate resource, check if properties contain TDE settings
+        tde_config = properties.get("transparentDataEncryption")
+        if tde_config and isinstance(tde_config, dict):
+            tde_status = tde_config.get("status")
+            if tde_status == "Enabled":
+                # Note: TDE is typically enabled by default in newer Azure SQL versions
+                # We'll add a note that TDE is expected to be enabled
+                logger.info(f"SQL Database '{resource_name}': Transparent Data Encryption enabled")
+
+        # Optional: ledger_enabled (security - MEDIUM for immutable audit log)
+        # Maps to Azure property: isLedgerDatabase
+        is_ledger = properties.get("isLedgerDatabase")
+        if is_ledger is not None:
+            if not isinstance(is_ledger, bool):
+                logger.warning(
+                    f"SQL Database '{resource_name}': isLedgerDatabase "
+                    f"expected bool, got {type(is_ledger).__name__}"
+                )
+            else:
+                config["ledger_enabled"] = is_ledger
+
+        # Optional: zone_redundant (reliability/security - MEDIUM)
+        # Maps to Azure property: zoneRedundant
+        zone_redundant = properties.get("zoneRedundant")
+        if zone_redundant is not None:
+            if not isinstance(zone_redundant, bool):
+                logger.warning(
+                    f"SQL Database '{resource_name}': zoneRedundant "
+                    f"expected bool, got {type(zone_redundant).__name__}"
+                )
+            else:
+                config["zone_redundant"] = zone_redundant
+
         logger.debug(
             f"SQL Database '{resource_name}' emitted for server '{server_name}'"
         )

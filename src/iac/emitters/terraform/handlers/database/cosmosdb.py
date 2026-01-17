@@ -68,6 +68,47 @@ class CosmosDBHandler(ResourceHandler):
         else:
             config["geo_location"] = [{"location": location, "failover_priority": 0}]
 
+        # Optional: public_network_access_enabled (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"Cosmos DB '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
+
+        # Optional: local_authentication_disabled (security - MEDIUM for auth control)
+        # Maps to Azure property: disableLocalAuth
+        disable_local_auth = properties.get("disableLocalAuth")
+        if disable_local_auth is not None:
+            if not isinstance(disable_local_auth, bool):
+                logger.warning(
+                    f"Cosmos DB '{resource_name}': disableLocalAuth "
+                    f"expected bool, got {type(disable_local_auth).__name__}"
+                )
+            else:
+                config["local_authentication_disabled"] = disable_local_auth
+
+        # Optional: ip_range_filter (security - HIGH for IP firewall)
+        # Maps to Azure property: ipRules
+        ip_rules = properties.get("ipRules", [])
+        if ip_rules:
+            # Cosmos DB expects comma-separated CIDR ranges
+            config["ip_range_filter"] = ",".join([rule.get("ipAddressOrRange", "") for rule in ip_rules if rule.get("ipAddressOrRange")])
+
+        # Optional: virtual_network_rule (security - HIGH for VNet restrictions)
+        # Maps to Azure property: virtualNetworkRules
+        vnet_rules = properties.get("virtualNetworkRules", [])
+        if vnet_rules:
+            config["virtual_network_rule"] = [{
+                "id": rule.get("id")
+            } for rule in vnet_rules if rule.get("id")]
+
         logger.debug(
             f"Cosmos DB '{resource_name}' emitted with "
             f"{len(config.get('geo_location', []))} locations"
