@@ -142,15 +142,57 @@ class StorageAccountHandler(ResourceHandler):
         if tls_version:
             config["min_tls_version"] = tls_version
 
-        # Optional: allow_blob_public_access (security)
+        # Optional: allow_nested_items_to_be_public (security)
+        # Maps to Azure property: allowBlobPublicAccess
+        # Note: Parameter renamed in azurerm v3.0+ (was allow_blob_public_access in v2.x)
         allow_blob_public_access = properties.get("allowBlobPublicAccess")
         if allow_blob_public_access is not None:
-            config["allow_blob_public_access"] = allow_blob_public_access
+            if not isinstance(allow_blob_public_access, bool):
+                logger.warning(
+                    f"Storage account '{resource_name}': allowBlobPublicAccess "
+                    f"expected bool, got {type(allow_blob_public_access).__name__}"
+                )
+            else:
+                config["allow_nested_items_to_be_public"] = allow_blob_public_access
 
         # Optional: default_to_oauth_authentication (security)
         default_to_oauth = properties.get("defaultToOAuthAuthentication")
         if default_to_oauth is not None:
-            config["default_to_oauth_authentication"] = default_to_oauth
+            if not isinstance(default_to_oauth, bool):
+                logger.warning(
+                    f"Storage account '{resource_name}': defaultToOAuthAuthentication "
+                    f"expected bool, got {type(default_to_oauth).__name__}"
+                )
+            else:
+                config["default_to_oauth_authentication"] = default_to_oauth
+
+        # Optional: shared_access_key_enabled (security - CRITICAL for zero-trust)
+        # Maps to Azure property: allowSharedKeyAccess
+        # Note: Disabling shared key access forces OAuth/Entra ID authentication
+        shared_key_access = properties.get("allowSharedKeyAccess")
+        if shared_key_access is not None:
+            if not isinstance(shared_key_access, bool):
+                logger.warning(
+                    f"Storage account '{resource_name}': allowSharedKeyAccess "
+                    f"expected bool, got {type(shared_key_access).__name__}"
+                )
+            else:
+                config["shared_access_key_enabled"] = shared_key_access
+
+        # Optional: public_network_access_enabled (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        # Note: Azure uses "Enabled"/"Disabled" strings, Terraform uses boolean
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"Storage account '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
 
         logger.debug(
             f"Storage Account '{resource_name}' emitted with "
