@@ -72,6 +72,30 @@ class AppServiceHandler(ResourceHandler):
         else:
             config["name"] = abstracted_name
 
+        # Optional: https_only (security - CRITICAL for protocol enforcement)
+        # Maps to Azure property: httpsOnly
+        https_only = properties.get("httpsOnly")
+        if https_only is not None:
+            if not isinstance(https_only, bool):
+                logger.warning(
+                    f"App Service '{resource_name}': httpsOnly "
+                    f"expected bool, got {type(https_only).__name__}"
+                )
+            else:
+                config["https_only"] = https_only
+
+        # Optional: client_certificate_enabled (security - MEDIUM for mutual TLS)
+        # Maps to Azure property: clientCertEnabled
+        client_cert = properties.get("clientCertEnabled")
+        if client_cert is not None:
+            if not isinstance(client_cert, bool):
+                logger.warning(
+                    f"App Service '{resource_name}': clientCertEnabled "
+                    f"expected bool, got {type(client_cert).__name__}"
+                )
+            else:
+                config["client_certificate_enabled"] = client_cert
+
         # Build site_config block
         site_config = {}
         site_config_props = properties.get("siteConfig", {})
@@ -80,6 +104,12 @@ class AppServiceHandler(ResourceHandler):
             site_config["application_stack"] = {
                 "docker_image": site_config_props["linuxFxVersion"]
             }
+
+        # Optional: minimum_tls_version in site_config (security - MEDIUM)
+        # Maps to Azure property: siteConfig.minTlsVersion
+        min_tls = site_config_props.get("minTlsVersion")
+        if min_tls:
+            site_config["minimum_tls_version"] = min_tls
 
         # Service plan ID
         service_plan_id = resource.get("app_service_plan_id")

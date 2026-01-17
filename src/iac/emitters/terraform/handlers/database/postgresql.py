@@ -57,6 +57,43 @@ class PostgreSQLFlexibleServerHandler(ResourceHandler):
         if storage and "storageSizeGB" in storage:
             config["storage_mb"] = storage["storageSizeGB"] * 1024
 
+        # Optional: public_network_access_enabled (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"PostgreSQL Server '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
+
+        # Optional: geo_redundant_backup_enabled (security/reliability - MEDIUM)
+        # Maps to Azure property: backup.geoRedundantBackup
+        backup_config = properties.get("backup", {})
+        if isinstance(backup_config, dict):
+            geo_redundant = backup_config.get("geoRedundantBackup")
+            if geo_redundant == "Enabled":
+                config["geo_redundant_backup_enabled"] = True
+            elif geo_redundant == "Disabled":
+                config["geo_redundant_backup_enabled"] = False
+
+        # Optional: authentication configuration (security - HIGH)
+        # Maps to Azure property: authConfig
+        auth_config = properties.get("authConfig", {})
+        if isinstance(auth_config, dict):
+            active_directory_auth = auth_config.get("activeDirectoryAuth")
+            password_auth = auth_config.get("passwordAuth")
+
+            if active_directory_auth:
+                config["authentication"] = {
+                    "active_directory_auth_enabled": active_directory_auth == "Enabled",
+                    "password_auth_enabled": password_auth == "Enabled" if password_auth else True
+                }
+
         logger.debug(f"PostgreSQL Flexible Server '{resource_name}' emitted")
 
         return "azurerm_postgresql_flexible_server", safe_name, config

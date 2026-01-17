@@ -82,6 +82,57 @@ class CognitiveServicesHandler(ResourceHandler):
         if custom_subdomain:
             config["custom_subdomain_name"] = custom_subdomain
 
+        # Optional: public_network_access_enabled (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"Cognitive Services '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
+
+        # Optional: local_auth_enabled (security - MEDIUM for authentication control)
+        # Maps to Azure property: disableLocalAuth (note: inverse logic!)
+        disable_local_auth = properties.get("disableLocalAuth")
+        if disable_local_auth is not None:
+            if not isinstance(disable_local_auth, bool):
+                logger.warning(
+                    f"Cognitive Services '{resource_name}': disableLocalAuth "
+                    f"expected bool, got {type(disable_local_auth).__name__}"
+                )
+            else:
+                # Note: Inverse logic - Azure has disableLocalAuth, Terraform has local_auth_enabled
+                config["local_auth_enabled"] = not disable_local_auth
+
+        # Optional: network_acls (security - HIGH for network restrictions)
+        # Maps to Azure property: networkAcls
+        network_acls = properties.get("networkAcls")
+        if network_acls and isinstance(network_acls, dict):
+            acl_config = {}
+            default_action = network_acls.get("defaultAction", "Allow")
+            if default_action:
+                acl_config["default_action"] = default_action
+
+            # IP rules
+            ip_rules = network_acls.get("ipRules", [])
+            if ip_rules:
+                acl_config["ip_rules"] = [rule.get("value") for rule in ip_rules if rule.get("value")]
+
+            # Virtual network rules
+            vnet_rules = network_acls.get("virtualNetworkRules", [])
+            if vnet_rules:
+                acl_config["virtual_network_rules"] = [{
+                    "subnet_id": rule.get("id")
+                } for rule in vnet_rules if rule.get("id")]
+
+            if acl_config:
+                config["network_acls"] = acl_config
+
         logger.debug(f"Cognitive Services '{resource_name}' emitted with kind='{kind}'")
 
         return "azurerm_cognitive_account", safe_name, config

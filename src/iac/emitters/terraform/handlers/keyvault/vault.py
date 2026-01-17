@@ -102,6 +102,65 @@ class KeyVaultHandler(ResourceHandler):
         if purge_protection:
             config["purge_protection_enabled"] = True
 
+        # Optional: public_network_access (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        # Note: Azure uses "Enabled"/"Disabled" strings, Terraform uses boolean
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"Key Vault '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
+
+        # Optional: enable_rbac_authorization (security - MEDIUM for access control)
+        # Maps to Azure property: enableRbacAuthorization
+        enable_rbac = properties.get("enableRbacAuthorization")
+        if enable_rbac is not None:
+            if not isinstance(enable_rbac, bool):
+                logger.warning(
+                    f"Key Vault '{resource_name}': enableRbacAuthorization "
+                    f"expected bool, got {type(enable_rbac).__name__}"
+                )
+            else:
+                config["enable_rbac_authorization"] = enable_rbac
+
+        # Optional: network_acls (security - HIGH for network restrictions)
+        # Maps to Azure property: networkAcls
+        network_acls = properties.get("networkAcls")
+        if network_acls and isinstance(network_acls, dict):
+            # Terraform expects network_acls block
+            acl_config = {}
+
+            # Default action
+            default_action = network_acls.get("defaultAction", "Allow")
+            if default_action:
+                acl_config["default_action"] = default_action
+
+            # IP rules
+            ip_rules = network_acls.get("ipRules", [])
+            if ip_rules:
+                acl_config["ip_rules"] = [rule.get("value") for rule in ip_rules if rule.get("value")]
+
+            # Virtual network subnet IDs
+            vnet_rules = network_acls.get("virtualNetworkRules", [])
+            if vnet_rules:
+                acl_config["virtual_network_subnet_ids"] = [
+                    rule.get("id") for rule in vnet_rules if rule.get("id")
+                ]
+
+            # Bypass (AzureServices, None)
+            bypass = network_acls.get("bypass", "AzureServices")
+            if bypass:
+                acl_config["bypass"] = bypass
+
+            if acl_config:
+                config["network_acls"] = acl_config
+
         logger.debug(f"Key Vault '{resource_name}' -> '{config['name']}' emitted")
 
         return "azurerm_key_vault", safe_name, config

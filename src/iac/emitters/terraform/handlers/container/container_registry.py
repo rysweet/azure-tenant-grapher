@@ -76,6 +76,42 @@ class ContainerRegistryHandler(ResourceHandler):
         if admin_enabled:
             config["admin_enabled"] = True
 
+        # Optional: public_network_access_enabled (security - HIGH for network isolation)
+        # Maps to Azure property: publicNetworkAccess
+        public_network_access = properties.get("publicNetworkAccess")
+        if public_network_access is not None:
+            if public_network_access == "Enabled":
+                config["public_network_access_enabled"] = True
+            elif public_network_access == "Disabled":
+                config["public_network_access_enabled"] = False
+            else:
+                logger.warning(
+                    f"Container Registry '{resource_name}': publicNetworkAccess "
+                    f"unexpected value '{public_network_access}', expected 'Enabled' or 'Disabled'"
+                )
+
+        # Optional: data_endpoint_enabled (security - MEDIUM for data access control)
+        # Maps to Azure property: dataEndpointEnabled
+        data_endpoint = properties.get("dataEndpointEnabled")
+        if data_endpoint is not None:
+            if not isinstance(data_endpoint, bool):
+                logger.warning(
+                    f"Container Registry '{resource_name}': dataEndpointEnabled "
+                    f"expected bool, got {type(data_endpoint).__name__}"
+                )
+            else:
+                config["data_endpoint_enabled"] = data_endpoint
+
+        # Optional: network_rule_set (security - HIGH for network restrictions)
+        # Maps to Azure property: networkRuleSet
+        network_rule_set = properties.get("networkRuleSet")
+        if network_rule_set and isinstance(network_rule_set, dict):
+            default_action = network_rule_set.get("defaultAction", "Allow")
+            if default_action:
+                config["network_rule_set"] = [{
+                    "default_action": default_action
+                }]
+
         logger.debug(f"Container Registry '{resource_name}' emitted")
 
         return "azurerm_container_registry", safe_name, config
