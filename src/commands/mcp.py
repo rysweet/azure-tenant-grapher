@@ -17,13 +17,36 @@ import click
 from src.commands.base import async_command
 
 
+async def mcp_server_command_handler(ctx: click.Context) -> None:
+    """
+    Ensure Neo4j is running, then launch MCP server (uvx mcp-neo4j-cypher).
+
+    Issue #482: CLI Modularization - migrated from cli_commands.py
+    """
+    import logging
+
+    from src.mcp_server import run_mcp_server_foreground
+
+    try:
+        logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
+        exit_code = await run_mcp_server_foreground()
+        if exit_code == 0:
+            click.echo("✅ MCP server exited cleanly.")
+        else:
+            click.echo(f"❌ MCP server exited with code {exit_code}", err=True)
+    except Exception as e:
+        click.echo(f"❌ Failed to start MCP server: {e}", err=True)
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+
 @click.command("mcp-server")
 @click.pass_context
 @async_command
 async def mcp_server(ctx: click.Context) -> None:
     """Start MCP server (uvx mcp-neo4j-cypher) after ensuring Neo4j is running."""
-    from src.cli_commands import mcp_server_command_handler
-
     await mcp_server_command_handler(ctx)
 
 
@@ -233,4 +256,5 @@ __all__ = [
     "mcp_query_command_handler",
     "mcp_server",
     "mcp_server_command",
+    "mcp_server_command_handler",
 ]

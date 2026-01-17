@@ -3,29 +3,40 @@ CLI Command Handlers
 
 Contains the implementation of various CLI commands to keep the main CLI file focused.
 
-DEPRECATION NOTICE (Issue #482):
-Many commands in this file have been moved to modular command modules in src/commands/.
-Imports from this file are deprecated and will be removed in a future version.
-Please import from the appropriate src/commands/* module instead:
+DEPRECATION NOTICE (Issue #482 → Issue #716 - MIGRATION COMPLETE):
+ALL commands except build_command_handler have been migrated to modular modules in src/commands/.
+Import from src/commands/* instead of this file:
 
-- DashboardLogHandler -> src.commands.base.DashboardLogHandler
-- create_tenant_command -> src.commands.tenant.create_tenant
-- spa_start -> src.commands.spa.spa_start
-- spa_stop -> src.commands.spa.spa_stop
-- app_registration_command -> src.commands.auth.app_registration
-- visualize_command_handler -> src.commands.visualize.visualize_command_handler
-- spec_command_handler -> src.commands.spec.spec_command_handler
-- generate_spec_command_handler -> src.commands.spec.generate_spec_command_handler
-- monitor_command_handler -> src.commands.monitor.monitor_command_handler
-- fidelity_command_handler -> src.commands.fidelity.fidelity_command_handler
-- cost_analysis_command_handler -> src.commands.cost.cost_analysis_command_handler
-- cost_forecast_command_handler -> src.commands.cost.cost_forecast_command_handler
-- cost_report_command_handler -> src.commands.cost.cost_report_command_handler
-- generate_sim_doc_command_handler -> src.commands.simulation.generate_sim_doc_command_handler
-- generate_threat_model_command_handler -> src.commands.threat_model.generate_threat_model_command_handler
-- mcp_query_command -> src.commands.mcp.mcp_query_command_handler
+Command Handler Migrations:
+- DashboardLogHandler → src.commands.base.DashboardLogHandler
+- create_tenant_command → src.commands.tenant.create_tenant
+- spa_start → src.commands.spa.spa_start
+- spa_stop → src.commands.spa.spa_stop
+- app_registration_command → src.commands.auth.app_registration
+- visualize_command_handler → src.commands.visualize.visualize_command_handler
+- spec_command_handler → src.commands.spec.spec_command_handler
+- generate_spec_command_handler → src.commands.spec.generate_spec_command_handler
+- monitor_command_handler → src.commands.monitor.monitor_command_handler
+- fidelity_command_handler → src.commands.fidelity.fidelity_command_handler
+- cost_analysis_command_handler → src.commands.cost.cost_analysis_command_handler
+- cost_forecast_command_handler → src.commands.cost.cost_forecast_command_handler
+- cost_report_command_handler → src.commands.cost.cost_report_command_handler
+- generate_sim_doc_command_handler → src.commands.simulation.generate_sim_doc_command_handler
+- generate_threat_model_command_handler → src.commands.threat_model.generate_threat_model_command_handler
+- mcp_query_command → src.commands.mcp.mcp_query_command_handler
+- mcp_server_command_handler → src.commands.mcp.mcp_server_command_handler
+- agent_mode_command_handler → src.commands.agent.agent_mode_command_handler
+- analyze_patterns_command_handler → src.commands.patterns.analyze_patterns_command_handler
+- well_architected_report_command_handler → src.commands.well_architected.well_architected_report_command_handler
 
-build_command_handler remains in this file as the core scan logic for backward compatibility.
+ONLY REMAINING: build_command_handler (core scan logic, kept for backward compatibility)
+
+REMOVAL TIMELINE:
+- This file will be reduced to only build_command_handler and related helpers in a future version
+- All handler functions above remain here temporarily for backward compatibility but are now duplicates
+- New code should import from src.commands/* modules
+
+See Issue #716 for migration completion details.
 """
 
 import asyncio

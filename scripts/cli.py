@@ -21,9 +21,10 @@ from rich.style import Style
 from src.cli_dashboard_manager import DashboardExitException
 from src.commands.abstract_graph import abstract_graph
 from src.commands.auth import app_registration as app_registration_cmd
+from src.commands.config import config as config_cmd
 
 # Import modular commands for CLI registration (Issue #482)
-from src.commands.config import config as config_cmd
+from src.commands.ctf_cmd import ctf as ctf_group
 from src.commands.database import (
     backup as backup_cmd,
 )
@@ -720,7 +721,7 @@ async def analyze_patterns(
         # Show more nodes in visualization
         atg analyze-patterns --top-n-nodes 50
     """
-    from src.cli_commands import analyze_patterns_command_handler
+    from src.commands.patterns import analyze_patterns_command_handler
 
     await analyze_patterns_command_handler(
         ctx, output_dir, no_visualizations, top_n_nodes, no_container
@@ -790,7 +791,7 @@ async def well_architected(
         # Custom output directory
         atg report well-architected -o my_waf_report
     """
-    from src.cli_commands import well_architected_report_command_handler
+    from src.commands.well_architected import well_architected_report_command_handler
 
     await well_architected_report_command_handler(
         ctx, output_dir, no_visualizations, skip_description_updates, no_container
@@ -1156,7 +1157,7 @@ def backup_db(backup_path: str) -> None:
 @async_command
 async def mcp_server(ctx: click.Context) -> None:
     """Start MCP server (uvx mcp-neo4j-cypher) after ensuring Neo4j is running."""
-    from src.cli_commands import mcp_server_command_handler
+    from src.commands.mcp import mcp_server_command_handler
 
     await mcp_server_command_handler(ctx)
 
@@ -1166,7 +1167,7 @@ async def mcp_server(ctx: click.Context) -> None:
 @async_command
 async def threat_model(ctx: click.Context) -> None:
     """Run the Threat Modeling Agent workflow to generate a DFD, enumerate threats, and produce a Markdown report from the current Neo4j graph."""
-    from src.cli_commands import generate_threat_model_command_handler
+    from src.commands.threat_model import generate_threat_model_command_handler
 
     await generate_threat_model_command_handler(ctx)
 
@@ -1201,7 +1202,7 @@ async def generate_sim_doc(
     """
     Generate a simulated Azure customer profile as a Markdown narrative.
     """
-    from src.cli_commands import generate_sim_doc_command_handler
+    from src.commands.simulation import generate_sim_doc_command_handler
 
     await generate_sim_doc_command_handler(
         ctx, size=size, seed_path=seed, out_path=output
@@ -1268,7 +1269,6 @@ cli.add_command(report_cmd, "report")
 cli.add_command(layer_group)
 
 # Register CTF command group (Issue #552: CTF Overlay System)
-from src.commands.ctf_cmd import ctf as ctf_group
 
 cli.add_command(ctf_group)
 
@@ -1282,7 +1282,7 @@ cli.add_command(ctf_group)
 @async_command
 async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     """Start AutoGen MCP agent mode (Neo4j + MCP server + agent chat loop)."""
-    from src.cli_commands import agent_mode_command_handler
+    from src.commands.agent import agent_mode_command_handler
 
     await agent_mode_command_handler(ctx, question)
 
@@ -1364,7 +1364,7 @@ async def monitor(
         # Table output format with watch
         atg monitor --watch --format table
     """
-    from src.cli_commands import monitor_command_handler
+    from src.commands.monitor import monitor_command_handler
 
     await monitor_command_handler(
         subscription_id=subscription_id,
@@ -1413,7 +1413,7 @@ async def mcp_query(
 
     This is an experimental feature that requires MCP_ENABLED=true in your .env file.
     """
-    from src.cli_commands import mcp_query_command
+    from src.commands.mcp import mcp_query_command
 
     debug = ctx.obj.get("debug", False)
     await mcp_query_command(
@@ -1492,7 +1492,7 @@ async def fidelity(
                      --target-subscription TARGET_ID \\
                      --check-objective demos/OBJECTIVE.md
     """
-    from src.cli_commands import fidelity_command_handler
+    from src.commands.fidelity import fidelity_command_handler
 
     await fidelity_command_handler(
         source_subscription=source_subscription,
@@ -1586,7 +1586,7 @@ async def cost_analysis(
                           --group-by service_name \\
                           --sync
     """
-    from src.cli_commands import cost_analysis_command_handler
+    from src.commands.cost import cost_analysis_command_handler
 
     await cost_analysis_command_handler(
         ctx=ctx,
@@ -1651,7 +1651,7 @@ async def cost_forecast(
         atg cost-forecast --subscription-id xxx-xxx-xxx \\
                           --output forecast.json
     """
-    from src.cli_commands import cost_forecast_command_handler
+    from src.commands.cost import cost_forecast_command_handler
 
     await cost_forecast_command_handler(
         ctx=ctx,
@@ -1740,7 +1740,7 @@ async def cost_report(
                         --format json \\
                         --output report.json
     """
-    from src.cli_commands import cost_report_command_handler
+    from src.commands.cost import cost_report_command_handler
 
     await cost_report_command_handler(
         ctx=ctx,
