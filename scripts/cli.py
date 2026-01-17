@@ -46,7 +46,6 @@ from src.commands.export_abstraction import export_abstraction_command
 from src.commands.layer_cmd import layer as layer_group
 from src.commands.list_deployments import list_deployments
 from src.commands.report import report as report_cmd
-from src.commands.sentinel import setup_sentinel_command
 from src.commands.scaling import (
     scale_clean as scale_clean_cmd,
 )
@@ -62,12 +61,22 @@ from src.commands.scaling import (
 from src.commands.scaling import (
     scale_validate as scale_validate_cmd,
 )
+from src.commands.sentinel import setup_sentinel_command
 from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
 from src.commands.spec import generate_spec_command_handler, spec_command_handler
 from src.commands.tenant import create_tenant as create_tenant_cmd
 from src.commands.undeploy import undeploy
 from src.commands.validate_deployment import validate_deployment_command
+from src.commands.version import (
+    backup_metadata as backup_metadata_cmd,
+)
+from src.commands.version import (
+    rebuild_graph as rebuild_graph_cmd,
+)
+from src.commands.version import (
+    version_check as version_check_cmd,
+)
 from src.commands.visualize import visualize_command_handler
 
 # Initialize console for rich output
@@ -1239,6 +1248,11 @@ cli.add_command(restore_cmd, "restore")
 cli.add_command(restore_cmd, "restore-db")  # Alias
 cli.add_command(wipe_cmd, "wipe")
 
+# Register version tracking commands (Issue #706: Graph Version Tracking)
+cli.add_command(version_check_cmd, "version-check")
+cli.add_command(rebuild_graph_cmd, "rebuild-graph")
+cli.add_command(backup_metadata_cmd, "backup-metadata")
+
 # Register diagnostic commands (Phase 4)
 cli.add_command(doctor_cmd, "doctor")
 cli.add_command(check_permissions_cmd, "check-permissions")
@@ -1255,6 +1269,7 @@ cli.add_command(layer_group)
 
 # Register CTF command group (Issue #552: CTF Overlay System)
 from src.commands.ctf_cmd import ctf as ctf_group
+
 cli.add_command(ctf_group)
 
 

@@ -115,6 +115,46 @@ async def build_command_handler(
     if debug:
         print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
 
+    # Version check (Issue #706) - non-blocking warning
+    try:
+        # Get Neo4j config for version check
+        from src.commands.base import get_neo4j_config_from_env
+        from src.neo4j_session_manager import Neo4jSessionManager
+        from src.version_tracking.detector import VersionDetector
+        from src.version_tracking.metadata import GraphMetadataService
+
+        uri, user, password = get_neo4j_config_from_env()
+        session_manager = Neo4jSessionManager(uri=uri, user=user, password=password)
+        metadata_service = GraphMetadataService(session_manager)
+        detector = VersionDetector()
+
+        # Detect version mismatch
+        mismatch = detector.detect_mismatch(metadata_service)
+
+        if mismatch:
+            click.echo()
+            click.echo("⚠️  " + "=" * 70)
+            click.echo("⚠️  VERSION MISMATCH DETECTED")
+            click.echo("⚠️  " + "=" * 70)
+            click.echo(
+                f"⚠️  Semaphore version: {mismatch.get('semaphore_version', 'N/A')}"
+            )
+            click.echo(
+                f"⚠️  Metadata version:  {mismatch.get('metadata_version', 'N/A')}"
+            )
+            click.echo(f"⚠️  Reason: {mismatch.get('reason', 'Unknown')}")
+            click.echo()
+            click.echo(
+                "⚠️  The graph will be updated with the current version after scanning."
+            )
+            click.echo("⚠️  To rebuild the graph from scratch, run:")
+            click.echo("⚠️    atg rebuild-graph --tenant-id <YOUR_TENANT_ID>")
+            click.echo("⚠️  " + "=" * 70)
+            click.echo()
+    except Exception as e:
+        if debug:
+            click.echo(f"[DEBUG] Version check warning (non-fatal): {e}", err=True)
+
     try:
         if debug:
             print("[DEBUG][CLI] Preparing config", flush=True)

@@ -402,7 +402,33 @@ class AzureTenantGrapher:
                         f"[DEBUG][BUILD_GRAPH] Completed resource processing. Stats: {stats.to_dict() if hasattr(stats, 'to_dict') else stats}"
                     )
 
-            # 4. Return stats as dict (back-compat)
+            # 4. Update graph metadata with current version (Issue #706)
+            try:
+                from datetime import datetime
+
+                from .version_tracking.detector import VersionDetector
+                from .version_tracking.metadata import GraphMetadataService
+
+                detector = VersionDetector()
+                current_version = detector.read_semaphore_version()
+
+                if current_version:
+                    metadata_service = GraphMetadataService(self.session_manager)
+                    timestamp = datetime.now().isoformat()
+                    metadata_service.write_metadata(
+                        version=current_version, last_scan_at=timestamp
+                    )
+                    logger.info(
+                        f"✅ Updated graph metadata: version={current_version}, last_scan={timestamp}"
+                    )
+                else:
+                    logger.warning(
+                        "⚠️ Could not read version from semaphore file - metadata not updated"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to update graph metadata: {e}")
+
+            # 5. Return stats as dict (back-compat)
             result = stats.to_dict()
             result["subscriptions"] = len(subscriptions)
             result["success"] = True
