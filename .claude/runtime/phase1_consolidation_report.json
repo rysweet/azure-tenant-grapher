@@ -1,0 +1,18 @@
+{
+  "files_deleted": [
+    "./.claude/skills/pptx/ooxml/README.md",
+    "./.claude/skills/docx/ooxml/README.md",
+    "./.claude/skills/azure-devops/HOW_TO_CREATE_YOUR_OWN.md",
+    "./.github/prompt-history/already_processed/2025-07-19--remediate-all-remaining-issues-enforce-prompt-history-commit-push-and-open-pr.md",
+    "./.github/prompt-history/already_processed/reflection--2025-07-18--neo4j-integration-test-rerun.md"
+  ],
+  "stubs_created": [
+    "./.claude/skills/pptx/ooxml/README.md",
+    "./.claude/skills/docx/ooxml/README.md",
+    "./.claude/skills/azure-devops/HOW_TO_CREATE_YOUR_OWN.md"
+  ],
+  "files_kept": [
+    "./.claude/skills/common/ooxml/README.md",
+    "./.claude/scenarios/az-devops-tools/HOW_TO_CREATE_YOUR_OWN.md"
+  ]
+}

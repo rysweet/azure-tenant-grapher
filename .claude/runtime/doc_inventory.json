@@ -1,0 +1,5672 @@
+{
+  "summary": {
+    "total_files": 807,
+    "categories": {
+      "other": 164,
+      "readme": 60,
+      "tests": 22,
+      "documentation": 211,
+      "examples": 2,
+      "templates": 11,
+      "context": 1,
+      "agents": 34,
+      "scenarios": 16,
+      "skills": 285,
+      "project-root": 1
+    },
+    "stale_files": 53,
+    "total_size_bytes": 9864679,
+    "generated_at": "2026-01-18T04:27:56.526244"
+  },
+  "files": [
+    {
+      "path": "./HASH_TRACKING_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2026-01-17T05:47:18",
+      "is_stale": false,
+      "size_bytes": 10586
+    },
+    {
+      "path": "./PYRIGHT_FIX_STRATEGY.md",
+      "category": "other",
+      "last_modified": "2026-01-13T05:09:44",
+      "is_stale": false,
+      "size_bytes": 4349
+    },
+    {
+      "path": "./scripts/README_DOCS_VALIDATION.md",
+      "category": "readme",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 12248
+    },
+    {
+      "path": "./scripts/VALIDATION_EXAMPLES.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:32:07",
+      "is_stale": false,
+      "size_bytes": 12360
+    },
+    {
+      "path": "./scripts/README_VALIDATE_IAC.md",
+      "category": "readme",
+      "last_modified": "2025-10-15T00:32:07",
+      "is_stale": false,
+      "size_bytes": 10529
+    },
+    {
+      "path": "./scripts/VALIDATION_QUICK_REF.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:32:07",
+      "is_stale": false,
+      "size_bytes": 2571
+    },
+    {
+      "path": "./scripts/README_RESOURCE_COVERAGE.md",
+      "category": "readme",
+      "last_modified": "2025-11-05T04:39:07",
+      "is_stale": false,
+      "size_bytes": 6145
+    },
+    {
+      "path": "./scripts/README_CLEANUP.md",
+      "category": "readme",
+      "last_modified": "2025-10-15T00:32:07",
+      "is_stale": false,
+      "size_bytes": 10890
+    },
+    {
+      "path": "./scripts/MIGRATION_GUIDE.md",
+      "category": "other",
+      "last_modified": "2025-12-09T18:08:50",
+      "is_stale": false,
+      "size_bytes": 3575
+    },
+    {
+      "path": "./scripts/sentinel/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 16285
+    },
+    {
+      "path": "./scripts/sentinel/tests/QUICK_START.md",
+      "category": "tests",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 11292
+    },
+    {
+      "path": "./infrastructure/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 15301
+    },
+    {
+      "path": "./PR_561_TEST_REPORT.md",
+      "category": "other",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 7889
+    },
+    {
+      "path": "./docs/MONITOR_COMMAND.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 10114
+    },
+    {
+      "path": "./docs/BUG_59_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 6792
+    },
+    {
+      "path": "./docs/demo_presentation.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T18:42:56",
+      "is_stale": false,
+      "size_bytes": 12696
+    },
+    {
+      "path": "./docs/MCP_INTEGRATION.md",
+      "category": "documentation",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 5921
+    },
+    {
+      "path": "./docs/implementation-plan-properties-extraction.md",
+      "category": "documentation",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 5060
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS_E2E_DEMONSTRATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 10424
+    },
+    {
+      "path": "./docs/design/azure_mcp_integration_research.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 24845
+    },
+    {
+      "path": "./docs/design/DESIGN_VNET_OVERLAP_DETECTION.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 57377
+    },
+    {
+      "path": "./docs/design/GRAPH_ENRICHMENT_PLAN.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 4281
+    },
+    {
+      "path": "./docs/design/SPA_ARCHITECTURE.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 11580
+    },
+    {
+      "path": "./docs/design/SCALE_OPERATIONS_UI_MOCKUPS.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 65498
+    },
+    {
+      "path": "./docs/design/CONFIG_QUICK_START.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 6948
+    },
+    {
+      "path": "./docs/design/DESIGN_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 7076
+    },
+    {
+      "path": "./docs/design/AGENT_DEPLOYER_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-18T18:15:00",
+      "is_stale": false,
+      "size_bytes": 18258
+    },
+    {
+      "path": "./docs/design/cross-tenant-translation/INTEGRATION_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 7097
+    },
+    {
+      "path": "./docs/design/cross-tenant-translation/PHASE5_INTEGRATION_COMPLETE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 10857
+    },
+    {
+      "path": "./docs/design/cross-tenant-translation/CLI_FLAGS_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 6282
+    },
+    {
+      "path": "./docs/design/SCALE_OPERATIONS_ARCHITECTURE_DIAGRAM.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 49596
+    },
+    {
+      "path": "./docs/design/azure_mcp_integration.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 22354
+    },
+    {
+      "path": "./docs/design/resource_processing_efficiency.md",
+      "category": "documentation",
+      "last_modified": "2025-06-19T22:33:03",
+      "is_stale": true,
+      "size_bytes": 2883
+    },
+    {
+      "path": "./docs/design/CONFIG_SYSTEM_DESIGN.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 16858
+    },
+    {
+      "path": "./docs/design/README.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 10443
+    },
+    {
+      "path": "./docs/design/SPA_REQUIREMENTS.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 4847
+    },
+    {
+      "path": "./docs/design/iac_subset_bicep.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 6878
+    },
+    {
+      "path": "./docs/design/SCALE_OPERATIONS_UI_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 13232
+    },
+    {
+      "path": "./docs/design/SCALE_OPERATIONS_UI_DESIGN.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 55715
+    },
+    {
+      "path": "./docs/README_SECTION_AUTONOMOUS_DEPLOYMENT.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 2987
+    },
+    {
+      "path": "./docs/INDEX.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 18601
+    },
+    {
+      "path": "./docs/quickstart/web-app-mode.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 1676
+    },
+    {
+      "path": "./docs/quickstart/terraform-import-quick-ref.md",
+      "category": "documentation",
+      "last_modified": "2025-12-18T19:29:05",
+      "is_stale": false,
+      "size_bytes": 3642
+    },
+    {
+      "path": "./docs/quickstart/scan-source-node-quick-ref.md",
+      "category": "documentation",
+      "last_modified": "2025-12-03T19:44:37",
+      "is_stale": false,
+      "size_bytes": 6952
+    },
+    {
+      "path": "./docs/quickstart/installation.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 2038
+    },
+    {
+      "path": "./docs/quickstart/AUTONOMOUS_DEPLOYMENT_QUICK_REF.md",
+      "category": "documentation",
+      "last_modified": "2025-12-18T18:15:00",
+      "is_stale": false,
+      "size_bytes": 8358
+    },
+    {
+      "path": "./docs/quickstart/scale-operations.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 3184
+    },
+    {
+      "path": "./docs/quickstart/AGENT_DEPLOYMENT_TUTORIAL.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 13171
+    },
+    {
+      "path": "./docs/quickstart/quick-start.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 3044
+    },
+    {
+      "path": "./docs/VERIFICATION_REPORT_ISSUE_621.md",
+      "category": "documentation",
+      "last_modified": "2026-01-15T23:11:38",
+      "is_stale": false,
+      "size_bytes": 13695
+    },
+    {
+      "path": "./docs/remote-mode/CONFIGURATION.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 11247
+    },
+    {
+      "path": "./docs/remote-mode/API_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 16256
+    },
+    {
+      "path": "./docs/remote-mode/DEPLOYMENT.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 13472
+    },
+    {
+      "path": "./docs/remote-mode/README.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 7977
+    },
+    {
+      "path": "./docs/remote-mode/PHASE2_QUICKSTART.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 7835
+    },
+    {
+      "path": "./docs/remote-mode/TROUBLESHOOTING.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 14943
+    },
+    {
+      "path": "./docs/remote-mode/USER_GUIDE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 10637
+    },
+    {
+      "path": "./docs/PYTHON_3.13_COMPATIBILITY.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T20:08:10",
+      "is_stale": false,
+      "size_bytes": 7856
+    },
+    {
+      "path": "./docs/DUAL_GRAPH_INDEX.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 10895
+    },
+    {
+      "path": "./docs/threat_model_agent_demo.md",
+      "category": "documentation",
+      "last_modified": "2025-06-20T00:07:26",
+      "is_stale": true,
+      "size_bytes": 2221
+    },
+    {
+      "path": "./docs/BUG_88_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-27T09:08:34",
+      "is_stale": false,
+      "size_bytes": 5329
+    },
+    {
+      "path": "./docs/TDD_QUICKSTART.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T15:02:27",
+      "is_stale": false,
+      "size_bytes": 8824
+    },
+    {
+      "path": "./docs/web-app/summary.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 11742
+    },
+    {
+      "path": "./docs/BUG_ASSOCIATION_IMPORT_FIX.md",
+      "category": "documentation",
+      "last_modified": "2025-11-27T03:48:07",
+      "is_stale": false,
+      "size_bytes": 7024
+    },
+    {
+      "path": "./docs/VERSION_TRACKING_OVERVIEW.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 7791
+    },
+    {
+      "path": "./docs/TDD_TEST_STRATEGY_TECH_DEBT.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T15:02:27",
+      "is_stale": false,
+      "size_bytes": 42695
+    },
+    {
+      "path": "./docs/SECURITY_SUBPROCESS_GUIDELINES.md",
+      "category": "documentation",
+      "last_modified": "2025-11-26T04:29:30",
+      "is_stale": false,
+      "size_bytes": 3166
+    },
+    {
+      "path": "./docs/graph-abstraction/README.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 8752
+    },
+    {
+      "path": "./docs/cleanup_iteration_resources.md",
+      "category": "documentation",
+      "last_modified": "2025-10-15T00:32:07",
+      "is_stale": false,
+      "size_bytes": 14098
+    },
+    {
+      "path": "./docs/services/AZURE_NAME_SANITIZER.md",
+      "category": "documentation",
+      "last_modified": "2026-01-13T07:20:45",
+      "is_stale": false,
+      "size_bytes": 18463
+    },
+    {
+      "path": "./docs/services/README.md",
+      "category": "documentation",
+      "last_modified": "2026-01-13T07:20:45",
+      "is_stale": false,
+      "size_bytes": 6898
+    },
+    {
+      "path": "./docs/UPN_PARENTHESES_SANITIZATION_FIX.md",
+      "category": "documentation",
+      "last_modified": "2025-11-22T06:32:36",
+      "is_stale": false,
+      "size_bytes": 3847
+    },
+    {
+      "path": "./docs/concepts/TERRAFORM_IMPORT_BLOCKS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-18T19:29:05",
+      "is_stale": false,
+      "size_bytes": 12676
+    },
+    {
+      "path": "./docs/concepts/GRAPH_VERSION_TRACKING.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 5931
+    },
+    {
+      "path": "./docs/examples/azure_name_sanitizer_usage.md",
+      "category": "documentation",
+      "last_modified": "2026-01-13T07:20:45",
+      "is_stale": false,
+      "size_bytes": 16297
+    },
+    {
+      "path": "./docs/examples/example-tenant-report.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 11500
+    },
+    {
+      "path": "./docs/SYNTHETIC_NODE_VISUALIZATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 11519
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS_UI_CODE_REVIEW.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 22464
+    },
+    {
+      "path": "./docs/demo/subset_bicep_demo.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 8654
+    },
+    {
+      "path": "./docs/demo/overview.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 3438
+    },
+    {
+      "path": "./docs/demo/commands/mcp-server.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 1282
+    },
+    {
+      "path": "./docs/demo/commands/generate-spec.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 1352
+    },
+    {
+      "path": "./docs/demo/commands/create-tenant.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 1304
+    },
+    {
+      "path": "./docs/demo/commands/agent-mode.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 741
+    },
+    {
+      "path": "./docs/demo/commands/create-tenant-sample.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 193
+    },
+    {
+      "path": "./docs/demo/commands/generate-sim-doc.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 1284
+    },
+    {
+      "path": "./docs/demo/commands/generate-iac.md",
+      "category": "documentation",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 1918
+    },
+    {
+      "path": "./docs/demo/commands/backup-db.md",
+      "category": "documentation",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 742
+    },
+    {
+      "path": "./docs/demo/commands/build.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 3391
+    },
+    {
+      "path": "./docs/demo/commands/spec.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 3323
+    },
+    {
+      "path": "./docs/demo/commands/config.md",
+      "category": "documentation",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 1504
+    },
+    {
+      "path": "./docs/demo/commands/README.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 1344
+    },
+    {
+      "path": "./docs/demo/commands/threat-model.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 1255
+    },
+    {
+      "path": "./docs/demo/commands/visualize.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 2480
+    },
+    {
+      "path": "./docs/demo/commands/test.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 861
+    },
+    {
+      "path": "./docs/demo/commands/doctor.md",
+      "category": "documentation",
+      "last_modified": "2025-07-03T00:18:03",
+      "is_stale": true,
+      "size_bytes": 603
+    },
+    {
+      "path": "./docs/KEYVAULT_NAME_TRUNCATION_FIX.md",
+      "category": "documentation",
+      "last_modified": "2025-11-22T06:32:36",
+      "is_stale": false,
+      "size_bytes": 5192
+    },
+    {
+      "path": "./docs/howto/handle-version-mismatches.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 11032
+    },
+    {
+      "path": "./docs/agentic-testing/REQUIREMENTS.md",
+      "category": "documentation",
+      "last_modified": "2025-09-03T00:57:05",
+      "is_stale": false,
+      "size_bytes": 11117
+    },
+    {
+      "path": "./docs/agentic-testing/VALIDATION.md",
+      "category": "documentation",
+      "last_modified": "2025-09-03T00:57:05",
+      "is_stale": false,
+      "size_bytes": 6915
+    },
+    {
+      "path": "./docs/agentic-testing/DESIGN.md",
+      "category": "documentation",
+      "last_modified": "2025-09-03T07:29:18",
+      "is_stale": false,
+      "size_bytes": 26870
+    },
+    {
+      "path": "./docs/CONTRIBUTING.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 4307
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS_BUG_FIXES.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 5380
+    },
+    {
+      "path": "./docs/command-help/report-help-text.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 8267
+    },
+    {
+      "path": "./docs/command-help/report-implementation-reference.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 17565
+    },
+    {
+      "path": "./docs/performance/optimizations.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 8959
+    },
+    {
+      "path": "./docs/tutorials/version-tracking-tutorial.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 17123
+    },
+    {
+      "path": "./docs/resources/CloudThreatModelling.md",
+      "category": "documentation",
+      "last_modified": "2025-06-19T21:36:51",
+      "is_stale": true,
+      "size_bytes": 8037
+    },
+    {
+      "path": "./docs/hash_tracking_flow.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T05:47:18",
+      "is_stale": false,
+      "size_bytes": 28332
+    },
+    {
+      "path": "./docs/BUG_66_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 4007
+    },
+    {
+      "path": "./docs/SCALE_PERFORMANCE_GUIDE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 12245
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS_E2E_FINDINGS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 1556
+    },
+    {
+      "path": "./docs/TDD_TEST_DESCRIPTIONS_ISSUE_296.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T18:03:29",
+      "is_stale": false,
+      "size_bytes": 14275
+    },
+    {
+      "path": "./docs/ctf-neo4j-schema-design.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 24052
+    },
+    {
+      "path": "./docs/TENANT_REPLICATION_DEPLOYMENT_GUIDE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 29857
+    },
+    {
+      "path": "./docs/guides/TENANT_INVENTORY_REPORTS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 15582
+    },
+    {
+      "path": "./docs/guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 13314
+    },
+    {
+      "path": "./docs/guides/AUTONOMOUS_DEPLOYMENT.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 12676
+    },
+    {
+      "path": "./docs/guides/scan-source-node-migration.md",
+      "category": "documentation",
+      "last_modified": "2025-12-03T19:44:37",
+      "is_stale": false,
+      "size_bytes": 8542
+    },
+    {
+      "path": "./docs/guides/AGENT_VS_MANUAL_DEPLOYMENT.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 16276
+    },
+    {
+      "path": "./docs/guides/LAYER_MANAGEMENT_QUICKSTART.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 7759
+    },
+    {
+      "path": "./docs/guides/AUTONOMOUS_DEPLOYMENT_FAQ.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 15119
+    },
+    {
+      "path": "./docs/AUTONOMOUS_DEPLOYMENT_INDEX.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 9010
+    },
+    {
+      "path": "./docs/AZURE_BASTION_CONNECTION_GUIDE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 12473
+    },
+    {
+      "path": "./docs/SERVICE_REFACTORING_ANALYSIS.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 7710
+    },
+    {
+      "path": "./docs/architecture/IaC_Name_Sanitization.md",
+      "category": "documentation",
+      "last_modified": "2026-01-13T07:20:45",
+      "is_stale": false,
+      "size_bytes": 13263
+    },
+    {
+      "path": "./docs/architecture/ARCHITECTURE_FLOW.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 28992
+    },
+    {
+      "path": "./docs/architecture/scan-source-node-relationships.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 9317
+    },
+    {
+      "path": "./docs/architecture/LAYER_QUERY_PATTERNS.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 17895
+    },
+    {
+      "path": "./docs/architecture/dual-graph.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 4120
+    },
+    {
+      "path": "./docs/architecture/MULTI_LAYER_GRAPH_ARCHITECTURE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 37121
+    },
+    {
+      "path": "./docs/architecture/CLI_MODULARIZATION_COMPLETE.md",
+      "category": "documentation",
+      "last_modified": "2026-01-18T01:36:50",
+      "is_stale": false,
+      "size_bytes": 7508
+    },
+    {
+      "path": "./docs/architecture/LAYER_IMPLEMENTATION_CHECKLIST.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 15451
+    },
+    {
+      "path": "./docs/architecture/README.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 11944
+    },
+    {
+      "path": "./docs/architecture/LAYER_CLI_IMPLEMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 11692
+    },
+    {
+      "path": "./docs/architecture/CLI_COMMANDS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4619
+    },
+    {
+      "path": "./docs/architecture/LAYER_CLI_SPECIFICATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 30016
+    },
+    {
+      "path": "./docs/architecture/LAYER_ARCHITECTURE_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 19107
+    },
+    {
+      "path": "./docs/architecture/LAYER_SERVICE_INTERFACES.md",
+      "category": "documentation",
+      "last_modified": "2025-11-20T20:43:09",
+      "is_stale": false,
+      "size_bytes": 30475
+    },
+    {
+      "path": "./docs/lighthouse/PHASE_1_COMPLETION.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:57:07",
+      "is_stale": false,
+      "size_bytes": 8635
+    },
+    {
+      "path": "./docs/lighthouse/MANUAL_TESTING_PLAN.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:57:07",
+      "is_stale": false,
+      "size_bytes": 7392
+    },
+    {
+      "path": "./docs/lighthouse/SECURITY_AUDIT_REPORT.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:57:07",
+      "is_stale": false,
+      "size_bytes": 9083
+    },
+    {
+      "path": "./docs/reference/version-tracking-commands.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 15668
+    },
+    {
+      "path": "./docs/WELL_ARCHITECTED_REPORTS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 11314
+    },
+    {
+      "path": "./docs/DATAPLANE_PLUGIN_ARCHITECTURE.md",
+      "category": "documentation",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 87274
+    },
+    {
+      "path": "./docs/smart-import-bug-fixes.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T04:24:20",
+      "is_stale": false,
+      "size_bytes": 4775
+    },
+    {
+      "path": "./docs/patterns/IMPORT_FIRST_STRATEGY.md",
+      "category": "documentation",
+      "last_modified": "2025-12-02T02:49:00",
+      "is_stale": false,
+      "size_bytes": 6730
+    },
+    {
+      "path": "./docs/SENTINEL_CONFIGURATION.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 18468
+    },
+    {
+      "path": "./docs/specs/PR-98-review-improvements.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 2974
+    },
+    {
+      "path": "./docs/specs/ISSUE_HIERARCHICAL_SPEC.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 1562
+    },
+    {
+      "path": "./docs/specs/PRIVATE_DNS_ZONES_SUPPORT_COMPLETE.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 8160
+    },
+    {
+      "path": "./docs/specs/TIMESTAMP_IMPROVEMENTS.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 4618
+    },
+    {
+      "path": "./docs/specs/PRIVATE_DNS_ZONES_SUPPORT_VERIFICATION.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 5067
+    },
+    {
+      "path": "./docs/specs/ISSUE_209_FIX_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 2280
+    },
+    {
+      "path": "./docs/specs/SECURITY_FIXES.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 9615
+    },
+    {
+      "path": "./docs/specs/MCP_INTEGRATION_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 4397
+    },
+    {
+      "path": "./docs/specs/MERGE_ORDER_RECOMMENDATION.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 5042
+    },
+    {
+      "path": "./docs/development/setup.md",
+      "category": "documentation",
+      "last_modified": "2026-01-13T02:07:32",
+      "is_stale": false,
+      "size_bytes": 5625
+    },
+    {
+      "path": "./docs/diagrams/README.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 6053
+    },
+    {
+      "path": "./docs/diagrams/DIAGRAM_MANIFEST.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 9452
+    },
+    {
+      "path": "./docs/fix-plan-api-versions.md",
+      "category": "documentation",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 3846
+    },
+    {
+      "path": "./docs/ARCHITECTURAL_PATTERN_ANALYSIS.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:44:14",
+      "is_stale": false,
+      "size_bytes": 26489
+    },
+    {
+      "path": "./docs/FIDELITY_TRACKING.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 8779
+    },
+    {
+      "path": "./docs/VISUALIZATION_ALIGNMENT_ANALYSIS.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 7231
+    },
+    {
+      "path": "./docs/SENTINEL_INTEGRATION_EXAMPLES.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 20081
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS_DIAGRAMS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 10421
+    },
+    {
+      "path": "./docs/BUG_10_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-12-18T19:29:05",
+      "is_stale": false,
+      "size_bytes": 13411
+    },
+    {
+      "path": "./docs/workflow.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 833
+    },
+    {
+      "path": "./docs/ARCHITECTURE_BASED_REPLICATION.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:44:14",
+      "is_stale": false,
+      "size_bytes": 45307
+    },
+    {
+      "path": "./docs/NEO4J_RESOURCE_DISCOVERY.md",
+      "category": "documentation",
+      "last_modified": "2026-01-18T03:53:14",
+      "is_stale": false,
+      "size_bytes": 9180
+    },
+    {
+      "path": "./docs/SENTINEL_DOCUMENTATION_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 13585
+    },
+    {
+      "path": "./docs/iac/graph-construction-version-tracking-refined.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 7486
+    },
+    {
+      "path": "./docs/iac/handlers/diagnostic-settings.md",
+      "category": "documentation",
+      "last_modified": "2026-01-15T23:55:13",
+      "is_stale": false,
+      "size_bytes": 10584
+    },
+    {
+      "path": "./docs/SENTINEL_TROUBLESHOOTING.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:59:03",
+      "is_stale": false,
+      "size_bytes": 20732
+    },
+    {
+      "path": "./docs/GRAPH_API_SETUP.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 4884
+    },
+    {
+      "path": "./docs/BUG_68_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-26T20:14:35",
+      "is_stale": false,
+      "size_bytes": 8022
+    },
+    {
+      "path": "./docs/research/azure_lighthouse_hybrid_evaluation.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 54904
+    },
+    {
+      "path": "./docs/research/graph_database_alternatives_investigation.md",
+      "category": "documentation",
+      "last_modified": "2026-01-15T23:14:24",
+      "is_stale": false,
+      "size_bytes": 28965
+    },
+    {
+      "path": "./docs/research/azure_lighthouse_evaluation.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T15:02:27",
+      "is_stale": false,
+      "size_bytes": 31229
+    },
+    {
+      "path": "./docs/research/sentinel/examples/README.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T00:28:24",
+      "is_stale": false,
+      "size_bytes": 8695
+    },
+    {
+      "path": "./docs/research/sentinel/AZURE_SENTINEL_MULTI_TENANT_TELEMETRY_AGGREGATION.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T00:06:47",
+      "is_stale": false,
+      "size_bytes": 39386
+    },
+    {
+      "path": "./docs/security/ATG_CLIENT_SERVER_SECURITY_DESIGN.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 58340
+    },
+    {
+      "path": "./docs/security/SECURITY_REVIEW_FINAL.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 18609
+    },
+    {
+      "path": "./docs/security/SECURITY.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 5208
+    },
+    {
+      "path": "./docs/TIMEOUT_HANDLING.md",
+      "category": "documentation",
+      "last_modified": "2025-11-26T04:29:23",
+      "is_stale": false,
+      "size_bytes": 5114
+    },
+    {
+      "path": "./docs/NEO4J_SCHEMA_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 35561
+    },
+    {
+      "path": "./docs/TERRAFORM_EMITTER_ARCHITECTURE.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T20:35:06",
+      "is_stale": false,
+      "size_bytes": 13801
+    },
+    {
+      "path": "./docs/ui-demo-cross-tenant-iac.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T18:01:42",
+      "is_stale": false,
+      "size_bytes": 12769
+    },
+    {
+      "path": "./docs/BUG_87_DOCUMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-11-27T09:08:34",
+      "is_stale": false,
+      "size_bytes": 3587
+    },
+    {
+      "path": "./docs/GADUGI_MIGRATION.md",
+      "category": "documentation",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 2866
+    },
+    {
+      "path": "./docs/SCALE_CONFIG_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 14207
+    },
+    {
+      "path": "./docs/testing/test_tenant_spec.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 1591
+    },
+    {
+      "path": "./docs/testing/TEST_SPECIFICATION_TABLE.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 19408
+    },
+    {
+      "path": "./docs/testing/scale-operations-complete.md",
+      "category": "documentation",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 12578
+    },
+    {
+      "path": "./docs/testing/TEST_FIX_SUMMARY.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 1942
+    },
+    {
+      "path": "./docs/testing/SCALE_OPERATIONS_AGENTIC_TESTING.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 15655
+    },
+    {
+      "path": "./docs/testing/PR_TEST_PLAN.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 8663
+    },
+    {
+      "path": "./docs/testing/AGENT_MODE_TEST_IMPLEMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 6663
+    },
+    {
+      "path": "./docs/testing/final_test_spec.md",
+      "category": "documentation",
+      "last_modified": "2025-10-31T03:05:43",
+      "is_stale": false,
+      "size_bytes": 5156
+    },
+    {
+      "path": "./docs/SYNTHETIC_NODE_QUICK_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 4997
+    },
+    {
+      "path": "./docs/SCALE_OPERATIONS.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 10510
+    },
+    {
+      "path": "./docs/azure-mcp-integration.md",
+      "category": "documentation",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 8280
+    },
+    {
+      "path": "./docs/DATAPLANE_BUILDER_QUICKSTART.md",
+      "category": "documentation",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 23743
+    },
+    {
+      "path": "./docs/TDD_TEST_SUITE_ISSUE_296.md",
+      "category": "documentation",
+      "last_modified": "2025-10-10T18:03:29",
+      "is_stale": false,
+      "size_bytes": 11568
+    },
+    {
+      "path": "./docs/KEYVAULT_PLUGIN_IMPLEMENTATION.md",
+      "category": "documentation",
+      "last_modified": "2025-10-29T06:21:30",
+      "is_stale": false,
+      "size_bytes": 11297
+    },
+    {
+      "path": "./docs/DUAL_GRAPH_SCHEMA.md",
+      "category": "documentation",
+      "last_modified": "2025-11-08T20:54:59",
+      "is_stale": false,
+      "size_bytes": 24958
+    },
+    {
+      "path": "./docs/cross-tenant/FEATURES.md",
+      "category": "documentation",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 1065
+    },
+    {
+      "path": "./docs/ctf_overlay_system/API_REFERENCE.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 22200
+    },
+    {
+      "path": "./docs/ctf_overlay_system/README.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 8632
+    },
+    {
+      "path": "./docs/ctf_overlay_system/ARCHITECTURE.md",
+      "category": "documentation",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 17182
+    },
+    {
+      "path": "./.devcontainer/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-24T01:41:40",
+      "is_stale": true,
+      "size_bytes": 1495
+    },
+    {
+      "path": "./Specs/ATG_CLIENT_SERVER_ARCHITECTURE.md",
+      "category": "other",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 43490
+    },
+    {
+      "path": "./Specs/WHEN_TO_ADD_COMPLEXITY.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 14248
+    },
+    {
+      "path": "./Specs/PRE_IMPLEMENTATION_VERIFICATION.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 13083
+    },
+    {
+      "path": "./Specs/CTF_OVERLAY_ARCHITECTURE.md",
+      "category": "other",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 45082
+    },
+    {
+      "path": "./Specs/ARCHITECTURE_COMPARISON.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 16277
+    },
+    {
+      "path": "./Specs/CTF_ANNOTATION_SERVICE.md",
+      "category": "other",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 16445
+    },
+    {
+      "path": "./Specs/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 11881
+    },
+    {
+      "path": "./Specs/AUTOMATIC_IDENTITY_MAPPING_REQUIREMENTS.md",
+      "category": "other",
+      "last_modified": "2025-11-04T03:14:20",
+      "is_stale": false,
+      "size_bytes": 28340
+    },
+    {
+      "path": "./Specs/SIMPLIFIED_ARCHITECTURE.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 29491
+    },
+    {
+      "path": "./Specs/modules/SERVER_MODULE_SPEC.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 24427
+    },
+    {
+      "path": "./Specs/modules/CLIENT_MODULE_SPEC.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 15161
+    },
+    {
+      "path": "./Specs/CTF_IMPORT_SERVICE.md",
+      "category": "other",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 21813
+    },
+    {
+      "path": "./Specs/ARCHITECTURE_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 15197
+    },
+    {
+      "path": "./Specs/AUTOMATIC_IDENTITY_MAPPING_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-04T03:14:20",
+      "is_stale": false,
+      "size_bytes": 8517
+    },
+    {
+      "path": "./Specs/DEPLOYMENT_AND_RISK_MITIGATION.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 35931
+    },
+    {
+      "path": "./agentic_testing/README.md",
+      "category": "readme",
+      "last_modified": "2025-09-03T00:57:05",
+      "is_stale": false,
+      "size_bytes": 4929
+    },
+    {
+      "path": "./agentic_testing/MIGRATION_NOTICE.md",
+      "category": "other",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 3453
+    },
+    {
+      "path": "./demos/START_HERE.md",
+      "category": "other",
+      "last_modified": "2025-10-17T02:35:18",
+      "is_stale": false,
+      "size_bytes": 2914
+    },
+    {
+      "path": "./demos/SESSION_STATUS_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 3912
+    },
+    {
+      "path": "./demos/SESSION_PROGRESS_2025-10-15_2001UTC.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 8541
+    },
+    {
+      "path": "./demos/simuland_iteration1/WORKSTREAM_F_ANALYSIS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 11779
+    },
+    {
+      "path": "./demos/simuland_iteration1/WORKSTREAM_E_DESIGN.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 17084
+    },
+    {
+      "path": "./demos/simuland_iteration1/WORKSTREAM_E_IMPLEMENTATION.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 9029
+    },
+    {
+      "path": "./demos/simuland_iteration1/PRESENTATION.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 12976
+    },
+    {
+      "path": "./demos/simuland_iteration1/WORKSTREAM_F_FIX_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 9411
+    },
+    {
+      "path": "./demos/simuland_iteration1/GAP_ANALYSIS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T00:01:40",
+      "is_stale": false,
+      "size_bytes": 7912
+    },
+    {
+      "path": "./demos/CONTINUOUS_OPERATION_STATUS_FINAL.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 8859
+    },
+    {
+      "path": "./demos/SESSION_PROGRESS_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9235
+    },
+    {
+      "path": "./demos/CONTINUOUS_SESSION_STATUS_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 6777
+    },
+    {
+      "path": "./demos/MANIFEST_CLOUD_HANDOFF.md",
+      "category": "other",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12996
+    },
+    {
+      "path": "./demos/SESSION_HANDOFF_AUTONOMOUS_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 11755
+    },
+    {
+      "path": "./demos/AUTONOMOUS_STATUS_CONTINUOUS.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 6327
+    },
+    {
+      "path": "./demos/FINAL_HANDOFF_TO_CLOUD.md",
+      "category": "other",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 15594
+    },
+    {
+      "path": "./demos/AUTONOMOUS_SESSION_STATUS_20251015.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9222
+    },
+    {
+      "path": "./demos/OBJECTIVE.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 8188
+    },
+    {
+      "path": "./demos/CONTINUOUS_OPERATION_SUCCESS.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 3915
+    },
+    {
+      "path": "./demos/CLOUD_AGENT_RUNBOOK.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 25153
+    },
+    {
+      "path": "./demos/AZURE_TENANT_REPLICATION_HANDOFF.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 45084
+    },
+    {
+      "path": "./demos/CLOUD_HANDOFF_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 16379
+    },
+    {
+      "path": "./demos/walkthrough/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9238
+    },
+    {
+      "path": "./demos/walkthrough/INTEGRATION.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 4046
+    },
+    {
+      "path": "./demos/walkthrough/modules/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 7020
+    },
+    {
+      "path": "./demos/walkthrough/DEMO_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 4992
+    },
+    {
+      "path": "./demos/walkthrough/MODULAR_ARCHITECTURE.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 7541
+    },
+    {
+      "path": "./demos/SESSION_SUMMARY_2025-10-14.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 13962
+    },
+    {
+      "path": "./demos/AUTONOMOUS_OPERATION_STATUS.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9901
+    },
+    {
+      "path": "./demos/simuland_iteration2/GAP_016_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 4246
+    },
+    {
+      "path": "./demos/simuland_iteration2/GAP_017_FIX_REPORT.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 7609
+    },
+    {
+      "path": "./demos/simuland_iteration2/PRESENTATION.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 17905
+    },
+    {
+      "path": "./demos/simuland_iteration2/FIDELITY_REPORT.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 31013
+    },
+    {
+      "path": "./demos/simuland_iteration2/EXECUTION_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 10496
+    },
+    {
+      "path": "./demos/simuland_iteration2/GAP_ANALYSIS.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 17842
+    },
+    {
+      "path": "./demos/simuland_iteration2/ITERATION2_COMPLETE.md",
+      "category": "other",
+      "last_modified": "2025-10-15T00:23:39",
+      "is_stale": false,
+      "size_bytes": 15549
+    },
+    {
+      "path": "./demos/simuland_iteration2/GAP_016_ANALYSIS.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:30:34",
+      "is_stale": false,
+      "size_bytes": 14492
+    },
+    {
+      "path": "./demos/simuland_replication_20251012/INDEX.md",
+      "category": "other",
+      "last_modified": "2025-10-14T15:53:23",
+      "is_stale": false,
+      "size_bytes": 7302
+    },
+    {
+      "path": "./demos/simuland_replication_20251012/docs/DEPLOYMENT_GUIDE.md",
+      "category": "documentation",
+      "last_modified": "2025-10-14T15:53:23",
+      "is_stale": false,
+      "size_bytes": 14344
+    },
+    {
+      "path": "./demos/simuland_replication_20251012/PRESENTATION.md",
+      "category": "other",
+      "last_modified": "2025-10-14T15:53:23",
+      "is_stale": false,
+      "size_bytes": 23900
+    },
+    {
+      "path": "./demos/simuland_replication_20251012/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-14T15:53:23",
+      "is_stale": false,
+      "size_bytes": 3502
+    },
+    {
+      "path": "./demos/DOCUMENTATION_INDEX.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 8561
+    },
+    {
+      "path": "./demos/AUTONOMOUS_REPLICATION_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 8390
+    },
+    {
+      "path": "./demos/QUICK_START_CLOUD.md",
+      "category": "other",
+      "last_modified": "2025-10-17T02:35:18",
+      "is_stale": false,
+      "size_bytes": 2577
+    },
+    {
+      "path": "./demos/SESSION_SUMMARY_HANDOFF.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9718
+    },
+    {
+      "path": "./demos/SESSION_STATUS_2025-10-15_AUTONOMOUS.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 5794
+    },
+    {
+      "path": "./demos/SESSION_HANDOFF_2025-10-15.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 15005
+    },
+    {
+      "path": "./demos/pr400_e2e_demo/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 49
+    },
+    {
+      "path": "./demos/pr400_e2e_demo/DEMO_RESULTS.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 7870
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION13_IMPLEMENTATION.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 9367
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION11_RESULTS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 16710
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION10_RESULTS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 11227
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION_LOOP_ANALYSIS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 13823
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION_20_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 6388
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION12_RESULTS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 5801
+    },
+    {
+      "path": "./demos/simuland_iteration3/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-14T20:10:31",
+      "is_stale": false,
+      "size_bytes": 7893
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION9_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 14398
+    },
+    {
+      "path": "./demos/simuland_iteration3/SESSION_LESSONS_LEARNED.md",
+      "category": "other",
+      "last_modified": "2025-10-14T20:10:31",
+      "is_stale": false,
+      "size_bytes": 9563
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION13_RESULTS.md",
+      "category": "other",
+      "last_modified": "2025-10-14T18:42:12",
+      "is_stale": false,
+      "size_bytes": 10641
+    },
+    {
+      "path": "./demos/simuland_iteration3/ITERATION_19_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 6003
+    },
+    {
+      "path": "./examples/README.md",
+      "category": "examples",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 10125
+    },
+    {
+      "path": "./examples/generate_identity_mapping.md",
+      "category": "examples",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 11882
+    },
+    {
+      "path": "./ISSUE_596_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2026-01-15T23:32:26",
+      "is_stale": false,
+      "size_bytes": 4617
+    },
+    {
+      "path": "./.claude/GRAPH_FILTERING_PRIMER.md",
+      "category": "other",
+      "last_modified": "2025-09-09T22:57:21",
+      "is_stale": false,
+      "size_bytes": 8063
+    },
+    {
+      "path": "./.claude/hooks/HOOK_SOLUTION.md",
+      "category": "other",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 4039
+    },
+    {
+      "path": "./.claude/docs/context-management-refactoring-architecture.md",
+      "category": "documentation",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 14543
+    },
+    {
+      "path": "./.claude/docs/ROOT_CAUSE_AZURE_PROPERTY_MAPPING_GAP.md",
+      "category": "documentation",
+      "last_modified": "2026-01-17T06:11:49",
+      "is_stale": false,
+      "size_bytes": 11280
+    },
+    {
+      "path": "./.claude/docs/INVESTIGATION_EXAMPLE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 5691
+    },
+    {
+      "path": "./.claude/docs/README.md",
+      "category": "documentation",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4987
+    },
+    {
+      "path": "./.claude/docs/INVESTIGATION_globally_unique_names_20260113.md",
+      "category": "documentation",
+      "last_modified": "2026-01-15T04:43:03",
+      "is_stale": false,
+      "size_bytes": 16668
+    },
+    {
+      "path": "./.claude/docs/ARCHITECTURE_EXAMPLE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11681
+    },
+    {
+      "path": "./.claude/templates/INVESTIGATION_SUMMARY_TEMPLATE.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 29141
+    },
+    {
+      "path": "./.claude/templates/investigation-doc-template.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 1384
+    },
+    {
+      "path": "./.claude/templates/architecture-doc-template.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2260
+    },
+    {
+      "path": "./.claude/templates/FEEDBACK_SUMMARY.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4289
+    },
+    {
+      "path": "./.claude/templates/README.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 3893
+    },
+    {
+      "path": "./.claude/templates/diagrams/PREFERENCE_SYSTEM.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10145
+    },
+    {
+      "path": "./.claude/templates/diagrams/EXECUTION_SEQUENCE.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11916
+    },
+    {
+      "path": "./.claude/templates/diagrams/DATA_FLOW.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10850
+    },
+    {
+      "path": "./.claude/templates/diagrams/COMPONENT_RELATIONSHIPS.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12360
+    },
+    {
+      "path": "./.claude/templates/diagrams/HOOK_SYSTEM_FLOW.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7674
+    },
+    {
+      "path": "./.claude/templates/diagrams/README.md",
+      "category": "templates",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9925
+    },
+    {
+      "path": "./.claude/ai_working/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 3748
+    },
+    {
+      "path": "./.claude/context/PROJECT.md",
+      "category": "context",
+      "last_modified": "2026-01-15T21:08:22",
+      "is_stale": false,
+      "size_bytes": 16695
+    },
+    {
+      "path": "./.claude/prompts/CLOUD_CONTINUATION_PROMPT.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 6264
+    },
+    {
+      "path": "./.claude/prompts/AUTONOMOUS_EXECUTION_MASTER.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 9539
+    },
+    {
+      "path": "./.claude/agents/deployment-fix-loop.md",
+      "category": "agents",
+      "last_modified": "2025-11-25T20:55:03",
+      "is_stale": false,
+      "size_bytes": 9214
+    },
+    {
+      "path": "./.claude/agents/amplihack/workflows/amplihack-improvement-workflow.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 8977
+    },
+    {
+      "path": "./.claude/agents/amplihack/workflows/prompt-review-workflow.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4563
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/builder.md",
+      "category": "agents",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5962
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/optimizer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 3034
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/architect.md",
+      "category": "agents",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5587
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/reviewer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7703
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/api-designer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4105
+    },
+    {
+      "path": "./.claude/agents/amplihack/core/tester.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 3191
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/memory-manager.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7707
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/fallback-cascade.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 9923
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/database.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 2442
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/integration.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 5451
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/philosophy-guardian.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4280
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/rust-programming-expert.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 6097
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/visualization-architect.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7370
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/pre-commit-diagnostic.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 6802
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/knowledge-archaeologist.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 9823
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/ambiguity.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4427
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/n-version-validator.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 6709
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/multi-agent-debate.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 9489
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/prompt-writer.md",
+      "category": "agents",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12752
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/xpia-defense.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4214
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/preference-reviewer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7496
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/azure-kubernetes-expert.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 9639
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/analyzer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 10039
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/security.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 3464
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/cleanup.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 5941
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/documentation-writer.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7377
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/fix-agent.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 7409
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/worktree-manager.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 6777
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/patterns.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 4304
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/ci-diagnostic-workflow.md",
+      "category": "agents",
+      "last_modified": "2025-11-27T00:02:11",
+      "is_stale": false,
+      "size_bytes": 8922
+    },
+    {
+      "path": "./.claude/agents/amplihack/specialized/amplifier-cli-architect.md",
+      "category": "agents",
+      "last_modified": "2025-11-30T04:48:04",
+      "is_stale": false,
+      "size_bytes": 15227
+    },
+    {
+      "path": "./.claude/scenarios/analyze-codebase/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 7156
+    },
+    {
+      "path": "./.claude/scenarios/analyze-codebase/HOW_TO_CREATE_YOUR_OWN.md",
+      "category": "scenarios",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 26256
+    },
+    {
+      "path": "./.claude/scenarios/templates/README_TEMPLATE.md",
+      "category": "scenarios",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 3566
+    },
+    {
+      "path": "./.claude/scenarios/templates/HOW_TO_CREATE_YOUR_OWN_TEMPLATE.md",
+      "category": "scenarios",
+      "last_modified": "2025-10-15T03:17:28",
+      "is_stale": false,
+      "size_bytes": 8395
+    },
+    {
+      "path": "./.claude/scenarios/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 5467
+    },
+    {
+      "path": "./.claude/scenarios/analyze-trace-logs/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12026
+    },
+    {
+      "path": "./.claude/scenarios/analyze-trace-logs/HOW_TO_CREATE_YOUR_OWN.md",
+      "category": "scenarios",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 15288
+    },
+    {
+      "path": "./.claude/scenarios/az-devops-tools/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 3142
+    },
+    {
+      "path": "./.claude/scenarios/az-devops-tools/HOW_TO_CREATE_YOUR_OWN.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 10529
+    },
+    {
+      "path": "./.claude/scenarios/check-broken-links/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 7622
+    },
+    {
+      "path": "./.claude/scenarios/check-broken-links/tests/TEST_COVERAGE_SUMMARY.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 8687
+    },
+    {
+      "path": "./.claude/scenarios/check-broken-links/tests/BUILDER_GUIDE.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 9845
+    },
+    {
+      "path": "./.claude/scenarios/check-broken-links/tests/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4654
+    },
+    {
+      "path": "./.claude/scenarios/mcp_manager/QUICKSTART.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5201
+    },
+    {
+      "path": "./.claude/scenarios/mcp_manager/README.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 7445
+    },
+    {
+      "path": "./.claude/scenarios/mcp_manager/HOW_TO_CREATE_YOUR_OWN.md",
+      "category": "scenarios",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 17476
+    },
+    {
+      "path": "./.claude/skills/historian-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 35320
+    },
+    {
+      "path": "./.claude/skills/historian-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 916
+    },
+    {
+      "path": "./.claude/skills/historian-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 1280
+    },
+    {
+      "path": "./.claude/skills/historian-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 22211
+    },
+    {
+      "path": "./.claude/skills/cascade-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 10786
+    },
+    {
+      "path": "./.claude/skills/outside-in-testing/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 45014
+    },
+    {
+      "path": "./.claude/skills/outside-in-testing/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13541
+    },
+    {
+      "path": "./.claude/skills/meta-cognitive/analyzing-deeply/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 17429
+    },
+    {
+      "path": "./.claude/skills/novelist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 44080
+    },
+    {
+      "path": "./.claude/skills/novelist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10360
+    },
+    {
+      "path": "./.claude/skills/novelist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2899
+    },
+    {
+      "path": "./.claude/skills/novelist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23514
+    },
+    {
+      "path": "./.claude/skills/consensus-voting/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-30T04:48:04",
+      "is_stale": false,
+      "size_bytes": 11649
+    },
+    {
+      "path": "./.claude/skills/consensus-voting/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-30T04:48:04",
+      "is_stale": false,
+      "size_bytes": 3577
+    },
+    {
+      "path": "./.claude/skills/mcp-manager/SKILL.md",
+      "category": "skills",
+      "last_modified": "2026-01-13T02:07:32",
+      "is_stale": false,
+      "size_bytes": 5842
+    },
+    {
+      "path": "./.claude/skills/indigenous-leader-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 64194
+    },
+    {
+      "path": "./.claude/skills/indigenous-leader-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7305
+    },
+    {
+      "path": "./.claude/skills/indigenous-leader-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6401
+    },
+    {
+      "path": "./.claude/skills/indigenous-leader-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 32058
+    },
+    {
+      "path": "./.claude/skills/roadmap-strategist/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7259
+    },
+    {
+      "path": "./.claude/skills/investigation-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-30T04:48:04",
+      "is_stale": false,
+      "size_bytes": 15615
+    },
+    {
+      "path": "./.claude/skills/learning-path-builder/examples/python-beginner.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 2404
+    },
+    {
+      "path": "./.claude/skills/learning-path-builder/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 17212
+    },
+    {
+      "path": "./.claude/skills/learning-path-builder/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 1199
+    },
+    {
+      "path": "./.claude/skills/anthropologist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 62443
+    },
+    {
+      "path": "./.claude/skills/anthropologist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12272
+    },
+    {
+      "path": "./.claude/skills/anthropologist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9619
+    },
+    {
+      "path": "./.claude/skills/anthropologist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 26075
+    },
+    {
+      "path": "./.claude/skills/n-version-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 8564
+    },
+    {
+      "path": "./.claude/skills/futurist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 45024
+    },
+    {
+      "path": "./.claude/skills/futurist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10400
+    },
+    {
+      "path": "./.claude/skills/futurist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 3385
+    },
+    {
+      "path": "./.claude/skills/futurist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 24177
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/mcp-integration.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12188
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/cost-optimization.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 13338
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/troubleshooting.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12746
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/role-assignments.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 19966
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/user-management.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 14477
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/devops-automation.md",
+      "category": "skills",
+      "last_modified": "2026-01-13T02:07:32",
+      "is_stale": false,
+      "size_bytes": 19696
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/cli-patterns.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 12630
+    },
+    {
+      "path": "./.claude/skills/azure-admin/docs/resource-management.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 15530
+    },
+    {
+      "path": "./.claude/skills/azure-admin/examples/mcp-workflow.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 8942
+    },
+    {
+      "path": "./.claude/skills/azure-admin/examples/bulk-user-onboarding.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 13909
+    },
+    {
+      "path": "./.claude/skills/azure-admin/examples/environment-setup.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 8499
+    },
+    {
+      "path": "./.claude/skills/azure-admin/examples/role-audit.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 9870
+    },
+    {
+      "path": "./.claude/skills/azure-admin/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 15936
+    },
+    {
+      "path": "./.claude/skills/azure-admin/README.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 9991
+    },
+    {
+      "path": "./.claude/skills/azure-admin/references/az-104-guide.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12716
+    },
+    {
+      "path": "./.claude/skills/azure-admin/references/microsoft-learn.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 10777
+    },
+    {
+      "path": "./.claude/skills/azure-admin/references/api-references.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 13420
+    },
+    {
+      "path": "./.claude/skills/pptx/examples/example_usage.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 15586
+    },
+    {
+      "path": "./.claude/skills/pptx/DEPENDENCIES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13320
+    },
+    {
+      "path": "./.claude/skills/pptx/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 25426
+    },
+    {
+      "path": "./.claude/skills/pptx/ooxml/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4726
+    },
+    {
+      "path": "./.claude/skills/pptx/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9487
+    },
+    {
+      "path": "./.claude/skills/code-smell-detector/examples/smell_analysis_example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10853
+    },
+    {
+      "path": "./.claude/skills/code-smell-detector/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 17879
+    },
+    {
+      "path": "./.claude/skills/code-smell-detector/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6156
+    },
+    {
+      "path": "./.claude/skills/code-smell-detector/QUICK_START.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7681
+    },
+    {
+      "path": "./.claude/skills/economist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 47196
+    },
+    {
+      "path": "./.claude/skills/economist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10525
+    },
+    {
+      "path": "./.claude/skills/economist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2611
+    },
+    {
+      "path": "./.claude/skills/economist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 17203
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/IMPLEMENTATION_SUMMARY.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12919
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/03-workflows.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13058
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/02-agents.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10507
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/04-tools-functions.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13494
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/06-telemetry-monitoring.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11291
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/01-overview.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7627
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/07-advanced-patterns.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13557
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/reference/05-context-middleware.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9544
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11355
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11676
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/integration/decision-framework.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9604
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/integration/amplihack-integration.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10115
+    },
+    {
+      "path": "./.claude/skills/microsoft-agent-framework/integration/migration-guide.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13204
+    },
+    {
+      "path": "./.claude/skills/computer-scientist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 57667
+    },
+    {
+      "path": "./.claude/skills/computer-scientist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9668
+    },
+    {
+      "path": "./.claude/skills/computer-scientist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7392
+    },
+    {
+      "path": "./.claude/skills/computer-scientist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 24915
+    },
+    {
+      "path": "./.claude/skills/chemist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 53909
+    },
+    {
+      "path": "./.claude/skills/chemist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10490
+    },
+    {
+      "path": "./.claude/skills/chemist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8501
+    },
+    {
+      "path": "./.claude/skills/chemist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 21549
+    },
+    {
+      "path": "./.claude/skills/poet-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 39184
+    },
+    {
+      "path": "./.claude/skills/poet-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9671
+    },
+    {
+      "path": "./.claude/skills/poet-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 3038
+    },
+    {
+      "path": "./.claude/skills/poet-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 24239
+    },
+    {
+      "path": "./.claude/skills/physicist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 60793
+    },
+    {
+      "path": "./.claude/skills/physicist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9697
+    },
+    {
+      "path": "./.claude/skills/physicist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7436
+    },
+    {
+      "path": "./.claude/skills/physicist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 19212
+    },
+    {
+      "path": "./.claude/skills/skill-builder/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 3438
+    },
+    {
+      "path": "./.claude/skills/skill-builder/examples.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 20349
+    },
+    {
+      "path": "./.claude/skills/skill-builder/reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 30846
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/examples/analysis-workflow.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10950
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/examples/session-management-spec.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 14186
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/examples/simple-utility-spec.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7671
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 10907
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 14633
+    },
+    {
+      "path": "./.claude/skills/module-spec-generator/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8772
+    },
+    {
+      "path": "./.claude/skills/pr-review-assistant/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 17862
+    },
+    {
+      "path": "./.claude/skills/pr-review-assistant/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7431
+    },
+    {
+      "path": "./.claude/skills/pr-review-assistant/QUICK_START.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10129
+    },
+    {
+      "path": "./.claude/skills/pr-review-assistant/REVIEW_CHECKLIST.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9345
+    },
+    {
+      "path": "./.claude/skills/pr-review-assistant/EXAMPLES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 22186
+    },
+    {
+      "path": "./.claude/skills/quality-audit-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 3407
+    },
+    {
+      "path": "./.claude/skills/quality-audit-workflow/examples.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 11076
+    },
+    {
+      "path": "./.claude/skills/quality-audit-workflow/reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 15422
+    },
+    {
+      "path": "./.claude/skills/pdf/examples/example_usage.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 16022
+    },
+    {
+      "path": "./.claude/skills/pdf/DEPENDENCIES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12059
+    },
+    {
+      "path": "./.claude/skills/pdf/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 7447
+    },
+    {
+      "path": "./.claude/skills/pdf/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 5822
+    },
+    {
+      "path": "./.claude/skills/context_management/examples/proactive_workflow.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11307
+    },
+    {
+      "path": "./.claude/skills/context_management/examples/basic_usage.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7004
+    },
+    {
+      "path": "./.claude/skills/context_management/examples/rehydration_levels.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11361
+    },
+    {
+      "path": "./.claude/skills/context_management/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 11179
+    },
+    {
+      "path": "./.claude/skills/context_management/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9619
+    },
+    {
+      "path": "./.claude/skills/context_management/QUICK_START.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7013
+    },
+    {
+      "path": "./.claude/skills/philosophy-compliance-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 11839
+    },
+    {
+      "path": "./.claude/skills/mermaid-diagram-generator/examples/architecture.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 873
+    },
+    {
+      "path": "./.claude/skills/mermaid-diagram-generator/examples/workflow.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 701
+    },
+    {
+      "path": "./.claude/skills/mermaid-diagram-generator/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 14192
+    },
+    {
+      "path": "./.claude/skills/mermaid-diagram-generator/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 1537
+    },
+    {
+      "path": "./.claude/skills/psychologist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 60136
+    },
+    {
+      "path": "./.claude/skills/psychologist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13163
+    },
+    {
+      "path": "./.claude/skills/psychologist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9330
+    },
+    {
+      "path": "./.claude/skills/psychologist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23405
+    },
+    {
+      "path": "./.claude/skills/model-evaluation-benchmark/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 3160
+    },
+    {
+      "path": "./.claude/skills/journalist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 44283
+    },
+    {
+      "path": "./.claude/skills/journalist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10862
+    },
+    {
+      "path": "./.claude/skills/journalist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2833
+    },
+    {
+      "path": "./.claude/skills/journalist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 25173
+    },
+    {
+      "path": "./.claude/skills/default-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 3282
+    },
+    {
+      "path": "./.claude/skills/test-gap-analyzer/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 14261
+    },
+    {
+      "path": "./.claude/skills/xlsx/examples/example_usage.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23969
+    },
+    {
+      "path": "./.claude/skills/xlsx/DEPENDENCIES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8705
+    },
+    {
+      "path": "./.claude/skills/xlsx/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 10629
+    },
+    {
+      "path": "./.claude/skills/xlsx/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6563
+    },
+    {
+      "path": "./.claude/skills/eval-recipes-runner/skill.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4038
+    },
+    {
+      "path": "./.claude/skills/engineer-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 39949
+    },
+    {
+      "path": "./.claude/skills/engineer-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7258
+    },
+    {
+      "path": "./.claude/skills/engineer-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7860
+    },
+    {
+      "path": "./.claude/skills/engineer-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 32105
+    },
+    {
+      "path": "./.claude/skills/collaboration/creating-pull-requests/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 14193
+    },
+    {
+      "path": "./.claude/skills/ultrathink-orchestrator/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 3332
+    },
+    {
+      "path": "./.claude/skills/ultrathink-orchestrator/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 4216
+    },
+    {
+      "path": "./.claude/skills/knowledge-extractor/examples/pattern-extraction-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6888
+    },
+    {
+      "path": "./.claude/skills/knowledge-extractor/examples/discovery-extraction-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4200
+    },
+    {
+      "path": "./.claude/skills/knowledge-extractor/examples/agent-creation-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7914
+    },
+    {
+      "path": "./.claude/skills/knowledge-extractor/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 16957
+    },
+    {
+      "path": "./.claude/skills/knowledge-extractor/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7780
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/reference-patterns.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 39735
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/03_pattern_recognition.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 3515
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/05_philosophy_check.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6873
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/02_implementation_guide.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4839
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/01_quick_lookup.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 1235
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/06_deep_dive.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 17227
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples/04_pattern_comparison.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7747
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 5937
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2285
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/examples.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 41176
+    },
+    {
+      "path": "./.claude/skills/design-patterns-expert/antipatterns.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 22997
+    },
+    {
+      "path": "./.claude/skills/quality/testing-code/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 14294
+    },
+    {
+      "path": "./.claude/skills/quality/reviewing-code/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12151
+    },
+    {
+      "path": "./.claude/skills/common/verification/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6140
+    },
+    {
+      "path": "./.claude/skills/common/ooxml/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4726
+    },
+    {
+      "path": "./.claude/skills/common/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10450
+    },
+    {
+      "path": "./.claude/skills/remote-work/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5145
+    },
+    {
+      "path": "./.claude/skills/debate-workflow/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 12696
+    },
+    {
+      "path": "./.claude/skills/development/architecting-solutions/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9269
+    },
+    {
+      "path": "./.claude/skills/development/setting-up-projects/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11576
+    },
+    {
+      "path": "./.claude/skills/backlog-curator/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8884
+    },
+    {
+      "path": "./.claude/skills/work-delegator/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13316
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/artifacts-reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 12765
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/workflows/team-collaboration.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 17306
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/workflows/release-management.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 15771
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/workflows/ci-cd-automation.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 14405
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/pipelines-reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 9649
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/repos-reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 13682
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/examples/boards-reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 13060
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 5104
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 9273
+    },
+    {
+      "path": "./.claude/skills/azure-devops-cli/tests/test-scenarios.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 11922
+    },
+    {
+      "path": "./.claude/skills/ethicist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 39281
+    },
+    {
+      "path": "./.claude/skills/ethicist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13571
+    },
+    {
+      "path": "./.claude/skills/ethicist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8149
+    },
+    {
+      "path": "./.claude/skills/ethicist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 32099
+    },
+    {
+      "path": "./.claude/skills/biologist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 33507
+    },
+    {
+      "path": "./.claude/skills/biologist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4544
+    },
+    {
+      "path": "./.claude/skills/biologist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4085
+    },
+    {
+      "path": "./.claude/skills/biologist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 33942
+    },
+    {
+      "path": "./.claude/skills/cybersecurity-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 56899
+    },
+    {
+      "path": "./.claude/skills/cybersecurity-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10226
+    },
+    {
+      "path": "./.claude/skills/cybersecurity-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8433
+    },
+    {
+      "path": "./.claude/skills/cybersecurity-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 20642
+    },
+    {
+      "path": "./.claude/skills/pm-architect/scripts/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6871
+    },
+    {
+      "path": "./.claude/skills/pm-architect/REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23759
+    },
+    {
+      "path": "./.claude/skills/pm-architect/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2961
+    },
+    {
+      "path": "./.claude/skills/pm-architect/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 2928
+    },
+    {
+      "path": "./.claude/skills/pm-architect/EXAMPLES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 26929
+    },
+    {
+      "path": "./.claude/skills/workstream-coordinator/skill.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11739
+    },
+    {
+      "path": "./.claude/skills/azure-devops/artifacts.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5951
+    },
+    {
+      "path": "./.claude/skills/azure-devops/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 10541
+    },
+    {
+      "path": "./.claude/skills/azure-devops/queries.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4751
+    },
+    {
+      "path": "./.claude/skills/azure-devops/pipelines.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 5003
+    },
+    {
+      "path": "./.claude/skills/azure-devops/repos.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4294
+    },
+    {
+      "path": "./.claude/skills/azure-devops/work-items.md",
+      "category": "skills",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 5589
+    },
+    {
+      "path": "./.claude/skills/azure-devops/authentication.md",
+      "category": "skills",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 3481
+    },
+    {
+      "path": "./.claude/skills/azure-devops/html-formatting.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 2933
+    },
+    {
+      "path": "./.claude/skills/azure-devops/HOW_TO_CREATE_YOUR_OWN.md",
+      "category": "skills",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 10529
+    },
+    {
+      "path": "./.claude/skills/meeting-synthesizer/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 14294
+    },
+    {
+      "path": "./.claude/skills/research/researching-topics/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10639
+    },
+    {
+      "path": "./.claude/skills/docx/examples/example_usage.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 25696
+    },
+    {
+      "path": "./.claude/skills/docx/DEPENDENCIES.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12050
+    },
+    {
+      "path": "./.claude/skills/docx/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 9834
+    },
+    {
+      "path": "./.claude/skills/docx/ooxml/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4726
+    },
+    {
+      "path": "./.claude/skills/docx/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 8944
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/examples/demo-script-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 6635
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/examples/blog-post-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 14304
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/examples/presentation-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 25090
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/examples/marketing-example.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11498
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 21255
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 17489
+    },
+    {
+      "path": "./.claude/skills/storytelling-synthesizer/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10141
+    },
+    {
+      "path": "./.claude/skills/email-drafter/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 13879
+    },
+    {
+      "path": "./.claude/skills/email-drafter/README.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 6193
+    },
+    {
+      "path": "./.claude/skills/email-drafter/tests/USAGE_TEST_CASES.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 8953
+    },
+    {
+      "path": "./.claude/skills/environmentalist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 66233
+    },
+    {
+      "path": "./.claude/skills/environmentalist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7978
+    },
+    {
+      "path": "./.claude/skills/environmentalist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 7020
+    },
+    {
+      "path": "./.claude/skills/environmentalist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 33725
+    },
+    {
+      "path": "./.claude/skills/philosopher-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 34789
+    },
+    {
+      "path": "./.claude/skills/philosopher-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4149
+    },
+    {
+      "path": "./.claude/skills/philosopher-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4880
+    },
+    {
+      "path": "./.claude/skills/philosopher-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 35430
+    },
+    {
+      "path": "./.claude/skills/political-scientist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 47143
+    },
+    {
+      "path": "./.claude/skills/political-scientist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 962
+    },
+    {
+      "path": "./.claude/skills/political-scientist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 1474
+    },
+    {
+      "path": "./.claude/skills/political-scientist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 19667
+    },
+    {
+      "path": "./.claude/skills/epidemiologist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 74030
+    },
+    {
+      "path": "./.claude/skills/epidemiologist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12507
+    },
+    {
+      "path": "./.claude/skills/epidemiologist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4680
+    },
+    {
+      "path": "./.claude/skills/epidemiologist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 24060
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/configs/future/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 1526
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 9377
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 4640
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/examples.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 17547
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/patterns.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 16079
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/reference.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 14954
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/tests/QUICKSTART.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 4143
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/tests/MCP_TESTING.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 6406
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/tests/README.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 9033
+    },
+    {
+      "path": "./.claude/skills/dynamic-debugger/tests/SUMMARY.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 7738
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/examples/workflow_automation.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 19971
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/examples/adaptive_testing.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23806
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/examples/data_pipeline.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 22808
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 61864
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/templates/goal_prompt_template.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 13874
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/templates/integration_guide.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 17788
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 12980
+    },
+    {
+      "path": "./.claude/skills/goal-seeking-agent-pattern/tests/test_skill_activation.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 22052
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/drift-detection.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 14546
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 13892
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/VALIDATION_REPORT.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10915
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11088
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/examples.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 25633
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/patterns.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 23227
+    },
+    {
+      "path": "./.claude/skills/agent-sdk/reference.md",
+      "category": "skills",
+      "last_modified": "2025-12-19T21:17:35",
+      "is_stale": false,
+      "size_bytes": 30200
+    },
+    {
+      "path": "./.claude/skills/sociologist-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 68635
+    },
+    {
+      "path": "./.claude/skills/sociologist-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 11513
+    },
+    {
+      "path": "./.claude/skills/sociologist-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9356
+    },
+    {
+      "path": "./.claude/skills/sociologist-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 25588
+    },
+    {
+      "path": "./.claude/skills/documentation-writing/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 5830
+    },
+    {
+      "path": "./.claude/skills/documentation-writing/github_pages/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 7868
+    },
+    {
+      "path": "./.claude/skills/documentation-writing/examples.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 8809
+    },
+    {
+      "path": "./.claude/skills/documentation-writing/reference.md",
+      "category": "skills",
+      "last_modified": "2025-11-26T20:14:31",
+      "is_stale": false,
+      "size_bytes": 9002
+    },
+    {
+      "path": "./.claude/skills/urban-planner-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 72114
+    },
+    {
+      "path": "./.claude/skills/urban-planner-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9302
+    },
+    {
+      "path": "./.claude/skills/urban-planner-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 4644
+    },
+    {
+      "path": "./.claude/skills/urban-planner-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 28847
+    },
+    {
+      "path": "./.claude/skills/lawyer-analyst/SKILL.md",
+      "category": "skills",
+      "last_modified": "2025-11-25T09:02:43",
+      "is_stale": false,
+      "size_bytes": 56911
+    },
+    {
+      "path": "./.claude/skills/lawyer-analyst/README.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 10984
+    },
+    {
+      "path": "./.claude/skills/lawyer-analyst/QUICK_REFERENCE.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 9592
+    },
+    {
+      "path": "./.claude/skills/lawyer-analyst/tests/quiz.md",
+      "category": "skills",
+      "last_modified": "2025-11-24T05:43:15",
+      "is_stale": false,
+      "size_bytes": 24968
+    },
+    {
+      "path": "./.roo/rules/07-github-actions-guidelines.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 687
+    },
+    {
+      "path": "./.roo/rules/01-python-uv-enforcement.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 917
+    },
+    {
+      "path": "./.roo/rules/03-workflow-for-all-changes.md",
+      "category": "other",
+      "last_modified": "2025-07-31T22:32:17",
+      "is_stale": false,
+      "size_bytes": 4604
+    },
+    {
+      "path": "./.roo/rules/04-testing-workflow.md",
+      "category": "other",
+      "last_modified": "2025-07-23T16:21:51",
+      "is_stale": false,
+      "size_bytes": 747
+    },
+    {
+      "path": "./.roo/rules/05-issue-template-and-labels.md",
+      "category": "other",
+      "last_modified": "2025-06-28T16:40:58",
+      "is_stale": true,
+      "size_bytes": 575
+    },
+    {
+      "path": "./.roo/rules/no-hardcoded-secrets-in-tests.md",
+      "category": "other",
+      "last_modified": "2025-06-21T16:30:26",
+      "is_stale": true,
+      "size_bytes": 1189
+    },
+    {
+      "path": "./.roo/rules/02-prompt-history-and-reflection.md",
+      "category": "other",
+      "last_modified": "2025-07-23T16:21:51",
+      "is_stale": false,
+      "size_bytes": 7979
+    },
+    {
+      "path": "./.roo/rules/06-todo-list.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 2228
+    },
+    {
+      "path": "./.roo/tmp/issue-127-body.md",
+      "category": "other",
+      "last_modified": "2025-07-23T20:45:43",
+      "is_stale": false,
+      "size_bytes": 3158
+    },
+    {
+      "path": "./dotnet/REMOVED_TESTS.md",
+      "category": "other",
+      "last_modified": "2025-06-18T22:55:23",
+      "is_stale": true,
+      "size_bytes": 1011
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Core/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 26
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Services/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 30
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Processing/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 32
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Config/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 28
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Llm/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 25
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Utilities/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 31
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Container/README.md",
+      "category": "readme",
+      "last_modified": "2025-07-01T23:44:08",
+      "is_stale": true,
+      "size_bytes": 1765
+    },
+    {
+      "path": "./dotnet/src/AzureTenantGrapher/Graph/README.md",
+      "category": "readme",
+      "last_modified": "2025-06-18T07:25:36",
+      "is_stale": true,
+      "size_bytes": 27
+    },
+    {
+      "path": "./notebooks/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-10T19:10:27",
+      "is_stale": false,
+      "size_bytes": 4993
+    },
+    {
+      "path": "./README.md",
+      "category": "readme",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 16353
+    },
+    {
+      "path": "./src/deployment/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-09T22:56:12",
+      "is_stale": false,
+      "size_bytes": 5798
+    },
+    {
+      "path": "./src/deployment/background/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-02T19:47:27",
+      "is_stale": false,
+      "size_bytes": 6544
+    },
+    {
+      "path": "./src/services/layer/REFACTORING.md",
+      "category": "other",
+      "last_modified": "2025-12-02T19:47:29",
+      "is_stale": false,
+      "size_bytes": 9207
+    },
+    {
+      "path": "./src/services/resource_processing/README.md",
+      "category": "readme",
+      "last_modified": "2025-11-26T04:30:31",
+      "is_stale": false,
+      "size_bytes": 7148
+    },
+    {
+      "path": "./src/services/README_COST_MANAGEMENT.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:21:30",
+      "is_stale": false,
+      "size_bytes": 7789
+    },
+    {
+      "path": "./src/services/scale_up/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-02T20:16:31",
+      "is_stale": false,
+      "size_bytes": 6646
+    },
+    {
+      "path": "./src/utils/README_SAFE_CYPHER.md",
+      "category": "readme",
+      "last_modified": "2025-12-02T16:49:07",
+      "is_stale": false,
+      "size_bytes": 9807
+    },
+    {
+      "path": "./src/version_tracking/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T05:47:18",
+      "is_stale": false,
+      "size_bytes": 8232
+    },
+    {
+      "path": "./src/iac/property_validation/manifest/mappings/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 5448
+    },
+    {
+      "path": "./src/iac/property_validation/manifest/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 9056
+    },
+    {
+      "path": "./src/iac/property_validation/analysis/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 8912
+    },
+    {
+      "path": "./src/iac/property_validation/analysis/ARCHITECTURE.md",
+      "category": "other",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 10009
+    },
+    {
+      "path": "./src/iac/property_validation/schemas/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 7031
+    },
+    {
+      "path": "./src/iac/property_validation/ci/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 7724
+    },
+    {
+      "path": "./src/iac/property_validation/README_CLI.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 7950
+    },
+    {
+      "path": "./src/iac/property_validation/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 6585
+    },
+    {
+      "path": "./src/iac/property_validation/IMPLEMENTATION_COMPLETE.md",
+      "category": "other",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 19745
+    },
+    {
+      "path": "./src/iac/property_validation/reporting/IMPLEMENTATION_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 11149
+    },
+    {
+      "path": "./src/iac/property_validation/reporting/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 14075
+    },
+    {
+      "path": "./src/iac/property_validation/QUICK_REFERENCE.md",
+      "category": "other",
+      "last_modified": "2026-01-17T06:53:03",
+      "is_stale": false,
+      "size_bytes": 1535
+    },
+    {
+      "path": "./src/iac/plugins/README_STORAGE.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:21:30",
+      "is_stale": false,
+      "size_bytes": 10972
+    },
+    {
+      "path": "./src/iac/plugins/README_APPSERVICE.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 12552
+    },
+    {
+      "path": "./src/iac/data_plane_plugins/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 20302
+    },
+    {
+      "path": "./src/iac/provider_manager_README.md",
+      "category": "readme",
+      "last_modified": "2025-11-10T17:46:49",
+      "is_stale": false,
+      "size_bytes": 4314
+    },
+    {
+      "path": "./src/iac/translators/COORDINATOR_USAGE.md",
+      "category": "other",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 10632
+    },
+    {
+      "path": "./src/iac/translators/IMPLEMENTATION_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 7925
+    },
+    {
+      "path": "./src/iac/translators/USAGE_EXAMPLE.md",
+      "category": "other",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 11578
+    },
+    {
+      "path": "./src/iac/translators/STORAGE_ACCOUNT_TRANSLATOR_README.md",
+      "category": "readme",
+      "last_modified": "2025-11-04T02:13:15",
+      "is_stale": false,
+      "size_bytes": 10054
+    },
+    {
+      "path": "./src/validation/README.md",
+      "category": "readme",
+      "last_modified": "2025-10-09T22:56:33",
+      "is_stale": false,
+      "size_bytes": 6370
+    },
+    {
+      "path": "./spa/docs/REQUIREMENTS.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 22177
+    },
+    {
+      "path": "./spa/docs/WEB_APP_MODE.md",
+      "category": "documentation",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 9887
+    },
+    {
+      "path": "./spa/docs/FEATURES.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 13731
+    },
+    {
+      "path": "./spa/docs/E2E_LAYER_SELECTOR_TESTING.md",
+      "category": "documentation",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 17071
+    },
+    {
+      "path": "./spa/docs/DESIGN.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 26091
+    },
+    {
+      "path": "./spa/docs/GRAPH_VISUALIZATION.md",
+      "category": "documentation",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 2551
+    },
+    {
+      "path": "./spa/agentic-testing/docs/screenshot-diff-guide.md",
+      "category": "documentation",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 8381
+    },
+    {
+      "path": "./spa/agentic-testing/README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 7438
+    },
+    {
+      "path": "./spa/agentic-testing/src/utils/README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 9237
+    },
+    {
+      "path": "./spa/agentic-testing/src/agents/ComprehensionAgent.README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 9522
+    },
+    {
+      "path": "./spa/agentic-testing/src/agents/README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 13998
+    },
+    {
+      "path": "./spa/agentic-testing/src/agents/README.SystemAgent.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 12791
+    },
+    {
+      "path": "./spa/agentic-testing/src/agents/PriorityAgent.README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 10391
+    },
+    {
+      "path": "./spa/agentic-testing/scenarios/README.md",
+      "category": "readme",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 10336
+    },
+    {
+      "path": "./spa/README.md",
+      "category": "readme",
+      "last_modified": "2026-01-13T04:05:39",
+      "is_stale": false,
+      "size_bytes": 17368
+    },
+    {
+      "path": "./spa/screenshots/POWERPOINT_QUICK_REFERENCE.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 4750
+    },
+    {
+      "path": "./spa/screenshots/README.md",
+      "category": "readme",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 4133
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/START_HERE.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 2843
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/TUTORIAL_INDEX.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 2932
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/TUTORIAL_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 7009
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/VISUAL_QUALITY_REPORT.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 7393
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/README.md",
+      "category": "readme",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 7669
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/QUICK_START.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 4604
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/MANIFEST.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 10360
+    },
+    {
+      "path": "./spa/screenshots/ui-tutorial/DELIVERY_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 11090
+    },
+    {
+      "path": "./spa/screenshots/scale-operations/README.md",
+      "category": "readme",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 11060
+    },
+    {
+      "path": "./spa/screenshots/scale-operations/SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 8089
+    },
+    {
+      "path": "./spa/screenshots/scale-operations/QUICK_REFERENCE.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 2787
+    },
+    {
+      "path": "./spa/screenshots/VISUALIZATION_SCREENSHOTS_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 6526
+    },
+    {
+      "path": "./spa/README_WEB_MODE.md",
+      "category": "readme",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 4673
+    },
+    {
+      "path": "./spa/tests/e2e/SCALE_OPERATIONS_TEST_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 11344
+    },
+    {
+      "path": "./spa/tests/e2e/RUNNING_SCALE_OPERATIONS_TESTS.md",
+      "category": "tests",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 5795
+    },
+    {
+      "path": "./.github/ISSUE_TYPESCRIPT_AGENTIC_TESTING.md",
+      "category": "other",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 5004
+    },
+    {
+      "path": "./.github/ThreatModellingAgent.md",
+      "category": "other",
+      "last_modified": "2025-06-19T22:33:03",
+      "is_stale": true,
+      "size_bytes": 2120
+    },
+    {
+      "path": "./.github/ISSUE_AZURE_MCP_INTEGRATION.md",
+      "category": "other",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 12811
+    },
+    {
+      "path": "./.github/copilot-instructions.md",
+      "category": "other",
+      "last_modified": "2025-06-09T15:48:15",
+      "is_stale": true,
+      "size_bytes": 903
+    },
+    {
+      "path": "./.github/ISSUE_AGENTIC_TESTING_SYSTEM.md",
+      "category": "other",
+      "last_modified": "2025-09-09T21:51:57",
+      "is_stale": false,
+      "size_bytes": 20706
+    },
+    {
+      "path": "./.github/azure-tenant-grapher-spec.md",
+      "category": "other",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 34841
+    },
+    {
+      "path": "./.github/ISSUE_MULTI_TENANT_SUPPORT.md",
+      "category": "other",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 22771
+    },
+    {
+      "path": "./.github/exception_handling_refactor_plan.md",
+      "category": "other",
+      "last_modified": "2025-06-15T19:20:01",
+      "is_stale": true,
+      "size_bytes": 2880
+    },
+    {
+      "path": "./.github/azure-tenant-grapher-prd.md",
+      "category": "other",
+      "last_modified": "2025-06-21T02:08:09",
+      "is_stale": true,
+      "size_bytes": 19391
+    },
+    {
+      "path": "./.github/ISSUE_ENHANCED_SIMDOC_IDENTITIES.md",
+      "category": "other",
+      "last_modified": "2025-09-02T22:10:30",
+      "is_stale": false,
+      "size_bytes": 25351
+    },
+    {
+      "path": "./.github/ISSUE_TEMPLATE_azure_tenant_markdown_spec.md",
+      "category": "other",
+      "last_modified": "2025-06-12T03:31:46",
+      "is_stale": true,
+      "size_bytes": 9142
+    },
+    {
+      "path": "./.github/ISSUE_TEMPLATE/ai-created-issue.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 928
+    },
+    {
+      "path": "./.github/ISSUE_TEMPLATE/migrate-outputs-directory-ai-agent.md",
+      "category": "other",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 2180
+    },
+    {
+      "path": "./.github/prompt-history/2025-08-28--proceed-to-migrate-all-legacy-output-files-and-dirs.md",
+      "category": "other",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 3521
+    },
+    {
+      "path": "./.github/prompt-history/2025-08-26--you-now-need-to-turn-the-failing.md",
+      "category": "other",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 1551
+    },
+    {
+      "path": "./.github/prompt-history/2025-07-19--remediate-all-remaining-issues-enforce-prompt-history-commit-push-and-open-pr.md",
+      "category": "other",
+      "last_modified": "2025-07-23T16:21:51",
+      "is_stale": false,
+      "size_bytes": 3254
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--test-the-improved-scripts-check-ci-status-sh-script.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 2106
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-16--update-integration-test-to-avoid-long-running-build.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1376
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/create-tenant.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 322
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-19--remediate-all-remaining-issues-enforce-prompt-history-commit-push-and-open-pr.md",
+      "category": "other",
+      "last_modified": "2025-07-31T22:32:17",
+      "is_stale": false,
+      "size_bytes": 3254
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-10--review-roo-rules-improvements.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 765
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--implement-and-test-robust-neo4j-autostart-and-healthcheck.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 2326
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-08-26--you-now-need-to-turn-the-failing.md",
+      "category": "other",
+      "last_modified": "2025-08-28T02:41:21",
+      "is_stale": false,
+      "size_bytes": 2791
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--update-scripts-check-ci-status-sh.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 2234
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--network-topology-enrichment.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1317
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/strengthen-prompt-history-rules-2025-01-10.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 2192
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/network-topology-enrichment.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 685
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-16--feature-specify-domain-name-to-use-for-all-entities-that-require-a-domain-name-eg-user-account-when-running-the-generate-iac-or-spec-commands.md",
+      "category": "other",
+      "last_modified": "2025-07-31T22:32:17",
+      "is_stale": false,
+      "size_bytes": 3064
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--diagnose-and-fix-the-failing-neo4j-autostart-test.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1757
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--implement-enforcement-of-resource-limit-in-build-path.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1851
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-14--branch-pr-issue-workflow.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1071
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--feature-specify-domain-name-to-use-for-all-entities-that-require-a-domain-name-eg-user-account-when-running-the-generate-iac-or-spec-commands.md",
+      "category": "other",
+      "last_modified": "2025-07-31T22:32:17",
+      "is_stale": false,
+      "size_bytes": 2323
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-18--neo4j-integration-test-rerun.md",
+      "category": "other",
+      "last_modified": "2025-07-31T22:32:17",
+      "is_stale": false,
+      "size_bytes": 2087
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-14--branch-pr-issue-workflow.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1880
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-07-16--remediate-ci-failure-ensure-neo4j-port-is-set-for-run-migrations-py-in-ci.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1463
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--update-integration-test-to-avoid-long-running-build.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1949
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/reflection--2025-07-16--remediate-ci-failure-ensure-neo4j-port-is-set-for-run-migrations-py-in-ci.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 1831
+    },
+    {
+      "path": "./.github/prompt-history/already_processed/2025-01-10--neo4j-connection-fix-continued.md",
+      "category": "other",
+      "last_modified": "2025-07-17T00:33:48",
+      "is_stale": true,
+      "size_bytes": 4768
+    },
+    {
+      "path": "./.github/prompt-history/reflection--2025-07-23--please-continue-from-the-following-summary.md",
+      "category": "other",
+      "last_modified": "2025-07-31T20:51:56",
+      "is_stale": false,
+      "size_bytes": 1301
+    },
+    {
+      "path": "./.github/prompt-history/reflection--2025-07-23--remediate-broken-cli-tests-agent-mode-dashboard-integration.md",
+      "category": "other",
+      "last_modified": "2025-08-28T02:41:21",
+      "is_stale": false,
+      "size_bytes": 1936
+    },
+    {
+      "path": "./.github/prompt-history/2025-09-10--run-all-python-tests-in-workspace.md",
+      "category": "other",
+      "last_modified": "2025-10-29T06:34:49",
+      "is_stale": false,
+      "size_bytes": 806
+    },
+    {
+      "path": "./.github/prompt-history/reflection--2025-08-28--proceed-to-migrate-all-legacy-output-files-and-dirs.md",
+      "category": "other",
+      "last_modified": "2025-08-30T01:09:11",
+      "is_stale": false,
+      "size_bytes": 3394
+    },
+    {
+      "path": "./.github/prompt-history/reflection--2025-07-18--neo4j-integration-test-rerun.md",
+      "category": "other",
+      "last_modified": "2025-07-23T16:21:51",
+      "is_stale": false,
+      "size_bytes": 2087
+    },
+    {
+      "path": "./.github/prompt-history/reflection--2025-07-19--remediate-all-remaining-issues-enforce-prompt-history-commit-push-and-open-pr.md",
+      "category": "other",
+      "last_modified": "2025-07-23T16:21:51",
+      "is_stale": false,
+      "size_bytes": 2651
+    },
+    {
+      "path": "./.github/prompt-history/2025-07-23--please-continue-from-the-following-summary.md",
+      "category": "other",
+      "last_modified": "2025-07-31T20:51:56",
+      "is_stale": false,
+      "size_bytes": 554
+    },
+    {
+      "path": "./.github/azure-tenant-markdown-spec.md",
+      "category": "other",
+      "last_modified": "2025-06-16T23:31:31",
+      "is_stale": true,
+      "size_bytes": 20455
+    },
+    {
+      "path": "./HANDOFF_BUG20_SUBNET_IMPORTS.md",
+      "category": "other",
+      "last_modified": "2025-12-19T23:16:51",
+      "is_stale": false,
+      "size_bytes": 3903
+    },
+    {
+      "path": "./TESTING_EVIDENCE_PR675.md",
+      "category": "other",
+      "last_modified": "2026-01-16T21:13:03",
+      "is_stale": false,
+      "size_bytes": 6376
+    },
+    {
+      "path": "./modules/api_contract/ASYNC_JOB_FLOW.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 15111
+    },
+    {
+      "path": "./modules/api_contract/API_SUMMARY.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 7637
+    },
+    {
+      "path": "./modules/api_contract/API_DESIGN_DECISIONS.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 9746
+    },
+    {
+      "path": "./modules/api_contract/VALIDATION_GUIDE.md",
+      "category": "other",
+      "last_modified": "2025-12-19T05:33:48",
+      "is_stale": false,
+      "size_bytes": 8937
+    },
+    {
+      "path": "./modules/api_contract/README.md",
+      "category": "readme",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 10241
+    },
+    {
+      "path": "./modules/api_contract/MODULE_INDEX.md",
+      "category": "other",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 8574
+    },
+    {
+      "path": "./visualizations/README.md",
+      "category": "readme",
+      "last_modified": "2025-11-16T16:42:07",
+      "is_stale": false,
+      "size_bytes": 7134
+    },
+    {
+      "path": "./CLAUDE.md",
+      "category": "project-root",
+      "last_modified": "2026-01-13T17:45:48",
+      "is_stale": false,
+      "size_bytes": 30683
+    },
+    {
+      "path": "./LOCAL_TEST_PLAN.md",
+      "category": "other",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 3199
+    },
+    {
+      "path": "./DOCKER_INSPECT_FIX.md",
+      "category": "other",
+      "last_modified": "2026-01-17T01:43:47",
+      "is_stale": false,
+      "size_bytes": 8398
+    },
+    {
+      "path": "./tests/remote/TEST_SUITE_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 12754
+    },
+    {
+      "path": "./tests/remote/README.md",
+      "category": "tests",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 7155
+    },
+    {
+      "path": "./tests/deployment/TEST_AGENT_DEPLOYER_README.md",
+      "category": "tests",
+      "last_modified": "2025-12-18T18:15:00",
+      "is_stale": false,
+      "size_bytes": 8281
+    },
+    {
+      "path": "./tests/DUAL_GRAPH_TESTS_README.md",
+      "category": "tests",
+      "last_modified": "2025-11-08T20:54:59",
+      "is_stale": false,
+      "size_bytes": 13166
+    },
+    {
+      "path": "./tests/fixtures/sample-tenant.md",
+      "category": "tests",
+      "last_modified": "2025-07-12T18:42:10",
+      "is_stale": true,
+      "size_bytes": 1254
+    },
+    {
+      "path": "./tests/services/layer/README_TESTS.md",
+      "category": "tests",
+      "last_modified": "2025-12-03T19:44:37",
+      "is_stale": false,
+      "size_bytes": 8044
+    },
+    {
+      "path": "./tests/QUICK_TEST_REFERENCE.md",
+      "category": "tests",
+      "last_modified": "2025-12-03T19:44:37",
+      "is_stale": false,
+      "size_bytes": 2582
+    },
+    {
+      "path": "./tests/TEST_QUALITY_CHECKLIST.md",
+      "category": "tests",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 8998
+    },
+    {
+      "path": "./tests/e2e/agent_mode/README.md",
+      "category": "tests",
+      "last_modified": "2025-12-19T23:10:26",
+      "is_stale": false,
+      "size_bytes": 7493
+    },
+    {
+      "path": "./tests/e2e/spa_tabs/README.md",
+      "category": "tests",
+      "last_modified": "2025-12-12T19:15:43",
+      "is_stale": false,
+      "size_bytes": 8953
+    },
+    {
+      "path": "./tests/TEST_SUITE_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2025-12-03T19:44:37",
+      "is_stale": false,
+      "size_bytes": 10185
+    },
+    {
+      "path": "./tests/BUILDER_QUICK_START.md",
+      "category": "tests",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 13965
+    },
+    {
+      "path": "./tests/iac/HANDLER_VALIDATION_GUIDE.md",
+      "category": "tests",
+      "last_modified": "2025-12-02T18:30:02",
+      "is_stale": false,
+      "size_bytes": 15498
+    },
+    {
+      "path": "./tests/iac/TEST_EXECUTION_REPORT.md",
+      "category": "tests",
+      "last_modified": "2025-12-02T18:30:02",
+      "is_stale": false,
+      "size_bytes": 10863
+    },
+    {
+      "path": "./tests/iac/README_HANDLER_TESTS.md",
+      "category": "tests",
+      "last_modified": "2025-12-02T18:30:02",
+      "is_stale": false,
+      "size_bytes": 9809
+    },
+    {
+      "path": "./tests/CTF_TEST_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 9631
+    },
+    {
+      "path": "./tests/TEST_CREATION_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2026-01-16T20:44:14",
+      "is_stale": false,
+      "size_bytes": 8101
+    },
+    {
+      "path": "./tests/CTF_TEST_STRATEGY.md",
+      "category": "tests",
+      "last_modified": "2026-01-16T20:51:42",
+      "is_stale": false,
+      "size_bytes": 13680
+    },
+    {
+      "path": "./tests/VERSION_TRACKING_TEST_SUMMARY.md",
+      "category": "tests",
+      "last_modified": "2026-01-17T03:38:21",
+      "is_stale": false,
+      "size_bytes": 7460
+    }
+  ]
+}
