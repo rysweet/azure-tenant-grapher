@@ -13,6 +13,81 @@ from azure.identity import (  # type: ignore[import-untyped]
 logger = logging.getLogger(__name__)
 
 
+# Supported resource types for data plane replication
+SUPPORTED_RESOURCE_TYPES = [
+    "Microsoft.Compute/virtualMachines",
+    "Microsoft.ContainerRegistry/registries",
+    "Microsoft.DocumentDB/databaseAccounts",
+    "Microsoft.Storage/storageAccounts",
+    "Microsoft.KeyVault/vaults",
+    "Microsoft.Sql/servers",
+    "Microsoft.Web/sites",
+    "Microsoft.ApiManagement/service",
+]
+
+
+def _query_resources_for_replication(session: Any, target_subscription_id: str) -> List[Dict[str, Any]]:
+    """Query Neo4j for resources in target subscription that support data plane replication.
+
+    Args:
+        session: Neo4j session
+        target_subscription_id: Target Azure subscription ID
+
+    Returns:
+        List of resource dictionaries with id, type, name, location
+
+    Raises:
+        Exception: If Neo4j query fails
+    """
+    # Build type filter for Cypher query
+    type_filter = " OR ".join([f"r.type = '{rt}'" for rt in SUPPORTED_RESOURCE_TYPES])
+
+    query = f"""
+    MATCH (r:Resource)
+    WHERE r.subscription_id = $subscription_id
+      AND ({type_filter})
+    RETURN r
+    """
+
+    try:
+        result = session.run(query, subscription_id=target_subscription_id)
+        resources = []
+
+        for record in result:
+            resource_node = record["r"]
+            resources.append({
+                "id": resource_node.get("id"),
+                "type": resource_node.get("type"),
+                "name": resource_node.get("name"),
+                "location": resource_node.get("location"),
+            })
+
+        return resources
+
+    except Exception as e:
+        logger.error(f"Failed to query Neo4j for resources: {e}")
+        raise
+
+
+def _map_resource_id(
+    target_resource_id: str,
+    source_subscription_id: str,
+    target_subscription_id: str,
+) -> str:
+    """Map resource ID from target subscription to source subscription.
+
+    Args:
+        target_resource_id: Resource ID in target subscription
+        source_subscription_id: Source subscription ID
+        target_subscription_id: Target subscription ID
+
+    Returns:
+        Resource ID with source subscription
+    """
+    # Simple string replacement of subscription ID
+    return target_resource_id.replace(target_subscription_id, source_subscription_id)
+
+
 class ReplicationMode(Enum):
     """Data plane replication modes."""
 
@@ -119,25 +194,38 @@ def orchestrate_dataplane_replication(
         ("APIManagement", APIManagementPlugin(credential)),
     ]
 
-    # Discover resources from Neo4j or Azure
-    # TODO: Query Neo4j for resources in target subscription
-    # For now, use placeholder
+    # Discover resources from Neo4j
     resources_to_replicate: List[Dict[str, Any]] = []
 
-    # TODO: Query Neo4j:
-    # MATCH (r:Resource {subscription_id: $target_sub})
-    # WHERE r.type IN ['Microsoft.Compute/virtualMachines', ...]
-    # RETURN r
+    try:
+        # Import Neo4j session manager
+        from src.db.session import get_session
+
+        # Query Neo4j for resources in target subscription
+        with get_session() as session:
+            resources_to_replicate = _query_resources_for_replication(
+                session, target_subscription_id
+            )
+            logger.info(f"Discovered {len(resources_to_replicate)} resources for replication from Neo4j")
+
+    except ImportError:
+        logger.warning("Neo4j session unavailable - install Neo4j dependencies for resource discovery")
+    except Exception as e:
+        logger.warning(f"Failed to query Neo4j for resources: {e}")
+        logger.warning("Continuing with empty resource list")
 
     results = {
         "status": "success",
         "resources_processed": 0,
         "plugins_executed": [],
         "errors": [],
-        "warnings": [
-            "Data plane replication not yet fully integrated with Neo4j discovery"
-        ],
+        "warnings": [],
     }
+
+    if len(resources_to_replicate) == 0:
+        results["warnings"].append(
+            "No resources discovered for replication (check Neo4j connectivity)"
+        )
 
     # Execute replication for each resource
     for resource in resources_to_replicate:
@@ -160,10 +248,9 @@ def orchestrate_dataplane_replication(
         logger.info(str(f"Replicating {resource_type} with {plugin_name} plugin..."))
 
         try:
-            # Map source resource to target resource
-            # TODO: Implement resource mapping logic
-            source_resource_id = resource_id.replace(
-                target_subscription_id, source_subscription_id
+            # Map source resource to target resource using helper function
+            source_resource_id = _map_resource_id(
+                resource_id, source_subscription_id, target_subscription_id
             )
             target_resource_id = resource_id
 

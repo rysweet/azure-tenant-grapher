@@ -19,6 +19,79 @@ from ..terraform_destroyer import TerraformDestroyer, UndeploymentConfirmation
 logger = logging.getLogger(__name__)
 
 
+def _parse_remaining_resources(stderr: str, stdout: str) -> Optional[Dict[str, Any]]:
+    """Parse Terraform destroy output to identify resources that failed to be destroyed.
+
+    Args:
+        stderr: Terraform stderr output
+        stdout: Terraform stdout output
+
+    Returns:
+        Dictionary with remaining resource information or None if parsing fails
+
+    Example output:
+        {
+            "count": 3,
+            "resources": ["azurerm_resource_group.main", "azurerm_virtual_network.vnet"],
+            "error_summary": "Dependency conflict - resources have dependencies that prevent deletion"
+        }
+    """
+    try:
+        import re
+
+        remaining = {"count": 0, "resources": [], "error_summary": ""}
+
+        # Combine stdout and stderr for parsing
+        combined_output = f"{stdout}\n{stderr}"
+
+        # Pattern 1: Extract resource addresses from error messages
+        # Terraform typically reports: "Error: deleting Resource (resource_id): ..."
+        resource_pattern = re.compile(r"Error:.*?deleting\s+(\w+)\s+\(([^)]+)\)", re.IGNORECASE)
+        matches = resource_pattern.findall(combined_output)
+
+        for resource_type, resource_id in matches:
+            resource_addr = f"{resource_type}({resource_id})"
+            if resource_addr not in remaining["resources"]:
+                remaining["resources"].append(resource_addr)
+
+        # Pattern 2: Extract from "still exists" messages
+        exists_pattern = re.compile(r"([a-z_]+\.[a-z_0-9]+).*still exists", re.IGNORECASE)
+        exists_matches = exists_pattern.findall(combined_output)
+
+        for resource_addr in exists_matches:
+            if resource_addr not in remaining["resources"]:
+                remaining["resources"].append(resource_addr)
+
+        # Pattern 3: Count from summary line (e.g., "3 resources failed to destroy")
+        summary_pattern = re.compile(r"(\d+)\s+resource[s]?\s+failed", re.IGNORECASE)
+        summary_match = summary_pattern.search(combined_output)
+
+        if summary_match:
+            remaining["count"] = int(summary_match.group(1))
+        else:
+            remaining["count"] = len(remaining["resources"])
+
+        # Extract error summary (first error line)
+        error_lines = [line for line in combined_output.split("\n") if "Error:" in line]
+        if error_lines:
+            remaining["error_summary"] = error_lines[0][:200]  # First error, truncated
+
+        # If we found at least one resource or count, return the dict
+        if remaining["count"] > 0 or remaining["resources"]:
+            return remaining
+
+        # No specific resources identified, return minimal info
+        return {
+            "count": 0,
+            "resources": [],
+            "error_summary": "Destroy failed - check Terraform output for details"
+        }
+
+    except Exception as e:
+        logger.warning(f"Failed to parse remaining resources: {e}")
+        return None
+
+
 @click.command()
 @click.option("--deployment-id", help="ID of deployment to destroy")
 @click.option("--directory", help="IaC output directory to destroy")
@@ -256,12 +329,15 @@ async def _run_undeploy(
         click.echo("\n❌ Terraform destroy failed!", err=True)
         click.echo(f"Error output:\n{stderr}", err=True)
 
+        # Parse remaining resources from Terraform output
+        remaining_resources = _parse_remaining_resources(stderr, stdout)
+
         # Update registry with failure
         if deployment["id"].startswith("deploy-"):
             registry.mark_failed(
                 deployment["id"],
                 error=stderr[:500],  # Truncate error message
-                remaining_resources=None,  # TODO: Parse remaining resources
+                remaining_resources=remaining_resources,
             )
 
         click.echo("\n🔧 Recovery Options:")

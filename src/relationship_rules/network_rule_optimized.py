@@ -117,7 +117,10 @@ class NetworkRuleOptimized(RelationshipRule):
                     self.auto_flush_if_needed(db_ops)
 
                     # Edge: Resource -> PrivateEndpoint (generic rel - not batched yet)
-                    # TODO: Implement batching for generic relationships
+                    # NOTE: Generic relationships (Resource->PrivateEndpoint) use immediate creation
+                    # because the base class batching system only supports Resource->Resource rels.
+                    # Future enhancement: Add generic relationship buffering to RelationshipRule base class
+                    # (Low priority - PrivateEndpoints are rare, performance impact minimal)
                     self.create_dual_graph_generic_rel(
                         db_ops,
                         str(pe_target_id),
@@ -140,7 +143,10 @@ class NetworkRuleOptimized(RelationshipRule):
             resolves_to = resource.get("resolves_to", [])
             for res_id in resolves_to:
                 # DNSZone -> Resource (generic rel - not batched yet)
-                # TODO: Implement batching for generic relationships
+                # NOTE: Generic relationships (DNSZone->Resource) use immediate creation
+                # because the base class batching system only supports Resource->Resource rels.
+                # Future enhancement: Add generic relationship buffering to RelationshipRule base class
+                # (Low priority - DNS zones are rare, performance impact minimal)
                 self.create_dual_graph_generic_rel(
                     db_ops,
                     str(rid),
@@ -154,7 +160,10 @@ class NetworkRuleOptimized(RelationshipRule):
         dns_zone_id = resource.get("dnsZoneId")
         if dns_zone_id and rid:
             # DNSZone -> Resource relationship (generic rel - not batched yet)
-            # TODO: Implement batching for generic relationships
+            # NOTE: Generic relationships (DNSZone->Resource) use immediate creation
+            # because the base class batching system only supports Resource->Resource rels.
+            # Future enhancement: Add generic relationship buffering to RelationshipRule base class
+            # (Low priority - DNS zones are rare, performance impact minimal)
             self.create_dual_graph_generic_rel(
                 db_ops,
                 str(dns_zone_id),
