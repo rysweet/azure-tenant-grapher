@@ -1022,7 +1022,9 @@ class SQLDatabasePlugin(DataPlanePlugin):
                             "row_count": self._get_table_row_count(
                                 cursor, current_table[0], current_table[1]
                             ),
-                            "size_bytes": 0,  # TODO: Get actual size
+                            "size_bytes": self._get_table_size(
+                                cursor, current_table[0], current_table[1]
+                            ),
                         }
                     )
 
@@ -1054,7 +1056,9 @@ class SQLDatabasePlugin(DataPlanePlugin):
                     "row_count": self._get_table_row_count(
                         cursor, current_table[0], current_table[1]
                     ),
-                    "size_bytes": 0,
+                    "size_bytes": self._get_table_size(
+                        cursor, current_table[0], current_table[1]
+                    ),
                 }
             )
 
@@ -1100,6 +1104,19 @@ class SQLDatabasePlugin(DataPlanePlugin):
                 FROM sys.dm_db_partition_stats
                 WHERE object_id = OBJECT_ID('[{schema}].[{table_name}]')
                 AND index_id IN (0, 1)
+            """)
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else 0
+        except Exception:
+            return 0
+
+    def _get_table_size(self, cursor, schema: str, table_name: str) -> int:
+        """Get table size in bytes."""
+        try:
+            cursor.execute(f"""
+                SELECT SUM(used_page_count) * 8192
+                FROM sys.dm_db_partition_stats
+                WHERE object_id = OBJECT_ID('[{schema}].[{table_name}]')
             """)
             result = cursor.fetchone()
             return result[0] if result and result[0] else 0

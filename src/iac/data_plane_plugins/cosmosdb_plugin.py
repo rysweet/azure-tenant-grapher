@@ -336,9 +336,9 @@ class CosmosDBPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_cosmosdb_sql_database" "{resource_name}" {{',
                         f'  name                = "{item.name}"',
-                        "  # TODO: Reference your Cosmos DB account here",
-                        "  account_name        = azurerm_cosmosdb_account.REPLACE_ME.name",
-                        "  resource_group_name = azurerm_resource_group.REPLACE_ME.name",
+                        "  # Reference your Cosmos DB account and resource group using variables:",
+                        "  account_name        = var.cosmosdb_account_name",
+                        "  resource_group_name = var.resource_group_name",
                         "",
                         "  # Throughput configuration",
                         "  # Set to null for serverless, or specify RU/s",
@@ -365,8 +365,8 @@ class CosmosDBPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_cosmosdb_sql_container" "{resource_name}" {{',
                         f'  name                = "{item.name}"',
-                        "  resource_group_name = azurerm_resource_group.REPLACE_ME.name",
-                        "  account_name        = azurerm_cosmosdb_account.REPLACE_ME.name",
+                        "  resource_group_name = var.resource_group_name",
+                        "  account_name        = var.cosmosdb_account_name",
                         f"  database_name       = azurerm_cosmosdb_sql_database.{db_resource_name}.name",
                         "",
                         f'  partition_key_path  = "{partition_key}"',
@@ -384,10 +384,12 @@ class CosmosDBPlugin(DataPlanePlugin):
                 if indexing_policy:
                     code_lines.extend(
                         [
-                            "  # Indexing policy",
-                            "  # TODO: Configure indexing based on your requirements",
-                            "  # Original policy (commented):",
+                            "  # Indexing policy - configure based on your query patterns",
+                            "  # Default: automatic indexing with consistent mode",
+                            "  # To use original policy, uncomment and customize:",
                             f"  # {json.dumps(indexing_policy, indent=2).replace(chr(10), chr(10) + '  # ')}",
+                            "  # For production, review Azure Cosmos DB indexing best practices:",
+                            "  # https://docs.microsoft.com/azure/cosmos-db/index-policy",
                             "",
                         ]
                     )
