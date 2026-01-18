@@ -25,6 +25,7 @@ def mock_discovery_service():
     service.credential = MagicMock()
     service.discover_subscriptions = AsyncMock()
     service.discover_resources_in_subscription = AsyncMock()
+    service.discover_role_assignments_in_subscription = AsyncMock()
     return service
 
 
@@ -63,6 +64,43 @@ def sample_resources() -> List[Dict[str, Any]]:
             "subscription_id": "sub-123",
             "properties": {
                 "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+            },
+            "tags": {},
+        },
+    ]
+
+
+@pytest.fixture
+def sample_role_assignments() -> List[Dict[str, Any]]:
+    """Sample role assignment data in Azure API format."""
+    return [
+        {
+            "id": "/subscriptions/sub-123/providers/Microsoft.Authorization/roleAssignments/assignment-1",
+            "name": "assignment-1",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "location": None,
+            "resource_group": "",
+            "subscription_id": "sub-123",
+            "properties": {
+                "principalId": "principal-123",
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "/subscriptions/sub-123/providers/Microsoft.Authorization/roleDefinitions/contributor",
+                "scope": "/subscriptions/sub-123",
+            },
+            "tags": {},
+        },
+        {
+            "id": "/subscriptions/sub-123/resourceGroups/rg1/providers/Microsoft.Authorization/roleAssignments/assignment-2",
+            "name": "assignment-2",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "location": None,
+            "resource_group": "rg1",
+            "subscription_id": "sub-123",
+            "properties": {
+                "principalId": "principal-456",
+                "principalType": "User",
+                "roleDefinitionId": "/subscriptions/sub-123/providers/Microsoft.Authorization/roleDefinitions/reader",
+                "scope": "/subscriptions/sub-123/resourceGroups/rg1",
             },
             "tags": {},
         },
@@ -515,6 +553,7 @@ class TestTargetScannerService:
             invalid_sub,
         ]
         mock_discovery_service.discover_resources_in_subscription.return_value = []
+        mock_discovery_service.discover_role_assignments_in_subscription.return_value = []
 
         scanner = TargetScannerService(mock_discovery_service)
         result = await scanner.scan_target_tenant(tenant_id="tenant-123")
@@ -522,3 +561,140 @@ class TestTargetScannerService:
         # Should only call discover_resources_in_subscription for valid subscription
         assert mock_discovery_service.discover_resources_in_subscription.call_count == 1
         assert result.error is None
+
+    # Issue #752: Role Assignment Detection Tests
+
+    @pytest.mark.asyncio
+    async def test_scan_includes_role_assignments(
+        self, mock_discovery_service, sample_resources, sample_role_assignments
+    ):
+        """Test that scan_target_tenant includes role assignments (Issue #752)."""
+        # Setup mocks - return both resources and role assignments
+        mock_discovery_service.discover_resources_in_subscription.return_value = (
+            sample_resources
+        )
+        mock_discovery_service.discover_role_assignments_in_subscription.return_value = sample_role_assignments
+
+        # Create service and scan
+        scanner = TargetScannerService(mock_discovery_service)
+        result = await scanner.scan_target_tenant(
+            tenant_id="tenant-123", subscription_id="sub-123"
+        )
+
+        # Verify both discovery methods were called
+        mock_discovery_service.discover_resources_in_subscription.assert_called_once_with(
+            "sub-123"
+        )
+        mock_discovery_service.discover_role_assignments_in_subscription.assert_called_once()
+
+        # Verify result includes both regular resources and role assignments
+        assert result.tenant_id == "tenant-123"
+        assert result.subscription_id == "sub-123"
+        assert len(result.resources) == 4  # 2 regular resources + 2 role assignments
+        assert result.error is None
+
+        # Verify role assignments are present in results
+        role_assignment_types = [
+            r.type
+            for r in result.resources
+            if r.type == "Microsoft.Authorization/roleAssignments"
+        ]
+        assert len(role_assignment_types) == 2
+
+    @pytest.mark.asyncio
+    async def test_scan_role_assignments_converted_correctly(
+        self, mock_discovery_service, sample_role_assignments
+    ):
+        """Test that role assignments are converted to TargetResource correctly."""
+        # Setup mocks - only role assignments, no regular resources
+        mock_discovery_service.discover_resources_in_subscription.return_value = []
+        mock_discovery_service.discover_role_assignments_in_subscription.return_value = sample_role_assignments
+
+        # Create service and scan
+        scanner = TargetScannerService(mock_discovery_service)
+        result = await scanner.scan_target_tenant(
+            tenant_id="tenant-123", subscription_id="sub-123"
+        )
+
+        # Verify role assignments were converted
+        assert len(result.resources) == 2
+        assert result.resources[0].name == "assignment-1"
+        assert result.resources[0].type == "Microsoft.Authorization/roleAssignments"
+        assert result.resources[0].properties["principalId"] == "principal-123"
+        assert result.resources[0].properties["principalType"] == "ServicePrincipal"
+
+        assert result.resources[1].name == "assignment-2"
+        assert result.resources[1].type == "Microsoft.Authorization/roleAssignments"
+        assert result.resources[1].properties["principalId"] == "principal-456"
+        assert result.resources[1].properties["principalType"] == "User"
+
+    @pytest.mark.asyncio
+    async def test_scan_role_assignment_discovery_failure_graceful(
+        self, mock_discovery_service, sample_resources
+    ):
+        """Test graceful handling when role assignment discovery fails."""
+        # Setup mocks - regular resources succeed, role assignments fail
+        mock_discovery_service.discover_resources_in_subscription.return_value = (
+            sample_resources
+        )
+        mock_discovery_service.discover_role_assignments_in_subscription.side_effect = (
+            Exception("Permission denied for role assignments")
+        )
+
+        # Create service and scan
+        scanner = TargetScannerService(mock_discovery_service)
+        result = await scanner.scan_target_tenant(
+            tenant_id="tenant-123", subscription_id="sub-123"
+        )
+
+        # Verify partial success - regular resources still discovered
+        assert result.tenant_id == "tenant-123"
+        assert len(result.resources) == 2  # Only regular resources
+        assert result.error is not None
+        assert "role assignments" in result.error.lower()
+        assert "Permission denied" in result.error
+
+    @pytest.mark.asyncio
+    async def test_scan_all_subscriptions_includes_role_assignments(
+        self,
+        mock_discovery_service,
+        sample_subscriptions,
+        sample_resources,
+        sample_role_assignments,
+    ):
+        """Test that multi-subscription scan includes role assignments from all subscriptions."""
+        # Setup mocks - return both resources and role assignments for all subscriptions
+        mock_discovery_service.discover_subscriptions.return_value = (
+            sample_subscriptions
+        )
+        mock_discovery_service.discover_resources_in_subscription.return_value = (
+            sample_resources
+        )
+        mock_discovery_service.discover_role_assignments_in_subscription.return_value = sample_role_assignments
+
+        # Create service and scan
+        scanner = TargetScannerService(mock_discovery_service)
+        result = await scanner.scan_target_tenant(tenant_id="tenant-123")
+
+        # Verify both discovery methods called for each subscription
+        assert mock_discovery_service.discover_resources_in_subscription.call_count == 2
+        assert (
+            mock_discovery_service.discover_role_assignments_in_subscription.call_count
+            == 2
+        )
+
+        # Verify result includes resources and role assignments from all subscriptions
+        # 2 subscriptions * (2 resources + 2 role assignments) = 8 total
+        assert result.tenant_id == "tenant-123"
+        assert len(result.resources) == 8
+        assert result.error is None
+
+        # Verify role assignments are present
+        role_assignment_count = len(
+            [
+                r
+                for r in result.resources
+                if r.type == "Microsoft.Authorization/roleAssignments"
+            ]
+        )
+        assert role_assignment_count == 4  # 2 per subscription
