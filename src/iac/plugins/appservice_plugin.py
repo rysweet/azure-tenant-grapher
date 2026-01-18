@@ -525,8 +525,13 @@ class AppServicePlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_linux_web_app_slot" "{resource_name}" {{',
                         f'  name                = "{slot_name}"',
-                        "  # TODO: Reference your App Service resource here",
-                        "  app_service_id      = azurerm_linux_web_app.REPLACE_ME.id",
+                        "  # Reference your App Service resource using one of these approaches:",
+                        "  # Option 1: Use data source:",
+                        "  #   app_service_id = data.azurerm_linux_web_app.existing.id",
+                        "  # Option 2: Reference resource created in this config:",
+                        "  #   app_service_id = azurerm_linux_web_app.main.id",
+                        "  # Option 3: Use variable (recommended):",
+                        "  app_service_id      = var.app_service_id",
                         "",
                     ]
                 )
