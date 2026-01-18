@@ -253,16 +253,45 @@ class WorkstreamOrchestrator:
         """Scan source tenant to ensure graph is up to date"""
         self.reporter.send(f"🔍 Scanning source tenant: {SOURCE_TENANT}")
 
-        # TODO: Implement actual scan
-        # For now, assume scan is already done
-        return True
+        cmd = [
+            "uv",
+            "run",
+            "atg",
+            "scan",
+            "--tenant-id",
+            SOURCE_TENANT,
+        ]
+
+        code, stdout, stderr = self.run_command(cmd, timeout=3600)
+
+        if code == 0:
+            self.reporter.send(f"✅ Source tenant scan completed")
+            return True
+        else:
+            self.reporter.send(f"❌ Source tenant scan failed: {stderr[:200]}")
+            return False
 
     def scan_target_tenant(self) -> bool:
         """Scan target tenant to capture current state"""
         self.reporter.send(f"🔍 Scanning target tenant: {TARGET_TENANT}")
 
-        # TODO: Implement actual scan
-        return True
+        cmd = [
+            "uv",
+            "run",
+            "atg",
+            "scan",
+            "--tenant-id",
+            TARGET_TENANT,
+        ]
+
+        code, stdout, stderr = self.run_command(cmd, timeout=3600)
+
+        if code == 0:
+            self.reporter.send(f"✅ Target tenant scan completed")
+            return True
+        else:
+            self.reporter.send(f"❌ Target tenant scan failed: {stderr[:200]}")
+            return False
 
     def generate_next_iteration(self, iteration_num: int) -> bool:
         """Generate next IaC iteration"""
@@ -502,7 +531,18 @@ class AutonomousEngine:
                     if "entra_id" not in self.status.get("completed_phases", []):
                         self.status["phase"] = "entra_id_replication"
                         self.reporter.send("🔄 Moving to Entra ID replication phase")
-                        # TODO: Implement Entra ID replication
+
+                        # Entra ID replication: scan both tenants to include AD/Graph resources
+                        source_scan_success = self.orchestrator.scan_source_tenant()
+                        target_scan_success = self.orchestrator.scan_target_tenant()
+
+                        if source_scan_success and target_scan_success:
+                            self.reporter.send("✅ Entra ID replication scans completed")
+                            self.status["completed_phases"].append("entra_id")
+                            self.reporter.send("🎉 Entra ID replication phase complete")
+                        else:
+                            self.reporter.send("⚠️ Entra ID scans failed, will retry next cycle")
+
                         time.sleep(60)
 
                 self.save_status()
