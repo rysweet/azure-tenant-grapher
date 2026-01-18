@@ -150,6 +150,63 @@
 - **[Web App Mode Summary](web-app/summary.md)** - Web application overview
 - **[Azure Bastion Connection Guide](AZURE_BASTION_CONNECTION_GUIDE.md)** - Remote access via Azure Bastion
 
+## Amplihack Framework (.claude/)
+
+The `.claude/` directory contains the amplihack agentic coding framework (285 skill files, 34 agents, 16 scenarios).
+
+### Core Context
+- **[PHILOSOPHY.md](../.claude/context/PHILOSOPHY.md)** - Development philosophy and ruthless simplicity
+- **[PROJECT.md](../.claude/context/PROJECT.md)** - Project-specific context for AI agents
+- **[PATTERNS.md](../.claude/context/PATTERNS.md)** - Development patterns and proven solutions
+- **[TRUST.md](../.claude/context/TRUST.md)** - Anti-sycophancy guidelines
+- **[USER_PREFERENCES.md](../.claude/context/USER_PREFERENCES.md)** - User preferences and customization
+
+### Agents
+AI agents for specialized tasks. See [.claude/agents/](../.claude/agents/) directory for complete list.
+- **[Core Agents](../.claude/agents/amplihack/core/)** - architect, builder, reviewer, tester
+- **[Specialized Agents](../.claude/agents/amplihack/specialized/)** - cleanup, fix-agent, and 30+ specialized agents
+
+### Skills (285 files)
+Claude Code skills extending capabilities. See [.claude/skills/](../.claude/skills/) for full catalog:
+- **azure-devops** - Azure DevOps integration
+- **documentation-writing** - Documentation generation
+- **investigation-workflow** - Code investigation
+- **dynamic-debugger** - Interactive debugging
+- And 281 more skills
+
+### Scenarios (16 production tools)
+Production-ready user-facing tools in [.claude/scenarios/](../.claude/scenarios/):
+- **analyze-codebase** - Comprehensive codebase analysis
+- **analyze-trace-logs** - Trace log analysis
+- **az-devops-tools** - Azure DevOps CLI tools
+- **check-broken-links** - Link validation
+
+### Workflows
+Development workflow definitions in [.claude/workflow/](../.claude/workflow/):
+- **DEFAULT_WORKFLOW.md** - Standard 22-step development workflow
+- **INVESTIGATION_WORKFLOW.md** - Code investigation workflow
+
+## Documentation Freshness
+
+As of 2026-01-18, documentation files include metadata headers indicating freshness:
+
+```markdown
+---
+last_updated: YYYY-MM-DD
+status: current | stale | deprecated
+category: <category>
+---
+```
+
+- **current**: Up-to-date and actively maintained
+- **stale**: >6 months since last update, may contain outdated information (53 files flagged)
+- **deprecated**: No longer maintained, kept for historical reference
+
+**Stale Documentation**: 53 files (6.6% of total) haven't been updated in 6+ months. These are flagged for review but preserved for reference.
+
+**Exact Duplicates Removed**: 9 files (4 duplicate groups consolidated)
+**Title Duplicates Merged**: 38 groups (77 files affected)
+
 ## Command Reference
 
 - **[Demo Commands Overview](demo/overview.md)** - Command demonstrations
@@ -301,6 +358,7 @@
 
 ---
 
-**Last Updated:** 2025-12-18
-**Total Documents:** 174 markdown files
-**Coverage:** 100% (no orphaned documentation)
+**Last Updated:** 2026-01-18
+**Total Documents:** 807 markdown files (includes project + amplihack framework)
+**Coverage:** Comprehensive (project docs + .claude/ framework documentation)
+**Audit Status:** Consolidated (Issue #739 - removed 9 exact duplicates, merged 38 title duplicate groups)
