@@ -351,3 +351,67 @@ class ResourceHandler(ABC):
                 f"Failed to normalize CIDR '{cidr}' for '{context_name}': {e}"
             )
             return None
+
+    @staticmethod
+    def map_identity_block(resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Map Azure resource identity to Terraform identity block.
+
+        Extracts identity configuration from Azure resources and converts to
+        Terraform identity block format. Supports all three identity types:
+        - SystemAssigned
+        - UserAssigned (with identity_ids list)
+        - SystemAssigned, UserAssigned (combined)
+
+        Args:
+            resource: Azure resource dict with identity configuration
+
+        Returns:
+            Terraform identity block dict or None if no identity
+
+        Examples:
+            SystemAssigned:
+                {"type": "SystemAssigned"}
+
+            UserAssigned:
+                {"type": "UserAssigned", "identity_ids": ["/subscriptions/.../identity1"]}
+
+            Combined:
+                {"type": "SystemAssigned, UserAssigned", "identity_ids": ["/subscriptions/.../identity1"]}
+        """
+        # Try to get identity from resource root or properties
+        identity = resource.get("identity")
+        if not identity:
+            properties = resource.get("properties", {})
+            if isinstance(properties, dict):
+                identity = properties.get("identity")
+
+        # No identity found
+        if not identity:
+            return None
+
+        # Malformed identity (should be dict)
+        if not isinstance(identity, dict):
+            logger.warning(
+                f"Malformed identity for resource '{resource.get('name')}' - expected dict, got {type(identity).__name__}"
+            )
+            return None
+
+        # Extract identity type
+        identity_type = identity.get("type")
+        if not identity_type:
+            return None
+
+        # Build Terraform identity block
+        terraform_identity = {"type": identity_type}
+
+        # For UserAssigned or combined types, extract identity IDs
+        if "UserAssigned" in identity_type:
+            user_assigned_identities = identity.get("userAssignedIdentities", {})
+            if isinstance(user_assigned_identities, dict):
+                # Extract resource IDs from userAssignedIdentities dict keys
+                identity_ids = list(user_assigned_identities.keys())
+                terraform_identity["identity_ids"] = identity_ids
+            else:
+                terraform_identity["identity_ids"] = []
+
+        return terraform_identity

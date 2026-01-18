@@ -79,18 +79,10 @@ class DataFactoryHandler(ResourceHandler):
         if properties.get("managedVirtualNetworkEnabled"):
             config["managed_virtual_network_enabled"] = True
 
-        # Identity
-        identity = resource.get("identity", {})
-        if identity.get("type"):
-            identity_type = identity.get("type", "").lower()
-            if "systemassigned" in identity_type:
-                config["identity"] = {"type": "SystemAssigned"}
-            elif "userassigned" in identity_type:
-                user_ids = list(identity.get("userAssignedIdentities", {}).keys())
-                config["identity"] = {
-                    "type": "UserAssigned",
-                    "identity_ids": user_ids,
-                }
+        # Identity - map from Azure resource identity configuration
+        identity_block = self.map_identity_block(resource)
+        if identity_block:
+            config["identity"] = identity_block
 
         # Global parameters
         global_params = properties.get("globalParameters", {})
