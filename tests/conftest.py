@@ -7,11 +7,16 @@ import pytest
 
 # from testcontainers.neo4j import Neo4jContainer  # Commented out - complex setup
 
-# Mock neo4j before importing modules that depend on it
+# Mock neo4j and its submodules before importing modules that depend on it
+# This prevents "neo4j is not a package" errors when tests import neo4j.exceptions, etc.
 mock_neo4j = Mock()
 mock_neo4j.Driver = Mock
 mock_neo4j.GraphDatabase = Mock()
-sys.modules['neo4j'] = mock_neo4j
+mock_neo4j.exceptions = Mock()
+mock_neo4j.graph = Mock()
+sys.modules["neo4j"] = mock_neo4j
+sys.modules["neo4j.exceptions"] = mock_neo4j.exceptions
+sys.modules["neo4j.graph"] = mock_neo4j.graph
 
 
 # ============================================================================
@@ -471,9 +476,7 @@ def sample_configuration_data():
         "tags": {"env": "prod", "app": "web"},
         "properties": {
             "hardwareProfile": {"vmSize": "Standard_D2s_v3"},
-            "storageProfile": {
-                "osDisk": {"osType": "Linux", "caching": "ReadWrite"}
-            },
+            "storageProfile": {"osDisk": {"osType": "Linux", "caching": "ReadWrite"}},
         },
     }
 
@@ -488,7 +491,9 @@ def sample_pattern_graph():
     graph.add_node("disks", count=15)
     graph.add_node("networkInterfaces", count=10)
     graph.add_edge("virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10)
-    graph.add_edge("virtualMachines", "networkInterfaces", relationship="DEPENDS_ON", frequency=10)
+    graph.add_edge(
+        "virtualMachines", "networkInterfaces", relationship="DEPENDS_ON", frequency=10
+    )
     return graph
 
 
@@ -509,7 +514,6 @@ def sample_detected_patterns():
             "connection_count": 15,
         },
     }
-
 
 
 @pytest.fixture
