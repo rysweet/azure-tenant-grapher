@@ -5,11 +5,11 @@ Modular architecture for architectural pattern analysis.
 Replaces the monolithic architectural_pattern_analyzer.py.
 
 Public API:
-    ArchitecturalPatternOrchestrator: Main orchestration class
+    Core modules: ResourceTypeHandler, GraphBuilder
+    Detectors: PatternDetector, OrphanDetector
 
 Issue #714: Refactor architectural_pattern_analyzer.py god object
+Issue #729: Remove unused scaffolding modules (Zero-BS compliance)
 """
 
-from .orchestrator import ArchitecturalPatternOrchestrator
-
-__all__ = ["ArchitecturalPatternOrchestrator"]
+__all__ = []  # Re-export from submodules as needed
