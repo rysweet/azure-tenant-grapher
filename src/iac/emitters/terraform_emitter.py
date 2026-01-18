@@ -43,21 +43,58 @@ class TerraformEmitter(IaCEmitter):
         import_strategy: Optional[str] = None,
         credential: Optional[Any] = None,
     ):
-        """Initialize the TerraformEmitter.
+        """Initialize the TerraformEmitter with configuration for IaC generation.
+
+        Sets up the emitter with translation parameters, import strategies, and
+        initializes tracking structures for NSG associations, resource references,
+        and generation metrics.
 
         Args:
-            config: Optional configuration dictionary
-            resource_group_prefix: Optional prefix to add to all resource group names (e.g., "ITERATION15_")
-            target_subscription_id: Target subscription ID for cross-tenant translation (opt-in)
-            target_tenant_id: Target tenant ID for cross-tenant translation (opt-in)
-            source_subscription_id: Source subscription ID (auto-detected if not provided)
-            source_tenant_id: Source tenant ID (auto-detected if not provided)
-            identity_mapping: Identity mapping dictionary for Entra ID translation
-            identity_mapping_file: Path to identity mapping JSON file
-            strict_mode: If True, fail on missing mappings. If False, warn.
-            auto_import_existing: If True, generate import blocks for existing resources (Issue #412)
-            import_strategy: Strategy for importing ("resource_groups", "all_resources", "selective")
-            credential: Azure credential for resource existence validation (Issue #422)
+            config: Optional configuration dictionary for base emitter settings
+            resource_group_prefix: Prefix added to all resource group names for namespace
+                                 isolation (e.g., "ITERATION15_" -> "ITERATION15_myResourceGroup")
+            target_subscription_id: Target Azure subscription ID for cross-tenant deployment.
+                                  When provided, enables ID translation mode where source
+                                  subscription IDs are replaced with target subscription ID.
+            target_tenant_id: Target Azure AD tenant ID for cross-tenant deployment.
+                            Used with target_subscription_id for complete tenant migration.
+            source_subscription_id: Source Azure subscription ID (auto-detected from graph
+                                  if not provided). Used as baseline for ID translation.
+            source_tenant_id: Source Azure AD tenant ID (auto-detected from graph if not
+                            provided). Used for identity mapping lookups.
+            identity_mapping: Dictionary mapping source identity IDs to target identity IDs
+                            for Entra ID resource translation (users, groups, service principals).
+                            Format: {"sourceObjectId": "targetObjectId"}
+            identity_mapping_file: Path to JSON file containing identity mapping dictionary.
+                                 Alternative to providing identity_mapping directly.
+            strict_mode: If True, fail on missing identity mappings. If False (default),
+                       log warnings and continue with best-effort translation.
+            auto_import_existing: If True, generate Terraform import blocks for resources
+                                that already exist in target tenant (Issue #412). Enables
+                                smart migration by importing existing resources.
+            import_strategy: Controls which resources get import blocks. Options:
+                           - "all_resources" (default): Import all resources
+                           - "resource_groups": Import only resource groups
+                           - "selective": Import based on comparison_result
+            credential: Azure credential for resource existence validation (Issue #422).
+                      Required when auto_import_existing=True to query target tenant.
+
+        Example:
+            >>> emitter = TerraformEmitter(
+            ...     resource_group_prefix="PROD_",
+            ...     target_subscription_id="12345678-1234-1234-1234-123456789012",
+            ...     identity_mapping_file="./identity_mapping.json",
+            ...     auto_import_existing=True,
+            ...     import_strategy="all_resources"
+            ... )
+            >>> terraform_files = emitter.emit(graph, Path("./terraform-output"))
+
+        Note:
+            - Translation parameters (target_subscription_id, etc.) are stored but not
+              initialized until emit() is called and resources are available
+            - Resource tracking structures (_nsg_associations, _available_resources, etc.)
+              are cleared and rebuilt on each emit() call
+            - Requires 68 resource handlers registered in HandlerRegistry
         """
         super().__init__(config)
         self.resource_group_prefix = resource_group_prefix or ""
@@ -351,16 +388,57 @@ class TerraformEmitter(IaCEmitter):
         split_by_community: bool = False,  # Fix #593: Default to True for parallel deployment
         location: Optional[str] = None,  # Fix #601: Target region override
     ) -> List[Path]:
-        """Generate Terraform template from tenant graph.
+        """Generate Terraform configuration from Azure tenant graph.
+
+        This is the main orchestration method that coordinates the entire Terraform
+        generation process through 7 distinct phases:
+
+        Phase 1: Resource Extraction - Extract all resources from Neo4j graph
+        Phase 2: Translation Setup - Initialize ID translation and name sanitization
+        Phase 3: Resource Indexing - Build index for dependency validation
+        Phase 4: Handler Delegation - Delegate to 68 resource-specific handlers
+        Phase 5: Deferred Resources - Emit resources with ordering dependencies
+        Phase 6: Post-Emit Callbacks - Handler cleanup and summary resources
+        Phase 7: File I/O - Write Terraform files with proper structure
 
         Args:
-            graph: Tenant graph to generate from
-            out_dir: Directory to write files
-            domain_name: Optional domain name for user accounts
-            subscription_id: Optional subscription ID for deployment
-            comparison_result: Optional comparison with target tenant (NEW in Phase 1E)
-                              If provided, enables smart import generation
-            split_by_community: If True, split resources into separate files per community
+            graph: TenantGraph containing all Azure resources and relationships
+            out_dir: Output directory for generated Terraform files
+            domain_name: Optional domain name for Azure AD user accounts (e.g., "contoso.com")
+            subscription_id: Optional target subscription ID for deployment
+            comparison_result: Optional ComparisonResult for smart import generation.
+                             If provided, generates import blocks for EXACT_MATCH resources
+                             and only emits NEW + DRIFTED resources (Phase 1E feature).
+            split_by_community: If True, uses CommunityDetector to split resources into
+                              separate Terraform files per community for parallel deployment.
+                              Default False for single-file output.
+            location: Optional target Azure region override (e.g., "eastus"). If provided,
+                    overrides resource locations for cross-region deployment (Fix #601).
+
+        Returns:
+            List[Path]: List of generated Terraform file paths (main.tf or community files)
+
+        Raises:
+            ValueError: If graph is empty or output directory cannot be created
+            RuntimeError: If resource translation or handler execution fails
+
+        Example:
+            >>> emitter = TerraformEmitter(resource_group_prefix="ITER15_")
+            >>> graph = TenantGraph(driver)
+            >>> output_files = emitter.emit(
+            ...     graph=graph,
+            ...     out_dir=Path("./terraform-output"),
+            ...     domain_name="contoso.com",
+            ...     subscription_id="12345678-1234-1234-1234-123456789012",
+            ...     split_by_community=True
+            ... )
+            >>> print(f"Generated {len(output_files)} Terraform files")
+
+        Note:
+            - Requires 68 resource handlers registered in HandlerRegistry
+            - Uses DependencyAnalyzer for topological resource sorting
+            - Supports cross-tenant translation via TranslationCoordinator
+            - Handles 50+ Azure resource types including compute, network, storage, database
         """
         # If a domain name is specified, set it for all user account entities
         if domain_name:
