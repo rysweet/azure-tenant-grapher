@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 from click.testing import CliRunner
 
-from src.cli_commands import spa_start, spa_stop
+from src.commands.spa import spa_start, spa_stop
 
 
 class TestSPACommands:

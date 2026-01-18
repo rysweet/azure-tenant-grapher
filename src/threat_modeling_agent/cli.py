@@ -6,7 +6,7 @@ import asyncio
 
 import click
 
-from src.cli_commands import generate_threat_model_command_handler
+from src.commands.threat_model import generate_threat_model_command_handler
 
 
 @click.group()
