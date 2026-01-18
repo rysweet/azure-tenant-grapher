@@ -3,6 +3,14 @@ Architectural Pattern Analyzer
 
 This module analyzes Azure resource graphs to identify common architectural patterns
 and generate visualizations showing resource relationships and patterns.
+
+REFACTORING NOTE (Issue #714):
+This class now delegates to modular components in src/analysis/patterns/:
+- Pattern detection → detectors/pattern_detector.py
+- Orphan detection → detectors/orphan_detector.py
+- Resource type handling → core/resource_type_handler.py
+
+Backward compatibility is maintained through this facade pattern.
 """
 
 from __future__ import annotations
@@ -15,6 +23,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 from neo4j import Driver, GraphDatabase
+
+# Import modular components (Issue #714 refactoring)
+from src.analysis.patterns.core.resource_type_handler import ResourceTypeHandler
+from src.analysis.patterns.detectors.orphan_detector import OrphanDetector
+from src.analysis.patterns.detectors.pattern_detector import (
+    ARCHITECTURAL_PATTERNS,
+    PatternDetector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +132,11 @@ class ArchitecturalPatternAnalyzer:
         self.neo4j_password = neo4j_password
         self.driver: Optional[Driver] = None
 
+        # Initialize modular components (Issue #714)
+        self._pattern_detector = PatternDetector()
+        self._orphan_detector = OrphanDetector()
+        self._resource_type_handler = ResourceTypeHandler()
+
     def connect(self) -> None:
         """Establish connection to Neo4j database."""
         try:
@@ -142,6 +163,8 @@ class ArchitecturalPatternAnalyzer:
         """
         Determine standardized resource type name from labels and Azure type.
 
+        Delegates to ResourceTypeHandler (Issue #714 refactoring).
+
         Args:
             labels: Node labels
             azure_type: Azure resource type (e.g., "Microsoft.Compute/virtualMachines")
@@ -149,27 +172,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             Standardized resource type name
         """
-        if not labels:
-            return "Unknown"
-
-        # Check if it's a Resource node with Azure type
-        if "Resource" in labels and azure_type:
-            # Extract resource type from Azure resource type
-            # e.g., "Microsoft.Compute/virtualMachines" -> "virtualMachines"
-            parts = azure_type.split("/")
-            if len(parts) >= 2:
-                return parts[-1]  # Last part is the resource type
-            return parts[0]
-
-        # For non-Resource nodes, use the most specific label
-        # Filter out generic labels like 'Original'
-        filtered_labels = [
-            label for label in labels if label not in ["Original", "Resource"]
-        ]
-        if filtered_labels:
-            return filtered_labels[0]
-
-        return labels[0] if labels else "Unknown"
+        return self._resource_type_handler.get_resource_type_name(labels, azure_type)
 
     def fetch_all_relationships(self) -> List[Dict[str, Any]]:
         """
@@ -314,6 +317,8 @@ class ArchitecturalPatternAnalyzer:
         """
         Detect architectural patterns in the graph.
 
+        Delegates to PatternDetector (Issue #714 refactoring).
+
         Args:
             graph: NetworkX graph
             resource_type_counts: Resource type frequency counts
@@ -321,40 +326,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             Dictionary of detected patterns with match information
         """
-        pattern_matches = {}
-        existing_resources = set(graph.nodes())
-
-        for pattern_name, pattern_info in self.ARCHITECTURAL_PATTERNS.items():
-            pattern_resources = set(pattern_info["resources"])
-            matched_resources = pattern_resources.intersection(existing_resources)
-
-            if len(matched_resources) >= 2:
-                connection_count = 0
-                pattern_edges = []
-
-                for source in matched_resources:
-                    for target in matched_resources:
-                        if source != target and graph.has_edge(source, target):
-                            edges = graph.get_edge_data(source, target)
-                            if edges:
-                                for _key, data in edges.items():
-                                    connection_count += data.get("frequency", 1)
-                                    pattern_edges.append(
-                                        (source, data["relationship"], target)
-                                    )
-
-                pattern_matches[pattern_name] = {
-                    "matched_resources": list(matched_resources),
-                    "missing_resources": list(pattern_resources - matched_resources),
-                    "connection_count": connection_count,
-                    "pattern_edges": pattern_edges[:5],  # Top 5 edges
-                    "completeness": len(matched_resources)
-                    / len(pattern_resources)
-                    * 100,
-                }
-
-        logger.info(str(f"Detected {len(pattern_matches)} architectural patterns"))
-        return pattern_matches
+        return self._pattern_detector.detect_patterns(graph, resource_type_counts)
 
     def export_graph_data(
         self,
@@ -652,6 +624,8 @@ class ArchitecturalPatternAnalyzer:
         """
         Identify resource types that are not part of any detected pattern.
 
+        Delegates to OrphanDetector (Issue #714 refactoring).
+
         Args:
             graph: NetworkX graph
             pattern_matches: Detected architectural patterns
@@ -659,70 +633,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             List of orphaned nodes with their connection information
         """
-        # Collect all nodes that are matched by at least one pattern
-        matched_nodes = set()
-        for _pattern_name, match in pattern_matches.items():
-            matched_nodes.update(match["matched_resources"])
-
-        # Find orphaned nodes (not in any pattern)
-        all_nodes = set(graph.nodes())
-        orphaned_nodes = all_nodes - matched_nodes
-
-        # Gather connection information for each orphaned node
-        orphaned_info = []
-        for node in orphaned_nodes:
-            # Find what this node connects to
-            out_neighbors = list(graph.successors(node))
-            in_neighbors = list(graph.predecessors(node))
-
-            # Find edges
-            outgoing_edges = []
-            for target in out_neighbors:
-                edges = graph.get_edge_data(node, target)
-                if edges:
-                    for _key, data in edges.items():
-                        outgoing_edges.append(
-                            {
-                                "target": target,
-                                "relationship": data.get("relationship", "UNKNOWN"),
-                                "frequency": data.get("frequency", 0),
-                            }
-                        )
-
-            incoming_edges = []
-            for source in in_neighbors:
-                edges = graph.get_edge_data(source, node)
-                if edges:
-                    for _key, data in edges.items():
-                        incoming_edges.append(
-                            {
-                                "source": source,
-                                "relationship": data.get("relationship", "UNKNOWN"),
-                                "frequency": data.get("frequency", 0),
-                            }
-                        )
-
-            orphaned_info.append(
-                {
-                    "resource_type": node,
-                    "connection_count": graph.nodes[node].get("count", 0),
-                    "in_degree": graph.in_degree(node),
-                    "out_degree": graph.out_degree(node),
-                    "total_degree": graph.degree(node),  # type: ignore[misc]
-                    "outgoing_edges": outgoing_edges,
-                    "incoming_edges": incoming_edges,
-                    "connected_to": list(set(out_neighbors + in_neighbors)),
-                }
-            )
-
-        # Sort by connection count (most connected first)
-        orphaned_info.sort(key=lambda x: x["connection_count"], reverse=True)
-
-        logger.info(
-            f"Identified {len(orphaned_info)} orphaned nodes "
-            f"out of {len(all_nodes)} total nodes"
-        )
-        return orphaned_info
+        return self._orphan_detector.identify_orphaned_nodes(graph, pattern_matches)
 
     def fetch_microsoft_learn_documentation(
         self, resource_type: str, max_attempts: int = 3
