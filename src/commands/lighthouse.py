@@ -18,14 +18,14 @@ from azure.identity import DefaultAzureCredential
 from rich.console import Console
 from rich.table import Table
 
-from sentinel.multi_tenant.exceptions import (
+from src.config_manager import create_neo4j_config_from_env
+from src.sentinel.multi_tenant.exceptions import (
     DelegationExistsError,
     DelegationNotFoundError,
     LighthouseError,
 )
-from sentinel.multi_tenant.lighthouse_manager import LighthouseManager
-from sentinel.multi_tenant.models import LighthouseStatus
-from src.config_manager import create_neo4j_config_from_env
+from src.sentinel.multi_tenant.lighthouse_manager import LighthouseManager
+from src.sentinel.multi_tenant.models import LighthouseStatus
 from src.utils.neo4j_startup import ensure_neo4j_running
 
 console = Console()
