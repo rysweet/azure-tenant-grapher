@@ -62,8 +62,13 @@ class AKSHandler(ResourceHandler):
                 "vm_size": "Standard_DS2_v2",
             }
 
-        # Identity
-        config["identity"] = {"type": "SystemAssigned"}
+        # Identity - map from Azure resource identity configuration
+        identity_block = self.map_identity_block(resource)
+        if identity_block:
+            config["identity"] = identity_block
+        else:
+            # Default to SystemAssigned if no identity found
+            config["identity"] = {"type": "SystemAssigned"}
 
         logger.debug(f"AKS Cluster '{resource_name}' emitted")
 

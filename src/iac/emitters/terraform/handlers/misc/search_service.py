@@ -109,12 +109,10 @@ class SearchServiceHandler(ResourceHandler):
                 rule.get("value", "") for rule in ip_rules if rule.get("value")
             ]
 
-        # Identity
-        identity = resource.get("identity", {})
-        if identity.get("type"):
-            identity_type = identity.get("type", "").lower()
-            if "systemassigned" in identity_type:
-                config["identity"] = {"type": "SystemAssigned"}
+        # Identity - map from Azure resource identity configuration
+        identity_block = self.map_identity_block(resource)
+        if identity_block:
+            config["identity"] = identity_block
 
         # Customer managed key
         encryption = properties.get("encryptionWithCmk", {})

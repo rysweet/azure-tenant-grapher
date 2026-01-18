@@ -48,8 +48,13 @@ class MLWorkspaceHandler(ResourceHandler):
             sku.get("name", "Basic") if isinstance(sku, dict) else "Basic"
         )
 
-        # Identity (required)
-        config["identity"] = {"type": "SystemAssigned"}
+        # Identity - map from Azure resource identity configuration
+        identity_block = self.map_identity_block(resource)
+        if identity_block:
+            config["identity"] = identity_block
+        else:
+            # Default to SystemAssigned if no identity found (required for ML Workspace)
+            config["identity"] = {"type": "SystemAssigned"}
 
         rg_name = self.get_resource_group(resource)
         sub_id = context.get_effective_subscription_id(resource)

@@ -86,12 +86,10 @@ class RecoveryServicesVaultHandler(ResourceHandler):
         if immutability.get("state"):
             config["immutability"] = immutability.get("state", "Disabled")
 
-        # Identity
-        identity = resource.get("identity", {})
-        if identity.get("type"):
-            identity_type = identity.get("type", "").lower()
-            if "systemassigned" in identity_type:
-                config["identity"] = {"type": "SystemAssigned"}
+        # Identity - map from Azure resource identity configuration
+        identity_block = self.map_identity_block(resource)
+        if identity_block:
+            config["identity"] = identity_block
 
         # Encryption
         encryption = properties.get("encryption", {})
