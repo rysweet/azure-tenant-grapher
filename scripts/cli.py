@@ -161,8 +161,8 @@ load_dotenv()
 try:
     import click
 
-    # Keep handler imports for backward compatibility (deprecated, use modular commands)
-    from src.cli_commands import build_command_handler
+    # Import from modular commands (Issue #722 - cli_commands.py removed)
+    from src.commands.scan import build_command_handler
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(str(f"Import error: {e}"))

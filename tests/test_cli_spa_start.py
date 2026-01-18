@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from src.cli_commands import spa_start
+from src.commands.spa import spa_start
 
 
 class TestSpaStartCommand:

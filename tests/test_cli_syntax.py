@@ -8,18 +8,18 @@ import pytest
 
 
 def test_cli_commands_syntax():
-    """Test that cli_commands.py has valid Python syntax."""
-    cli_commands_path = Path(__file__).parent.parent / "src" / "cli_commands.py"
+    """Test that src/commands/scan.py has valid Python syntax (Issue #722 - cli_commands.py removed)."""
+    scan_path = Path(__file__).parent.parent / "src" / "commands" / "scan.py"
 
     # Read the file content
-    with open(cli_commands_path, encoding="utf-8") as f:
+    with open(scan_path, encoding="utf-8") as f:
         source_code = f.read()
 
     # Try to parse it as valid Python
     try:
         ast.parse(source_code)
     except SyntaxError as e:
-        pytest.fail(f"Syntax error in cli_commands.py at line {e.lineno}: {e.msg}")
+        pytest.fail(f"Syntax error in src/commands/scan.py at line {e.lineno}: {e.msg}")
 
 
 def test_cli_script_syntax():
@@ -38,16 +38,16 @@ def test_cli_script_syntax():
 
 
 def test_can_import_cli():
-    """Test that we can import the CLI without errors."""
+    """Test that we can import the CLI without errors (Issue #722 - cli_commands.py removed)."""
     try:
         # Add parent directory to path
         sys.path.insert(0, str(Path(__file__).parent.parent))
 
-        # Try to import cli_commands
         # Try to import the main CLI
         from scripts.cli import cli  # noqa: F401
 
-        import src.cli_commands  # noqa: F401
+        # Try to import scan commands module (replaces cli_commands)
+        import src.commands.scan  # noqa: F401
 
     except SyntaxError as e:
         pytest.fail(f"Cannot import CLI due to syntax error: {e}")

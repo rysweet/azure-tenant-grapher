@@ -9,7 +9,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from src.cli_commands import mcp_query_command
+from src.commands.mcp import mcp_query_command_handler as mcp_query_command
 
 
 class TestMCPQueryCommand:
