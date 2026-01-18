@@ -151,9 +151,22 @@ print(str(f"SOURCE_RESOURCES={{count}}"))
             if source_count == 0:
                 # Need to scan source tenant
                 logger.info("Scanning source tenant...")
-                # TODO: Implement source tenant scanning
-                # For now, assume it's already scanned
-                pass
+                scan_cmd = [
+                    "uv",
+                    "run",
+                    "atg",
+                    "scan",
+                    "--tenant-id",
+                    self.source_tenant,
+                ]
+                logger.info(f"Executing: {' '.join(scan_cmd)}")
+                scan_success, scan_stdout, scan_stderr = self._run_command(
+                    scan_cmd, timeout=3600
+                )
+                if not scan_success:
+                    logger.error(f"Source tenant scan failed: {scan_stderr}")
+                    return False
+                logger.info("Source tenant scan completed successfully")
 
             self.status["metrics"]["source_resources"] = source_count
             self.status["phases_completed"].append("scan_source")
@@ -338,9 +351,24 @@ print(str(f"SOURCE_RESOURCES={{count}}"))
         self._send_imessage(f"🔍 Phase 5: Scanning target tenant {self.target_tenant}")
 
         # Scan target tenant
-        # TODO: Implement target tenant scanning
-        # For now, query current state
+        scan_cmd = [
+            "uv",
+            "run",
+            "atg",
+            "scan",
+            "--tenant-id",
+            self.target_tenant,
+        ]
+        logger.info(f"Executing: {' '.join(scan_cmd)}")
+        scan_success, scan_stdout, scan_stderr = self._run_command(
+            scan_cmd, timeout=3600
+        )
+        if not scan_success:
+            logger.error(f"Target tenant scan failed: {scan_stderr}")
+            return False
+        logger.info("Target tenant scan completed successfully")
 
+        # Query current state after scan
         success, stdout, stderr = self._run_command(
             [
                 "uv",
@@ -463,8 +491,34 @@ print(str(f"TARGET_RESOURCES={{count}}"))
                         f"⚠️ Iteration {self.current_iteration} validation failed: {len(errors)} errors"
                     )
 
-                    # TODO: Analyze errors and fix code
-                    # For now, continue to next iteration
+                    # Analyze errors and log detailed information
+                    error_types = {}
+                    for err in errors:
+                        err_detail = err.get("detail", "Unknown error")
+                        err_summary = err.get("summary", "")
+
+                        # Categorize error types
+                        if "subnet" in err_detail.lower() or "address" in err_detail.lower():
+                            error_types["network"] = error_types.get("network", 0) + 1
+                        elif "resource" in err_detail.lower() and "not found" in err_detail.lower():
+                            error_types["missing_resource"] = error_types.get("missing_resource", 0) + 1
+                        elif "invalid" in err_detail.lower():
+                            error_types["invalid_config"] = error_types.get("invalid_config", 0) + 1
+                        else:
+                            error_types["other"] = error_types.get("other", 0) + 1
+
+                        logger.error(f"  Terraform error: {err_summary}: {err_detail}")
+
+                    logger.info(f"Error breakdown: {error_types}")
+                    self.status["errors"].append({
+                        "iteration": self.current_iteration,
+                        "error_count": len(errors),
+                        "error_types": error_types,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    self._save_status()
+
+                    # Continue to next iteration to try improvements
                     time.sleep(30)
                     continue
 
