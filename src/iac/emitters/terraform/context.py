@@ -107,6 +107,38 @@ class EmitterContext:
             self.terraform_config["resource"][resource_type] = {}
         self.terraform_config["resource"][resource_type][name] = config
 
+    def add_data_source(
+        self,
+        data_type: str,
+        name: str,
+        config: Dict[str, Any],
+    ) -> None:
+        """Add a data source to terraform config.
+
+        Data sources allow referencing existing Azure resources
+        (e.g., Key Vault secrets, existing VNets).
+
+        Args:
+            data_type: Terraform data source type (e.g., "azurerm_key_vault_secret")
+            name: Data source name
+            config: Data source configuration dict
+
+        Example:
+            context.add_data_source(
+                "azurerm_key_vault_secret",
+                "vm_admin_password",
+                {
+                    "name": "vm-admin-password",
+                    "key_vault_id": "${data.azurerm_key_vault.main.id}",
+                },
+            )
+        """
+        if "data" not in self.terraform_config:
+            self.terraform_config["data"] = {}
+        if data_type not in self.terraform_config["data"]:
+            self.terraform_config["data"][data_type] = {}
+        self.terraform_config["data"][data_type][name] = config
+
     def get_effective_subscription_id(self, resource: Dict[str, Any]) -> str:
         """Get the subscription ID to use for resource construction.
 
