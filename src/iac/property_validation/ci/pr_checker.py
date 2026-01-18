@@ -176,8 +176,11 @@ class PRChecker:
         """
         handler_results = {}
 
-        # Find all handler files
-        handler_files = list(handlers_dir.glob("**/*_handler.py"))
+        # Find all Python files in handlers directory (excluding __init__.py and base_handler.py)
+        all_py_files = list(handlers_dir.glob("**/*.py"))
+        handler_files = [
+            f for f in all_py_files if f.name not in ("__init__.py", "base_handler.py")
+        ]
 
         if not handler_files:
             print(f"Warning: No handler files found in {handlers_dir}")

@@ -3,14 +3,14 @@ name: Property Coverage Validation
 on:
   pull_request:
     paths:
-      - 'src/iac/handlers/**'
+      - 'src/iac/emitters/terraform/handlers/**'
       - 'src/iac/property_validation/**'
       - '.github/workflows/property-coverage.yml'
   push:
     branches:
       - main
     paths:
-      - 'src/iac/handlers/**'
+      - 'src/iac/emitters/terraform/handlers/**'
       - 'src/iac/property_validation/**'
 
 permissions:
@@ -51,7 +51,7 @@ jobs:
 
           # Run validation and capture output
           python src/iac/property_validation/ci/pr_checker.py \
-            --handlers-dir src/iac/handlers \
+            --handlers-dir src/iac/emitters/terraform/handlers \
             --thresholds src/iac/property_validation/ci/thresholds.yaml \
             --output coverage-report.md \
             --verbose
