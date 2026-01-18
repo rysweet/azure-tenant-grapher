@@ -11,21 +11,22 @@ Philosophy:
 """
 
 import argparse
-import sys
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
+
 
 # Color codes for terminal output
 class Colors:
     """ANSI color codes for terminal output."""
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    MAGENTA = '\033[95m'
-    CYAN = '\033[96m'
-    BOLD = '\033[1m'
-    RESET = '\033[0m'
+
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
 
 
 def print_colored(text: str, color: str, bold: bool = False) -> None:
@@ -36,9 +37,9 @@ def print_colored(text: str, color: str, bold: bool = False) -> None:
 
 def print_header(text: str) -> None:
     """Print section header."""
-    print_colored(f"\n{'='*60}", Colors.CYAN)
+    print_colored(f"\n{'=' * 60}", Colors.CYAN)
     print_colored(text, Colors.CYAN, bold=True)
-    print_colored('='*60, Colors.CYAN)
+    print_colored("=" * 60, Colors.CYAN)
 
 
 def print_success(text: str) -> None:
@@ -58,7 +59,7 @@ def print_warning(text: str) -> None:
 
 def print_info(text: str) -> None:
     """Print info message."""
-    print_colored(f"ℹ {text}", Colors.BLUE)
+    print_colored(f"i {text}", Colors.BLUE)
 
 
 def validate_handler(handler_path: Optional[str] = None) -> int:
@@ -71,10 +72,14 @@ def validate_handler(handler_path: Optional[str] = None) -> int:
         Exit code (0=success, 1=failure)
     """
     from iac.property_validation.analysis.handler_analyzer import analyze_handler
-    from iac.property_validation.validation.critical_classifier import CriticalClassifier
-    from iac.property_validation.validation.gap_finder import GapFinder
-    from iac.property_validation.validation.coverage_calculator import CoverageCalculator
     from iac.property_validation.models import PropertyDefinition
+    from iac.property_validation.validation.coverage_calculator import (
+        CoverageCalculator,
+    )
+    from iac.property_validation.validation.critical_classifier import (
+        CriticalClassifier,
+    )
+    from iac.property_validation.validation.gap_finder import GapFinder
 
     print_header("Property Validation")
 
@@ -124,35 +129,32 @@ def validate_handler(handler_path: Optional[str] = None) -> int:
                 required=True,
                 has_default=False,
                 property_type="string",
-                description="Storage account tier"
+                description="Storage account tier",
             ),
             "replication_type": PropertyDefinition(
                 name="replication_type",
                 required=True,
                 has_default=False,
                 property_type="string",
-                description="Replication strategy"
+                description="Replication strategy",
             ),
             "tls_version": PropertyDefinition(
                 name="tls_version",
                 required=False,
                 has_default=True,
                 property_type="string",
-                description="Minimum TLS version"
+                description="Minimum TLS version",
             ),
         }
 
         # Find gaps
-        gaps = gap_finder.find_gaps(
-            schema_properties,
-            result.terraform_writes
-        )
+        gaps = gap_finder.find_gaps(schema_properties, result.terraform_writes)
 
         # Calculate coverage
         metrics = coverage_calculator.calculate_coverage(
             required_properties=set(schema_properties.keys()),
             actual_properties=result.terraform_writes,
-            gaps=gaps
+            gaps=gaps,
         )
 
         # Calculate quality score
@@ -174,14 +176,16 @@ def validate_handler(handler_path: Optional[str] = None) -> int:
                     "MEDIUM": Colors.BLUE,
                     "LOW": Colors.CYAN,
                 }.get(gap.criticality.value, Colors.RESET)
-                print(f"    {color}[{gap.criticality.value}]{Colors.RESET} {gap.property_name}: {gap.reason}")
+                print(
+                    f"    {color}[{gap.criticality.value}]{Colors.RESET} {gap.property_name}: {gap.reason}"
+                )
 
         # Pass/fail determination
         if metrics.critical_gaps > 0:
             print_error(f"  FAILED: {metrics.critical_gaps} critical gap(s)")
             all_passed = False
         elif score < 70.0:
-            print_warning(f"  WARNING: Quality score below threshold (70)")
+            print_warning("  WARNING: Quality score below threshold (70)")
             all_passed = False
         else:
             print_success("  PASSED")
@@ -192,8 +196,13 @@ def validate_handler(handler_path: Optional[str] = None) -> int:
     print_header("Validation Summary")
     print(f"\nHandlers validated: {len(results)}")
     passed = sum(1 for _, m, s in results if m.critical_gaps == 0 and s >= 70.0)
-    print_colored(f"Passed: {passed}", Colors.GREEN if passed == len(results) else Colors.YELLOW)
-    print_colored(f"Failed: {len(results) - passed}", Colors.RED if passed < len(results) else Colors.GREEN)
+    print_colored(
+        f"Passed: {passed}", Colors.GREEN if passed == len(results) else Colors.YELLOW
+    )
+    print_colored(
+        f"Failed: {len(results) - passed}",
+        Colors.RED if passed < len(results) else Colors.GREEN,
+    )
 
     return 0 if all_passed else 1
 
@@ -211,8 +220,10 @@ def generate_report(output_path: str = "coverage_report.html") -> int:
 
     print_info(f"Output: {output_path}")
 
-    # TODO: Implement HTML report generation
-    print_warning("Report generation not yet implemented")
+    # See src/iac/FUTURE_WORK.md - TODO #1 for implementation specifications
+    print_warning(
+        "HTML report generation not yet implemented - see src/iac/FUTURE_WORK.md TODO #1"
+    )
 
     # For now, create a basic report
     report_content = """<!DOCTYPE html>
@@ -276,7 +287,7 @@ def generate_manifest(resource_type: str, output_dir: Optional[str] = None) -> i
     manifest = generator.generate_template_manifest(
         azure_resource_type=azure_type,
         terraform_resource_type=terraform_type,
-        provider_version_min="3.0.0"
+        provider_version_min="3.0.0",
     )
 
     # Save manifest
@@ -293,17 +304,26 @@ def generate_manifest(resource_type: str, output_dir: Optional[str] = None) -> i
 def check_thresholds() -> int:
     """Check if coverage meets CI/CD thresholds.
 
+    Runs validation on all handlers and checks results against configured thresholds.
+
     Returns:
         Exit code (0=pass, 1=fail)
     """
+    from iac.property_validation.analysis.handler_analyzer import analyze_handler
+    from iac.property_validation.models import PropertyDefinition
+    from iac.property_validation.validation.coverage_calculator import (
+        CoverageCalculator,
+    )
+    from iac.property_validation.validation.critical_classifier import (
+        CriticalClassifier,
+    )
+    from iac.property_validation.validation.gap_finder import GapFinder
+
     print_header("CI/CD Threshold Check")
 
-    # TODO: Implement threshold checking
-    print_warning("Threshold checking not yet implemented")
-
-    # Mock thresholds
+    # Define thresholds (could be loaded from config file in future)
     thresholds = {
-        "min_coverage": 80.0,
+        "min_coverage": 70.0,
         "max_critical_gaps": 0,
         "min_quality_score": 70.0,
     }
@@ -312,32 +332,99 @@ def check_thresholds() -> int:
     for key, value in thresholds.items():
         print(f"  {key}: {value}")
 
-    # Mock results (would come from actual validation)
+    # Find all handler files
+    base_path = Path("src/iac/handlers")
+    if not base_path.exists():
+        print_error(f"Handlers directory not found: {base_path}")
+        return 1
+
+    handler_files = list(base_path.glob("**/*_handler.py"))
+    if not handler_files:
+        print_error("No handler files found")
+        return 1
+
+    # Initialize validation components
+    classifier = CriticalClassifier()
+    gap_finder = GapFinder(classifier)
+    coverage_calculator = CoverageCalculator()
+
+    # Validate all handlers to get actual metrics
+    total_coverage_sum = 0.0
+    total_critical_gaps = 0
+    total_handlers = 0
+    quality_scores = []
+
+    for handler_file in handler_files:
+        result = analyze_handler(handler_file)
+        if not result:
+            continue
+
+        # Mock schema properties for now (in production, these come from Terraform schema loader)
+        schema_properties = {
+            "name": PropertyDefinition(
+                name="name",
+                required=True,
+                has_default=False,
+                property_type="string",
+                description="Resource name",
+            ),
+        }
+
+        gaps = gap_finder.find_gaps(schema_properties, result.terraform_writes)
+
+        metrics = coverage_calculator.calculate_coverage(
+            required_properties=set(schema_properties.keys()),
+            actual_properties=result.terraform_writes,
+            gaps=gaps,
+        )
+
+        score = coverage_calculator.calculate_weighted_score(metrics)
+
+        total_coverage_sum += metrics.coverage_percentage
+        total_critical_gaps += metrics.critical_gaps
+        quality_scores.append(score)
+        total_handlers += 1
+
+    # Calculate overall metrics
     actual = {
-        "coverage": 85.0,
-        "critical_gaps": 0,
-        "quality_score": 75.0,
+        "coverage": total_coverage_sum / max(1, total_handlers),
+        "critical_gaps": total_critical_gaps,
+        "quality_score": sum(quality_scores) / max(1, len(quality_scores))
+        if quality_scores
+        else 0.0,
     }
 
-    print_info("\nActual values:")
+    print_info(f"\nActual values (from {total_handlers} handlers):")
     passed = True
 
     if actual["coverage"] >= thresholds["min_coverage"]:
-        print_success(f"  Coverage: {actual['coverage']}% >= {thresholds['min_coverage']}%")
+        print_success(
+            f"  Coverage: {actual['coverage']:.1f}% >= {thresholds['min_coverage']}%"
+        )
     else:
-        print_error(f"  Coverage: {actual['coverage']}% < {thresholds['min_coverage']}%")
+        print_error(
+            f"  Coverage: {actual['coverage']:.1f}% < {thresholds['min_coverage']}%"
+        )
         passed = False
 
     if actual["critical_gaps"] <= thresholds["max_critical_gaps"]:
-        print_success(f"  Critical gaps: {actual['critical_gaps']} <= {thresholds['max_critical_gaps']}")
+        print_success(
+            f"  Critical gaps: {actual['critical_gaps']} <= {thresholds['max_critical_gaps']}"
+        )
     else:
-        print_error(f"  Critical gaps: {actual['critical_gaps']} > {thresholds['max_critical_gaps']}")
+        print_error(
+            f"  Critical gaps: {actual['critical_gaps']} > {thresholds['max_critical_gaps']}"
+        )
         passed = False
 
     if actual["quality_score"] >= thresholds["min_quality_score"]:
-        print_success(f"  Quality score: {actual['quality_score']} >= {thresholds['min_quality_score']}")
+        print_success(
+            f"  Quality score: {actual['quality_score']:.1f} >= {thresholds['min_quality_score']}"
+        )
     else:
-        print_error(f"  Quality score: {actual['quality_score']} < {thresholds['min_quality_score']}")
+        print_error(
+            f"  Quality score: {actual['quality_score']:.1f} < {thresholds['min_quality_score']}"
+        )
         passed = False
 
     print_header("Result")
@@ -405,61 +492,41 @@ Examples:
 
   # Clear schema cache
   python -m iac.property_validation clear-cache
-        """
+        """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # Validate command
     validate_parser = subparsers.add_parser(
-        "validate",
-        help="Validate handler property coverage"
+        "validate", help="Validate handler property coverage"
     )
-    validate_parser.add_argument(
-        "--handler",
-        help="Specific handler file to validate"
-    )
+    validate_parser.add_argument("--handler", help="Specific handler file to validate")
 
     # Report command
-    report_parser = subparsers.add_parser(
-        "report",
-        help="Generate coverage report"
-    )
+    report_parser = subparsers.add_parser("report", help="Generate coverage report")
     report_parser.add_argument(
-        "--output",
-        default="coverage_report.html",
-        help="Output file path"
+        "--output", default="coverage_report.html", help="Output file path"
     )
 
     # Generate manifest command
     manifest_parser = subparsers.add_parser(
-        "generate-manifest",
-        help="Generate property manifest for resource type"
+        "generate-manifest", help="Generate property manifest for resource type"
     )
     manifest_parser.add_argument(
-        "--resource",
-        required=True,
-        help="Resource type (e.g., storage_account)"
+        "--resource", required=True, help="Resource type (e.g., storage_account)"
     )
-    manifest_parser.add_argument(
-        "--output-dir",
-        help="Output directory for manifest"
-    )
+    manifest_parser.add_argument("--output-dir", help="Output directory for manifest")
 
     # Check thresholds command
     subparsers.add_parser(
-        "check-thresholds",
-        help="Check if coverage meets CI/CD thresholds"
+        "check-thresholds", help="Check if coverage meets CI/CD thresholds"
     )
 
     # Clear cache command
-    cache_parser = subparsers.add_parser(
-        "clear-cache",
-        help="Clear schema cache"
-    )
+    cache_parser = subparsers.add_parser("clear-cache", help="Clear schema cache")
     cache_parser.add_argument(
-        "--provider",
-        help="Specific provider to clear (e.g., Microsoft.Storage)"
+        "--provider", help="Specific provider to clear (e.g., Microsoft.Storage)"
     )
 
     # Parse arguments

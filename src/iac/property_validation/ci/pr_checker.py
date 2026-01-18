@@ -29,7 +29,7 @@ import yaml
 
 # Import validation components
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from property_validation.models import Criticality, CoverageMetrics
+from property_validation.models import CoverageMetrics
 from property_validation.validation import (
     CoverageCalculator,
     CriticalClassifier,
@@ -105,13 +105,11 @@ class PRChecker:
             regression_tolerance=float(t.get("regression_tolerance", -5)),
         )
 
-    def validate_handler(
-        self, handler_file: Path
-    ) -> Optional[CoverageMetrics]:
-        """Validate a single handler file.
+    def validate_handler(self, handler_file: Path) -> Optional[CoverageMetrics]:
+        """Validate a single handler file using actual analysis system.
 
-        This is a placeholder that would integrate with the actual
-        property extraction and validation logic.
+        Integrates with handler_analyzer to extract property usage,
+        then runs gap analysis and coverage calculation.
 
         Args:
             handler_file: Path to handler Python file
@@ -119,33 +117,55 @@ class PRChecker:
         Returns:
             CoverageMetrics for the handler, or None if validation fails
         """
-        # TODO: Integrate with actual handler analysis
-        # For now, return a mock result to demonstrate the flow
-        # In production, this would:
-        # 1. Parse handler file to extract property usage
-        # 2. Load Terraform schema for resource types
-        # 3. Run gap analysis
-        # 4. Calculate coverage metrics
+        # Import actual analysis components
+        from property_validation.analysis.handler_analyzer import analyze_handler
+        from property_validation.models import PropertyDefinition
 
-        # Mock implementation - replace with actual analysis
-        from property_validation.models import PropertyGap
+        # Step 1: Parse handler file to extract property usage
+        result = analyze_handler(handler_file)
+        if not result:
+            return None
 
-        mock_gaps = []
-        return CoverageMetrics(
-            total_properties=10,
-            covered_properties=7,
-            missing_properties=3,
-            coverage_percentage=70.0,
-            gaps=mock_gaps,
-            critical_gaps=0,
-            high_priority_gaps=1,
-            medium_priority_gaps=2,
-            low_priority_gaps=0,
+        # Step 2: Load Terraform schema for resource types
+        # For now, use a basic schema with common properties
+        # In production, this would load from actual Terraform provider schema
+        schema_properties = {
+            "name": PropertyDefinition(
+                name="name",
+                required=True,
+                has_default=False,
+                property_type="string",
+                description="Resource name",
+            ),
+            "location": PropertyDefinition(
+                name="location",
+                required=True,
+                has_default=False,
+                property_type="string",
+                description="Resource location",
+            ),
+            "resource_group_name": PropertyDefinition(
+                name="resource_group_name",
+                required=True,
+                has_default=False,
+                property_type="string",
+                description="Resource group name",
+            ),
+        }
+
+        # Step 3: Run gap analysis
+        gaps = self.gap_finder.find_gaps(schema_properties, result.terraform_writes)
+
+        # Step 4: Calculate coverage metrics
+        metrics = self.calculator.calculate_coverage(
+            required_properties=set(schema_properties.keys()),
+            actual_properties=result.terraform_writes,
+            gaps=gaps,
         )
 
-    def validate_all_handlers(
-        self, handlers_dir: Path
-    ) -> Dict[str, CoverageMetrics]:
+        return metrics
+
+    def validate_all_handlers(self, handlers_dir: Path) -> Dict[str, CoverageMetrics]:
         """Run validation on all handler files in directory.
 
         Args:
@@ -156,8 +176,11 @@ class PRChecker:
         """
         handler_results = {}
 
-        # Find all handler files
-        handler_files = list(handlers_dir.glob("**/*_handler.py"))
+        # Find all Python files in handlers directory (excluding __init__.py and base_handler.py)
+        all_py_files = list(handlers_dir.glob("**/*.py"))
+        handler_files = [
+            f for f in all_py_files if f.name not in ("__init__.py", "base_handler.py")
+        ]
 
         if not handler_files:
             print(f"Warning: No handler files found in {handlers_dir}")
@@ -275,10 +298,14 @@ class PRChecker:
         # Gap summary
         lines.append("## Gap Summary")
         lines.append("")
-        lines.append(f"- **CRITICAL gaps**: {result.total_critical_gaps} "
-                    f"(allowed: {self.thresholds.critical_gaps_allowed})")
-        lines.append(f"- **HIGH priority gaps**: {result.total_high_gaps} "
-                    f"(allowed: {self.thresholds.high_gaps_allowed})")
+        lines.append(
+            f"- **CRITICAL gaps**: {result.total_critical_gaps} "
+            f"(allowed: {self.thresholds.critical_gaps_allowed})"
+        )
+        lines.append(
+            f"- **HIGH priority gaps**: {result.total_high_gaps} "
+            f"(allowed: {self.thresholds.high_gaps_allowed})"
+        )
         lines.append("")
 
         # Per-handler breakdown
@@ -291,7 +318,8 @@ class PRChecker:
             for handler_name, metrics in sorted(result.handler_results.items()):
                 status_icon = (
                     "✅"
-                    if metrics.coverage_percentage >= self.thresholds.per_handler_minimum
+                    if metrics.coverage_percentage
+                    >= self.thresholds.per_handler_minimum
                     else "❌"
                 )
                 lines.append(
@@ -316,7 +344,9 @@ class PRChecker:
         lines.append("**Thresholds**:")
         lines.append(f"- Overall minimum: {self.thresholds.overall_minimum}%")
         lines.append(f"- Per-handler minimum: {self.thresholds.per_handler_minimum}%")
-        lines.append(f"- Critical gaps allowed: {self.thresholds.critical_gaps_allowed}")
+        lines.append(
+            f"- Critical gaps allowed: {self.thresholds.critical_gaps_allowed}"
+        )
         lines.append(f"- High gaps allowed: {self.thresholds.high_gaps_allowed}")
         lines.append("")
 
@@ -367,7 +397,7 @@ def main():
         checker.thresholds = thresholds
 
         if args.verbose:
-            print(f"Thresholds loaded:")
+            print("Thresholds loaded:")
             print(f"  Overall minimum: {thresholds.overall_minimum}%")
             print(f"  Per-handler minimum: {thresholds.per_handler_minimum}%")
             print()
@@ -412,6 +442,7 @@ def main():
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(2)
 
