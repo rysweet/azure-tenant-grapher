@@ -180,30 +180,93 @@ def deploy_command(
         if dataplane != "none" and not dry_run:
             click.echo(f"\nStarting data plane replication ({dataplane} mode)...")
 
-            # Need source subscription/tenant for replication
-            # TODO: Get these from Neo4j or user input
-            # For now, warn that this requires additional configuration
-            click.echo(
-                "⚠️  Data plane replication requires source tenant/subscription configuration"
-            )
-            click.echo(
-                "    This feature is in development. Control plane deployment completed successfully."
-            )
-            click.echo(
-                "    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication instructions."
-            )
+            # Get source subscription/tenant for replication from environment or prompt
+            source_tenant_id = None
+            source_subscription_id = None
 
-            # Placeholder for future implementation
-            # dataplane_result = orchestrate_dataplane_replication(
-            #     iac_dir=Path(iac_dir),
-            #     mode=ReplicationMode(dataplane),
-            #     source_tenant_id=source_tenant_id,
-            #     target_tenant_id=target_tenant_id,
-            #     source_subscription_id=source_subscription_id,
-            #     target_subscription_id=subscription_id,
-            #     sp_client_id=sp_client_id,
-            #     sp_client_secret=sp_client_secret,
-            # )
+            # Try to get from environment variables first
+            import os
+            source_tenant_id = os.getenv("ATG_SOURCE_TENANT_ID")
+            source_subscription_id = os.getenv("ATG_SOURCE_SUBSCRIPTION_ID")
+
+            # If not in environment, prompt user (interactive mode only)
+            if not source_tenant_id or not source_subscription_id:
+                click.echo("⚠️  Data plane replication requires source tenant/subscription IDs")
+                click.echo("    Set ATG_SOURCE_TENANT_ID and ATG_SOURCE_SUBSCRIPTION_ID environment variables")
+                click.echo("    or provide them interactively below:")
+
+                if not source_tenant_id:
+                    source_tenant_id = click.prompt("Source tenant ID", type=str, default="")
+                if not source_subscription_id:
+                    source_subscription_id = click.prompt("Source subscription ID", type=str, default="")
+
+                # If still empty, skip dataplane replication
+                if not source_tenant_id or not source_subscription_id:
+                    click.echo("⚠️  Skipping data plane replication (missing source configuration)")
+                    click.echo("    Control plane deployment completed successfully.")
+                    click.echo("    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication.")
+                else:
+                    # Execute dataplane replication
+                    from ..deployment.dataplane_orchestrator import (
+                        orchestrate_dataplane_replication,
+                        ReplicationMode,
+                    )
+
+                    try:
+                        dataplane_result = orchestrate_dataplane_replication(
+                            iac_dir=Path(iac_dir),
+                            mode=ReplicationMode(dataplane),
+                            source_tenant_id=source_tenant_id,
+                            target_tenant_id=target_tenant_id,
+                            source_subscription_id=source_subscription_id,
+                            target_subscription_id=subscription_id or "",
+                            sp_client_id=sp_client_id,
+                            sp_client_secret=sp_client_secret,
+                        )
+
+                        # Display dataplane results
+                        click.echo(f"\nData plane replication {dataplane_result['status']}")
+                        click.echo(f"  Resources processed: {dataplane_result['resources_processed']}")
+                        click.echo(f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}")
+                        if dataplane_result['errors']:
+                            click.echo(f"  Errors: {len(dataplane_result['errors'])}")
+                        if dataplane_result['warnings']:
+                            click.echo(f"  Warnings: {len(dataplane_result['warnings'])}")
+
+                    except Exception as e:
+                        click.echo(f"⚠️  Data plane replication failed: {e}", err=True)
+                        click.echo("    Control plane deployment completed successfully.")
+            else:
+                # Execute dataplane replication with environment variables
+                from ..deployment.dataplane_orchestrator import (
+                    orchestrate_dataplane_replication,
+                    ReplicationMode,
+                )
+
+                try:
+                    dataplane_result = orchestrate_dataplane_replication(
+                        iac_dir=Path(iac_dir),
+                        mode=ReplicationMode(dataplane),
+                        source_tenant_id=source_tenant_id,
+                        target_tenant_id=target_tenant_id,
+                        source_subscription_id=source_subscription_id,
+                        target_subscription_id=subscription_id or "",
+                        sp_client_id=sp_client_id,
+                        sp_client_secret=sp_client_secret,
+                    )
+
+                    # Display dataplane results
+                    click.echo(f"\nData plane replication {dataplane_result['status']}")
+                    click.echo(f"  Resources processed: {dataplane_result['resources_processed']}")
+                    click.echo(f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}")
+                    if dataplane_result['errors']:
+                        click.echo(f"  Errors: {len(dataplane_result['errors'])}")
+                    if dataplane_result['warnings']:
+                        click.echo(f"  Warnings: {len(dataplane_result['warnings'])}")
+
+                except Exception as e:
+                    click.echo(f"⚠️  Data plane replication failed: {e}", err=True)
+                    click.echo("    Control plane deployment completed successfully.")
 
         # Display result
         status = result["status"]
