@@ -474,7 +474,8 @@ class KeyVaultTranslator(BaseTranslator):
             logger.debug("No identity mapping file provided in context")
             return None
 
-        # TODO Phase 3: Load and parse identity mapping file
+        # Future Work: Load and parse identity mapping file
+        # See src/iac/FUTURE_WORK.md - TODO #8 for implementation specifications
         # For now, return None (Phase 2 implementation)
         logger.debug(
             f"Identity mapping file specified but not yet implemented: {identity_mapping_file}"

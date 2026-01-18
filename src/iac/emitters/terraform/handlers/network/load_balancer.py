@@ -63,7 +63,8 @@ class LoadBalancerHandler(ResourceHandler):
             sku_name = "Standard"
         config["sku"] = sku_name
 
-        # TODO: Future enhancement - Extract and emit:
+        # Future Work: Extract and emit additional LB components
+        # See src/iac/FUTURE_WORK.md - TODO #7 for implementation specifications:
         # - frontend_ip_configuration blocks
         # - backend_address_pool blocks (separate resource)
         # - probe blocks (separate resource)

@@ -195,7 +195,8 @@ class DependencyAnalyzer:
                     f"Added RG dependency for {resource.get('name', 'unknown')}: {terraform_ref}"
                 )
 
-        # TODO: Extract additional explicit dependencies from properties
+        # Future Work: Extract additional explicit dependencies from properties
+        # See src/iac/FUTURE_WORK.md - TODO #6 for implementation specifications:
         # - VNets for subnets
         # - Subnets for NICs
         # - NICs for VMs

@@ -1311,9 +1311,15 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                     terraform_config = json.load(f)
 
                 # Initialize validator (GAP-015, GAP-016)
-                subscription_id = None  # TODO: Get from environment/config
+                # Resolve subscription ID: target_subscription > AZURE_SUBSCRIPTION_ID > extract from resources
+                # This mirrors the logic at lines 697-720 for consistency
+                resolved_subscription_id = (
+                    target_subscription
+                    or os.environ.get("AZURE_SUBSCRIPTION_ID")
+                    or subscription_id  # Already resolved earlier in function
+                )
                 validator = NameConflictValidator(
-                    subscription_id=subscription_id,
+                    subscription_id=resolved_subscription_id,
                     naming_suffix=naming_suffix,
                     preserve_names=preserve_names,
                     auto_purge_soft_deleted=auto_purge_soft_deleted,

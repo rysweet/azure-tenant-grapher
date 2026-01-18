@@ -1,6 +1,7 @@
 """Key Vault conflict handler (stub implementation).
 
-TODO: Implement proper Key Vault soft-delete conflict detection and resolution.
+Future Work: Implement proper Key Vault soft-delete conflict detection and resolution.
+See src/iac/FUTURE_WORK.md - TODO #3 for complete implementation specifications.
 This is a stub to unblock IaC generation. Real implementation needed for production.
 """
 
