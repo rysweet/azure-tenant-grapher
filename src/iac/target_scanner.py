@@ -135,13 +135,15 @@ class TargetScannerService:
 
                 try:
                     logger.info(str(f"🔍 Scanning subscription: {sub_name} ({sub_id})"))
+
+                    # Discover regular resources
                     resources = (
                         await self.discovery_service.discover_resources_in_subscription(
                             sub_id
                         )
                     )
 
-                    # Convert to TargetResource format
+                    # Convert regular resources to TargetResource format
                     for resource in resources:
                         try:
                             target_resource = self._convert_to_target_resource(resource)
@@ -155,6 +157,42 @@ class TargetScannerService:
                     logger.info(
                         f"✅ Found {len(resources)} resources in subscription {sub_name}"
                     )
+
+                    # Issue #752 fix: Discover role assignments (separate Authorization API call)
+                    try:
+                        role_assignments = await self.discovery_service.discover_role_assignments_in_subscription(
+                            sub_id, sub_name
+                        )
+
+                        # Convert role assignments to TargetResource format
+                        for role_assignment in role_assignments:
+                            try:
+                                target_resource = self._convert_to_target_resource(
+                                    role_assignment
+                                )
+                                all_resources.append(target_resource)
+                            except Exception as convert_error:
+                                logger.warning(
+                                    f"Failed to convert role assignment {role_assignment.get('id', 'unknown')}: {convert_error}"
+                                )
+                                # Continue with other role assignments
+
+                        logger.info(
+                            f"✅ Found {len(role_assignments)} role assignments in subscription {sub_name}"
+                        )
+
+                    except Exception as role_error:
+                        # Handle role assignment discovery errors gracefully
+                        role_partial_error = f"Failed to discover role assignments in subscription {sub_name} ({sub_id}): {role_error}"
+                        logger.warning(role_partial_error)
+
+                        # Accumulate role assignment errors but don't fail the entire scan
+                        if error_message:
+                            error_message += f"\n{role_partial_error}"
+                        else:
+                            error_message = role_partial_error
+
+                        # Continue with other subscriptions even if role assignments fail
 
                 except Exception as resource_error:
                     partial_error = f"Failed to scan subscription {sub_name} ({sub_id}): {resource_error}"
