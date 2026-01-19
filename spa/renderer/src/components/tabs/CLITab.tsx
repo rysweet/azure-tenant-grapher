@@ -347,15 +347,15 @@ const CLITab: React.FC = () => {
   const [processSocket, setProcessSocket] = useState<Socket | null>(null);
 
   // Write output to terminal
-  const writeToTerminal = useCallback((text: string, color?: string) => {
-    if (terminalInstance.current) {
-      if (color) {
-        terminalInstance.current.write(`\x1b[${color}m${text}\x1b[0m\r\n`);
-      } else {
-        terminalInstance.current.write(`${text}\r\n`);
-      }
+ const writeToTerminal = useCallback((text: string, color?: string) => {
+  if (terminalInstance.current) {
+    if (color) {
+      terminalInstance.current.write(`\x1b[${color}m${text}\x1b[0m\r\n`);
+    } else {
+      terminalInstance.current.write(`${text}\r\n`);
     }
-  }, []);
+  }
+}, []);
 
   // Clear terminal
   const clearTerminal = useCallback(() => {
@@ -366,21 +366,13 @@ const CLITab: React.FC = () => {
     setTerminalOutput([]);
   }, []);
 
-  // Resize window when CLI tab is mounted
-  useEffect(() => {
-    const resizeWindow = async () => {
-      try {
-        if (window.electronAPI?.window?.resize) {
-          await window.electronAPI.window.resize?.(1600, 1200);
-          // Window resized for CLI tab
-        }
-      } catch (error) {
-        // Console error removed
-      }
-    };
-
-    resizeWindow();
-  }, []); // Run once on mount
+  // Reset terminal state for new command execution
+  const resetTerminalForNewCommand = useCallback(() => {
+    if (terminalInstance.current) {
+      terminalInstance.current.clear();
+    }
+    setTerminalOutput([]); // Clear previous command output to prevent stale data (Issue #771)
+  }, []);
 
   // Initialize terminal
   useEffect(() => {
@@ -533,6 +525,9 @@ const CLITab: React.FC = () => {
 
         // Execute after a short delay to ensure everything is initialized
         const timeoutId = setTimeout(() => {
+          // Clear terminal and reset output state for fresh start
+          resetTerminalForNewCommand();
+
           writeToTerminal(`Auto-executing command: atg ${autoCommand}`, '36'); // Cyan color
 
           // Execute the command inline to avoid circular dependency
@@ -679,6 +674,9 @@ const CLITab: React.FC = () => {
     const args = buildCommandLine();
     const commandLine = `${commandDef.name} ${args.join(' ')}`;
 
+    // Clear terminal and reset output state so output starts fresh
+    resetTerminalForNewCommand();
+
     // Write command to terminal
     writeToTerminal(`$ atg ${commandLine}`, '32'); // Green color
 
@@ -734,7 +732,7 @@ const CLITab: React.FC = () => {
         } else if (response.data.status === 'cancelled') {
           writeToTerminal('Process cancelled by user', '33'); // Yellow color
         }
-        
+
         setIsRunning(false);
         setCurrentProcessId(null);
         unsubscribeFromProcess(currentProcessId);
@@ -1008,15 +1006,18 @@ const CLITab: React.FC = () => {
               ref={terminalRef}
               sx={{
                 flex: 1,
-                overflow: 'hidden',
+                overflow: 'auto',
                 backgroundColor: '#1e1e1e',
                 minHeight: '400px',
+                height: '600px',
+                maxHeight: '600px',
                 '& .xterm': {
                   height: '100%',
+                  width: '100%',
                   padding: 1,
                 },
                 '& .xterm-viewport': {
-                  overflow: 'auto',
+                  overflow: 'auto !important',
                   backgroundColor: '#1e1e1e !important',
                 },
                 '& .xterm-screen': {
