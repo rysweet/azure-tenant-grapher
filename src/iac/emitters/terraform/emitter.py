@@ -145,6 +145,9 @@ class TerraformEmitter:
         # Phase 3: Call post_emit on all handlers
         self._post_emit_handlers()
 
+        # Phase 4: Validate resource references (Fix #566)
+        self._validate_resource_references()
+
         # Log statistics
         self._log_statistics()
 
@@ -220,6 +223,12 @@ class TerraformEmitter:
 
         # Track in context for reference validation
         self.context.add_resource(terraform_type, terraform_name)
+
+        # Track resource groups for reference validation (Fix #566)
+        if terraform_type == "azurerm_resource_group":
+            rg_name = config.get("name")
+            if rg_name:
+                self.context.available_resource_groups.add(rg_name)
 
     def _emit_deferred_resources(self) -> None:
         """Emit deferred resources like NSG associations.
@@ -301,6 +310,30 @@ class TerraformEmitter:
                 )
                 if self.context.strict_mode:
                     raise
+
+    def _validate_resource_references(self) -> None:
+        """Validate all resource references in terraform config (Fix #566).
+
+        Checks that all resource_group_name references point to emitted
+        resource groups. Tracks missing references for reporting.
+        """
+        resources = self.context.terraform_config.get("resource", {})
+
+        for terraform_type, type_resources in resources.items():
+            for resource_name, config in type_resources.items():
+                # Validate resource_group_name reference
+                rg_name = config.get("resource_group_name")
+                if rg_name and rg_name not in self.context.available_resource_groups:
+                    self.context.track_missing_reference(
+                        resource_name=resource_name,
+                        resource_type="azurerm_resource_group",
+                        missing_resource_name=rg_name,
+                        missing_resource_id=f"/resourceGroups/{rg_name}",
+                        referencing_resource_type=terraform_type,
+                    )
+                    logger.debug(
+                        f"Resource '{resource_name}' references missing resource group '{rg_name}'"
+                    )
 
     def _log_statistics(self) -> None:
         """Log emission statistics."""
