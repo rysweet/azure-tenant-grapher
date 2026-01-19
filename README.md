@@ -4,7 +4,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 
 ![Azure Tenant Grapher Screenshot](docs/resources/screenshot.png)
 
-> **📚 [View Complete Documentation](https://rysweet.github.io/pr600/)** - Full guides, tutorials, and API reference on GitHub Pages
+> **📚 [View Complete Documentation](https://docs.github.com/en/pages)** - Full guides, tutorials, and API reference on GitHub Pages
 
 ---
 
@@ -15,21 +15,30 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
   - [Prerequisites](#prerequisites)
   - [Create & Explore Your Graph](#create--explore-your-graph)
 - [Installation](#installation)
+- [Dependency Management](#dependency-management)
 - [Usage](#usage)
-  - [Scan & Rebuild Graph](#scan--rebuild-graph)
+  - [Filtered Scanning with Identity Inclusion](#filtered-scanning-with-identity-inclusion)
+  - [Azure AD Identity Import](#azure-ad-identity-import)
   - [Agent Mode](#agent-mode)
-  - [Threat Modeling](#threat-modeling)
+  - [Generate Tenant Specification](#generate-tenant-specification)
+  - [MCP Server](#mcp-server)
   - [Generate & Deploy IaC](#generate--deploy-iac)
+  - [Threat Modeling agent example - example of using the MCP server in an agent](#threat-modeling-agent-example---example-of-using-the-mcp-server-in-an-agent)
   - [Database Backup](#database-backup)
-- [Advanced Topics](#advanced-topics)
-  - [Graph Enrichment & Refactor Plan](#graph-enrichment--refactor-plan)
   - [IaC Subset & Rules System](#iac-subset--rules-system)
-  - [Architecture](#architecture)
+- [Desktop GUI (Electron App)](#desktop-gui-electron-app)
+  - [GUI Quick Start](#gui-quick-start)
+  - [GUI Development](#gui-development)
+  - [GUI Features](#gui-features)
 - [Demo Walkthrough System](#demo-walkthrough-system)
+  - [Demo Features](#demo-features)
+  - [Running Demos](#running-demos)
+  - [Demo Scenarios](#demo-scenarios)
+  - [CI/CD Integration](#cicd-integration)
 - [Development & Testing](#development--testing)
+  - [Test Output and Artifact Cleanup](#test-output-and-artifact-cleanup)
+  - [Automated Test Output and Artifacts](#automated-test-output-and-artifacts)
 - [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 

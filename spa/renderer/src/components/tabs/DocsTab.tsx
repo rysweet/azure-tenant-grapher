@@ -368,7 +368,7 @@ const TableOfContents: React.FC<{ content: string; onItemClick: (id: string) => 
                 primary={item.title}
                 primaryTypographyProps={{
                   variant: 'body2',
-                  fontSize: Math.max(0.75, 0.875 - (item.level - 1) * 0.1),
+                  fontSize: '0.875rem',
                   color: 'text.secondary',
                 }}
               />
@@ -465,8 +465,22 @@ const DocsTab: React.FC = () => {
     if (!contentSearchQuery || !fileContent) return fileContent;
 
     const regex = new RegExp(`(${contentSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return fileContent.replace(regex, '**$1**');
+    return fileContent.replace(regex, '<mark>$1</mark>');
   }, [fileContent, contentSearchQuery]);
+
+  // Scroll to first search match
+  useEffect(() => {
+    if (contentSearchQuery && fileContent) {
+      // Small delay to ensure content is rendered
+      const timer = setTimeout(() => {
+        const firstMark = document.querySelector('mark');
+        if (firstMark) {
+          firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [contentSearchQuery, fileContent]);
 
   // Custom markdown components
   const markdownComponents = {
@@ -497,43 +511,84 @@ const DocsTab: React.FC = () => {
         </code>
       );
     },
-    h1: ({ children, ...props }: any) => (
-      <Typography variant="h3" component="h1" gutterBottom sx={{ mt: 4, mb: 2 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    h2: ({ children, ...props }: any) => (
-      <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 3, mb: 2 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    h3: ({ children, ...props }: any) => (
-      <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 2, mb: 1 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    h4: ({ children, ...props }: any) => (
-      <Typography variant="h6" component="h4" gutterBottom sx={{ mt: 2, mb: 1 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    h5: ({ children, ...props }: any) => (
-      <Typography variant="subtitle1" component="h5" gutterBottom sx={{ mt: 1, mb: 1, fontWeight: 600 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    h6: ({ children, ...props }: any) => (
-      <Typography variant="subtitle2" component="h6" gutterBottom sx={{ mt: 1, mb: 1, fontWeight: 600 }} {...props}>
-        {children}
-      </Typography>
-    ),
+    h1: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="h3" component="h1" gutterBottom sx={{ mt: 4, mb: 2 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
+    h2: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 3, mb: 2 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
+    h3: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 2, mb: 1 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
+    h4: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="h6" component="h4" gutterBottom sx={{ mt: 2, mb: 1 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
+    h5: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="subtitle1" component="h5" gutterBottom sx={{ mt: 1, mb: 1, fontWeight: 600 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
+    h6: ({ children, ...props }: any) => {
+      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return (
+        <Typography variant="subtitle2" component="h6" gutterBottom sx={{ mt: 1, mb: 1, fontWeight: 600 }} {...props} id={id}>
+          {children}
+        </Typography>
+      );
+    },
     p: ({ children, ...props }: any) => (
       <Typography variant="body1" paragraph {...props}>
         {children}
       </Typography>
     ),
     a: ({ href, children, ...props }: any) => {
-      // Handle internal links
+      // Handle anchor links (scroll to section on same page)
+      if (href && href.startsWith('#')) {
+        return (
+          <Box
+            component="a"
+            href={href}
+            onClick={(e: any) => {
+              e.preventDefault();
+              scrollToHeading(href.slice(1));
+            }}
+            sx={{
+              color: 'primary.main',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              '&:hover': { color: 'primary.dark' }
+            }}
+            {...props}
+          >
+            {children}
+          </Box>
+        );
+      }
+
+      // Handle internal .md file links
       if (href && href.endsWith('.md')) {
         return (
           <Box
@@ -557,6 +612,7 @@ const DocsTab: React.FC = () => {
         );
       }
 
+      // External links (http://, https://, etc.)
       return (
         <Box
           component="a"
@@ -574,6 +630,20 @@ const DocsTab: React.FC = () => {
         </Box>
       );
     },
+    mark: ({ children, ...props }: any) => (
+      <Box
+        component="mark"
+        sx={{
+          backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.3) : alpha(theme.palette.warning.light, 0.5),
+          color: 'inherit',
+          padding: '2px 0',
+          borderRadius: '2px',
+        }}
+        {...props}
+      >
+        {children}
+      </Box>
+    ),
   };
 
   const drawerContent = (
