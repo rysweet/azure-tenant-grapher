@@ -293,4 +293,7 @@ WSL_LINUX_PATH_FIX_COMPLETE.md
 # Sentinel output
 sentinel-output/
 bash-test-output/
-test_*.py
+# Ignore test files in root/src, but NOT in tests/ directory
+/test_*.py
+/src/**/test_*.py
+!tests/**/test_*.py
