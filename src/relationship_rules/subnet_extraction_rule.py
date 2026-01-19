@@ -159,6 +159,7 @@ class SubnetExtractionRule(RelationshipRule):
             )
 
         # Build subnet resource
+        # FIX Issue #565: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
         subnet_resource = {
             "id": subnet_id,
             "name": subnet_name,
@@ -168,6 +169,12 @@ class SubnetExtractionRule(RelationshipRule):
             "subscription_id": vnet_resource.get("subscription_id"),
             "parent_id": vnet_id,
             "properties": self._serialize_value(subnet_props),
+            "scan_id": vnet_resource.get(
+                "scan_id"
+            ),  # Required for SCAN_SOURCE_NODE relationship
+            "tenant_id": vnet_resource.get(
+                "tenant_id"
+            ),  # Required for SCAN_SOURCE_NODE relationship
         }
 
         return subnet_resource
