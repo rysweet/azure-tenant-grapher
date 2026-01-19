@@ -68,11 +68,18 @@ export class SecureProcessManager extends EventEmitter {
     }
 
     const id = uuidv4();
-    const pythonPath = process.env.PYTHON_PATH || 'python3';
-    const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
+    const projectRoot = path.resolve(__dirname, '../../../..');
+
+    // Use virtual environment Python instead of system Python
+    const pythonPath = process.env.PYTHON_PATH || (
+      process.platform === 'win32'
+        ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+        : path.join(projectRoot, '.venv', 'bin', 'python')
+    );
+
+    const cliPath = path.resolve(__dirname, '../../../../scripts/cli.py');
 
     // Verify CLI path is within project
-    const projectRoot = path.resolve(__dirname, '../../..');
     if (!cliPath.startsWith(projectRoot)) {
       throw new Error('CLI path outside project directory');
     }
