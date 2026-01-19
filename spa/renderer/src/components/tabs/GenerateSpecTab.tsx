@@ -189,6 +189,7 @@ const GenerateSpecTab: React.FC = () => {
             value={generatedSpec || '// Specification will appear here after generation'}
             language={outputFormat === 'json' ? 'json' : 'markdown'}
             theme="vs-dark"
+            loading={null}
             options={{
               readOnly: true,
               minimap: { enabled: false },

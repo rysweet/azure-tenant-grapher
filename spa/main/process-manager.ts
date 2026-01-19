@@ -37,8 +37,16 @@ export class ProcessManager extends EventEmitter {
     }
 
     const id = uuidv4();
-    const pythonPath = process.env.PYTHON_PATH || 'python3';
-    const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
+    const projectRoot = path.resolve(__dirname, '../../../..');
+
+    // Use virtual environment Python instead of system Python
+    const pythonPath = process.env.PYTHON_PATH || (
+      process.platform === 'win32'
+        ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+        : path.join(projectRoot, '.venv', 'bin', 'python')
+    );
+
+    const cliPath = path.resolve(__dirname, '../../../../scripts/cli.py');
 
     console.log('[ProcessManager] Executing command:', command, 'with args:', args);
     console.log('[ProcessManager] Python path:', pythonPath);
@@ -49,11 +57,11 @@ export class ProcessManager extends EventEmitter {
 
     // Never use shell: true to prevent command injection
     const childProcess = spawn(pythonPath, fullArgs, {
-      cwd: path.resolve(__dirname, '../../..'),
+      cwd: projectRoot,
       shell: false, // Explicitly disable shell execution
       env: {
         ...process.env,
-        PYTHONPATH: path.resolve(__dirname, '../../..'),
+        PYTHONPATH: projectRoot,
         PYTHONUNBUFFERED: '1', // Force Python to flush output immediately
       },
     });

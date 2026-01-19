@@ -48,6 +48,7 @@ const ALLOWED_ARGS = new Set([
   '--max-llm-threads',
   '--max-build-threads',
   '--resource-limit',
+  '--limit',
   '--rebuild-edges',
   '--visualize',
   '--visualize-only',
