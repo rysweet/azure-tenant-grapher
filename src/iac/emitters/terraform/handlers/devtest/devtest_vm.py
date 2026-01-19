@@ -1,7 +1,7 @@
 """DevTest VM handler for Terraform emission.
 
 Handles: Microsoft.DevTestLab/labs/virtualMachines
-Emits: azurerm_dev_test_linux_virtual_machine
+Emits: azurerm_dev_test_linux_virtual_machine, azurerm_dev_test_windows_virtual_machine
 """
 
 import logging
@@ -20,6 +20,7 @@ class DevTestVMHandler(ResourceHandler):
 
     Emits:
         - azurerm_dev_test_linux_virtual_machine
+        - azurerm_dev_test_windows_virtual_machine
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -28,6 +29,7 @@ class DevTestVMHandler(ResourceHandler):
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_dev_test_linux_virtual_machine",
+        "azurerm_dev_test_windows_virtual_machine",
     }
 
     def emit(
@@ -71,8 +73,26 @@ class DevTestVMHandler(ResourceHandler):
                 f"virtualnetworks/{lab_name}Vnet"
             )
 
-        # Gallery image reference
+        # Gallery image reference - used for OS detection
         gallery_image_ref = properties.get("galleryImageReference", {})
+
+        # Detect OS type (GAP-002: Support Windows VMs)
+        os_type = gallery_image_ref.get("osType", "").lower()
+        offer = gallery_image_ref.get("offer", "").lower()
+        publisher = gallery_image_ref.get("publisher", "").lower()
+
+        # Determine if this is a Windows VM
+        is_windows = (
+            os_type == "windows"
+            or "windows" in offer
+            or "microsoftwindowsserver" in publisher
+        )
+
+        # Set VM type based on OS
+        if is_windows:
+            vm_type = "azurerm_dev_test_windows_virtual_machine"
+        else:
+            vm_type = "azurerm_dev_test_linux_virtual_machine"
 
         config.update(
             {
@@ -82,7 +102,6 @@ class DevTestVMHandler(ResourceHandler):
                 "storage_type": storage_type,
                 "lab_subnet_name": lab_subnet_name,
                 "lab_virtual_network_id": lab_virtual_network_id,
-                "ssh_key": f"var.devtest_vm_ssh_key_{safe_name}",
                 "gallery_image_reference": {
                     "offer": gallery_image_ref.get(
                         "offer", "0001-com-ubuntu-server-jammy"
@@ -94,6 +113,16 @@ class DevTestVMHandler(ResourceHandler):
             }
         )
 
-        logger.debug(f"DevTest VM '{vm_name}' emitted for lab '{lab_name}'")
+        # Add authentication based on OS type (GAP-002)
+        if is_windows:
+            # Windows VMs use password authentication
+            config["password"] = f"var.devtest_vm_password_{safe_name}"
+        else:
+            # Linux VMs use SSH key authentication
+            config["ssh_key"] = f"var.devtest_vm_ssh_key_{safe_name}"
 
-        return "azurerm_dev_test_linux_virtual_machine", safe_name, config
+        logger.debug(
+            f"DevTest VM '{vm_name}' emitted as {vm_type} for lab '{lab_name}'"
+        )
+
+        return vm_type, safe_name, config
