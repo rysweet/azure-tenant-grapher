@@ -82,12 +82,12 @@ class KeyVaultHandler(ResourceHandler):
         config["sku_name"] = sku_name.lower()  # Fix #596: Terraform requires lowercase
 
         # Tenant ID (required) - Fix #604: Use target tenant ID for cross-tenant deployment
-        # Priority: target_tenant_id (cross-tenant) > source tenantId (same-tenant)
-        tenant_id = context.target_tenant_id or properties.get("tenantId")
-        if tenant_id:
-            config["tenant_id"] = tenant_id
+        # ISSUE #475: NEVER use raw source tenantId - it leaks source tenant GUID
+        # Priority: target_tenant_id (cross-tenant) > variable reference (same-tenant)
+        if context.target_tenant_id:
+            config["tenant_id"] = context.target_tenant_id
         else:
-            # Use variable reference
+            # Use variable reference - NEVER fall back to properties.get("tenantId")
             config["tenant_id"] = "${var.tenant_id}"
 
         # Soft delete settings
