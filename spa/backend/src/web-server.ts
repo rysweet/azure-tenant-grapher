@@ -287,12 +287,22 @@ app.post('/api/cancel/:processId', (req, res) => {
   const process = activeProcesses.get(processId);
 
   if (!process) {
-    return res.status(404).json({ error: 'Process not found' });
+    // Process already completed or doesn't exist - treat as success
+    logger.debug(`Cancel request for non-existent process: ${processId} (likely already completed)`);
+    return res.json({ status: 'not_running', message: 'Process already completed or not found' });
   }
 
-  process.kill('SIGTERM');
-  activeProcesses.delete(processId);
-  res.json({ status: 'cancelled' });
+  try {
+    process.kill('SIGTERM');
+    activeProcesses.delete(processId);
+    logger.info(`Process ${processId} cancelled successfully`);
+    res.json({ status: 'cancelled' });
+  } catch (error) {
+    logger.error(`Failed to kill process ${processId}`, { error });
+    // Still remove from active processes even if kill fails
+    activeProcesses.delete(processId);
+    res.json({ status: 'cancelled', warning: 'Process may have already exited' });
+  }
 });
 
 // Get process status
