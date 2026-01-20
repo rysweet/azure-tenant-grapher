@@ -703,6 +703,7 @@ class AzureDiscoveryService:
                         subnets_pager = network_client.subnets.list(rg, vnet_name)
 
                         for subnet in subnets_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             subnet_dict = {
                                 "id": getattr(subnet, "id", None),
                                 "name": getattr(subnet, "name", None),
@@ -711,6 +712,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": vnet.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": vnet.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(subnet_dict)
 
@@ -755,6 +762,7 @@ class AzureDiscoveryService:
                         )
 
                         for runbook in runbooks_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             runbook_dict = {
                                 "id": getattr(runbook, "id", None),
                                 "name": getattr(runbook, "name", None),
@@ -763,6 +771,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": account.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": account.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(runbook_dict)
 
@@ -808,6 +822,7 @@ class AzureDiscoveryService:
                         )
 
                         for link in links_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             link_dict = {
                                 "id": getattr(link, "id", None),
                                 "name": getattr(link, "name", None),
@@ -816,6 +831,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": dns_zone.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": dns_zone.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(link_dict)
 
@@ -863,6 +884,7 @@ class AzureDiscoveryService:
                         )
 
                         for ext in extensions_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             ext_dict = {
                                 "id": getattr(ext, "id", None),
                                 "name": getattr(ext, "name", None),
@@ -871,6 +893,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": vm.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": vm.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(ext_dict)
 
@@ -920,6 +948,7 @@ class AzureDiscoveryService:
                         )
 
                         for db in databases_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             db_dict = {
                                 "id": getattr(db, "id", None),
                                 "name": getattr(db, "name", None),
@@ -928,6 +957,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": server.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": server.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(db_dict)
 
@@ -984,6 +1019,7 @@ class AzureDiscoveryService:
                             )
 
                             for config in configs_pager:
+                                # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                                 config_dict = {
                                     "id": getattr(config, "id", None),
                                     "name": getattr(config, "name", None),
@@ -992,6 +1028,12 @@ class AzureDiscoveryService:
                                     "properties": {},
                                     "subscription_id": subscription_id,
                                     "resource_group": rg,
+                                    "scan_id": server.get(
+                                        "scan_id"
+                                    ),  # Required for SCAN_SOURCE_NODE relationship
+                                    "tenant_id": server.get(
+                                        "tenant_id"
+                                    ),  # Required for SCAN_SOURCE_NODE relationship
                                 }
                                 child_resources.append(config_dict)
                         except Exception:
@@ -1047,6 +1089,7 @@ class AzureDiscoveryService:
                         webhooks_pager = acr_client.webhooks.list(rg, registry_name)
 
                         for webhook in webhooks_pager:
+                            # FIX Issue #563: Include scan_id and tenant_id to ensure SCAN_SOURCE_NODE relationships are created
                             webhook_dict = {
                                 "id": getattr(webhook, "id", None),
                                 "name": getattr(webhook, "name", None),
@@ -1055,6 +1098,12 @@ class AzureDiscoveryService:
                                 "properties": {},
                                 "subscription_id": subscription_id,
                                 "resource_group": rg,
+                                "scan_id": registry.get(
+                                    "scan_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
+                                "tenant_id": registry.get(
+                                    "tenant_id"
+                                ),  # Required for SCAN_SOURCE_NODE relationship
                             }
                             child_resources.append(webhook_dict)
 
