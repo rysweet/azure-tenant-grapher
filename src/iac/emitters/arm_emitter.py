@@ -536,6 +536,49 @@ class ArmEmitter(IaCEmitter):
 
         return arm_template
 
+    def _sanitize_vm_properties(self, properties: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove deployment-incompatible disk ID references from VM properties.
+
+        Azure ARM deployment doesn't allow pre-specifying managedDisk.id values.
+        These are generated during deployment. We keep storageAccountType and
+        other valid disk configuration properties.
+
+        Args:
+            properties: VM properties dictionary from tenant graph
+
+        Returns:
+            Sanitized properties with managedDisk.id fields removed
+
+        Issue #389: Fixes ARM template export invalid managedDisk.id references
+        """
+        if not properties:
+            return properties
+
+        # Deep copy to avoid modifying original
+        import copy
+
+        sanitized = copy.deepcopy(properties)
+
+        # Sanitize storageProfile if present
+        if "storageProfile" in sanitized:
+            storage_profile = sanitized["storageProfile"]
+
+            # Sanitize osDisk
+            if "osDisk" in storage_profile:
+                os_disk = storage_profile["osDisk"]
+                if "managedDisk" in os_disk:
+                    # Remove id but keep storageAccountType and other properties
+                    os_disk["managedDisk"].pop("id", None)
+
+            # Sanitize dataDisks
+            if "dataDisks" in storage_profile:
+                for data_disk in storage_profile["dataDisks"]:
+                    if "managedDisk" in data_disk:
+                        # Remove id but keep storageAccountType and other properties
+                        data_disk["managedDisk"].pop("id", None)
+
+        return sanitized
+
     def _convert_resource_to_arm(
         self, resource: Dict[str, Any], mapping: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
@@ -559,7 +602,12 @@ class ArmEmitter(IaCEmitter):
         # Add resource-specific required properties
         az_type = resource.get("type", "")
 
-        if az_type == "Microsoft.Storage/storageAccounts":
+        # Sanitize VM disk references (Issue #389)
+        if az_type == "Microsoft.Compute/virtualMachines":
+            arm_resource["properties"] = self._sanitize_vm_properties(
+                arm_resource.get("properties", {})
+            )
+        elif az_type == "Microsoft.Storage/storageAccounts":
             arm_resource["sku"] = resource.get("sku", {"name": "Standard_LRS"})
             arm_resource["kind"] = resource.get("kind", "StorageV2")
         elif az_type == "Microsoft.Network/virtualNetworks":
