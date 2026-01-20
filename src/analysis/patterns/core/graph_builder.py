@@ -67,7 +67,6 @@ class GraphBuilder:
         logger.info(str(f"Loaded {len(all_relationships)} relationships from graph"))
         return all_relationships
 
-
     def build_networkx_graph(
         self, aggregated_relationships: List[Dict[str, Any]]
     ) -> Tuple[nx.MultiDiGraph[str], Dict[str, int], Dict[Tuple[str, str], int]]:

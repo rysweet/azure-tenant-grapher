@@ -14,13 +14,14 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class AzureSchemaError(Exception):
     """Raised when Azure schema operations fail."""
+
     pass
 
 
@@ -44,9 +45,7 @@ class AzureScraper:
     DEFAULT_TTL_HOURS = 24
 
     def __init__(
-        self,
-        cache_dir: Optional[Path] = None,
-        cache_ttl_hours: int = DEFAULT_TTL_HOURS
+        self, cache_dir: Optional[Path] = None, cache_ttl_hours: int = DEFAULT_TTL_HOURS
     ):
         """Initialize Azure scraper with cache configuration."""
         self.cache_dir = cache_dir or self.DEFAULT_CACHE_DIR
@@ -65,11 +64,12 @@ class AzureScraper:
         """Lazily initialize Azure client."""
         if self._client is None:
             try:
+                # Get subscription ID from environment or use default
+                import os
+
                 from azure.identity import DefaultAzureCredential
                 from azure.mgmt.resource import ResourceManagementClient
 
-                # Get subscription ID from environment or use default
-                import os
                 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
                 if not subscription_id:
                     raise AzureSchemaError(
@@ -100,7 +100,7 @@ class AzureScraper:
             return False
 
         try:
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 data = json.load(f)
                 cached_time = datetime.fromisoformat(data.get("cached_at", ""))
                 expiry_time = cached_time + timedelta(hours=self.cache_ttl_hours)
@@ -114,7 +114,7 @@ class AzureScraper:
             return None
 
         try:
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 data = json.load(f)
                 return data.get("schema")
         except (json.JSONDecodeError, OSError) as e:
@@ -123,10 +123,7 @@ class AzureScraper:
 
     def _write_cache(self, cache_path: Path, schema: Dict[str, Any]) -> None:
         """Write schema to cache with timestamp."""
-        cache_data = {
-            "cached_at": datetime.now().isoformat(),
-            "schema": schema
-        }
+        cache_data = {"cached_at": datetime.now().isoformat(), "schema": schema}
 
         try:
             with open(cache_path, "w") as f:
@@ -145,7 +142,7 @@ class AzureScraper:
             schema = {
                 "provider": provider,
                 "namespace": provider_info.namespace,
-                "resource_types": {}
+                "resource_types": {},
             }
 
             # Extract schema for each resource type
@@ -156,7 +153,7 @@ class AzureScraper:
                     "api_versions": list(resource_type.api_versions or []),
                     "locations": list(resource_type.locations or []),
                     "capabilities": getattr(resource_type, "capabilities", None),
-                    "properties": self._extract_properties(resource_type)
+                    "properties": self._extract_properties(resource_type),
                 }
 
             return schema
@@ -187,10 +184,7 @@ class AzureScraper:
         return properties
 
     def get_resource_schema(
-        self,
-        provider: str,
-        resource_type: str,
-        force_refresh: bool = False
+        self, provider: str, resource_type: str, force_refresh: bool = False
     ) -> Dict[str, Any]:
         """Get schema for a specific Azure resource type.
 

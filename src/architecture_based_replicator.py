@@ -109,7 +109,9 @@ class ArchitecturePatternReplicator:
             )
 
             # Fetch actual resources for each pattern
-            self._fetch_pattern_resources(use_configuration_coherence, coherence_threshold)
+            self._fetch_pattern_resources(
+                use_configuration_coherence, coherence_threshold
+            )
 
             logger.info(
                 f"Detected {len(self.detected_patterns)} architectural patterns"
@@ -164,7 +166,11 @@ class ArchitecturePatternReplicator:
             logger.warning("No patterns detected, nothing to fetch")
             return
 
-        mode = "configuration-coherent" if use_configuration_coherence else "ResourceGroup-based"
+        mode = (
+            "configuration-coherent"
+            if use_configuration_coherence
+            else "ResourceGroup-based"
+        )
         logger.info(f"Finding {mode} architectural instances for each pattern...")
 
         driver = GraphDatabase.driver(
@@ -195,7 +201,9 @@ class ArchitecturePatternReplicator:
         finally:
             driver.close()
 
-        total_instances = sum(len(instances) for instances in self.pattern_resources.values())
+        total_instances = sum(
+            len(instances) for instances in self.pattern_resources.values()
+        )
         logger.info(
             f"Found {total_instances} total {mode} instances across {len(self.pattern_resources)} patterns"
         )
@@ -287,7 +295,10 @@ class ArchitecturePatternReplicator:
                     expanded = False
                     for res_id in list(instance_ids):
                         for connected_id in direct_connections[res_id]:
-                            if connected_id not in instance_ids and connected_id in resource_info:
+                            if (
+                                connected_id not in instance_ids
+                                and connected_id in resource_info
+                            ):
                                 instance.append(resource_info[connected_id])
                                 instance_ids.add(connected_id)
                                 expanded = True
@@ -557,7 +568,11 @@ class ArchitecturePatternReplicator:
         node_coverage_weight: Optional[float] = None,
         use_architecture_distribution: bool = True,
         use_configuration_coherence: bool = True,
-    ) -> Tuple[List[Tuple[str, List[List[Dict[str, Any]]]]], List[float], Optional[Dict[str, Any]]]:
+    ) -> Tuple[
+        List[Tuple[str, List[List[Dict[str, Any]]]]],
+        List[float],
+        Optional[Dict[str, Any]],
+    ]:
         """
         Generate tenant replication plan to match source pattern graph.
 
@@ -594,11 +609,10 @@ class ArchitecturePatternReplicator:
         # Randomly choose between pure spectral (0.0) or pure coverage (1.0) if not specified
         if node_coverage_weight is None:
             import random
+
             node_coverage_weight = float(random.choice([0, 1]))
 
-        logger.info(
-            f"Generating replication plan to match source pattern graph..."
-        )
+        logger.info("Generating replication plan to match source pattern graph...")
         logger.info(
             f"Source pattern: {self.source_pattern_graph.number_of_nodes()} types, "
             f"{self.source_pattern_graph.number_of_edges()} edges"
@@ -613,15 +627,16 @@ class ArchitecturePatternReplicator:
             logger.info("LAYER 1: Computing architecture distribution...")
 
             distribution_scores = self.analyzer.compute_architecture_distribution(
-                self.pattern_resources,
-                self.source_pattern_graph
+                self.pattern_resources, self.source_pattern_graph
             )
 
-            logger.info(f"Distribution analysis complete for {len(distribution_scores)} patterns")
+            logger.info(
+                f"Distribution analysis complete for {len(distribution_scores)} patterns"
+            )
             for pattern_name, data in sorted(
                 distribution_scores.items(),
-                key=lambda x: x[1]['distribution_score'],
-                reverse=True
+                key=lambda x: x[1]["distribution_score"],
+                reverse=True,
             )[:5]:
                 logger.info(
                     f"  {data['rank']}. {pattern_name}: "
@@ -666,15 +681,14 @@ class ArchitecturePatternReplicator:
             logger.info("LAYER 2: Computing proportional pattern targets...")
 
             pattern_targets = self.analyzer.compute_pattern_targets(
-                distribution_scores,
-                target_instance_count
+                distribution_scores, target_instance_count
             )
 
-            logger.info(f"Proportional allocation for {target_instance_count} instances:")
+            logger.info(
+                f"Proportional allocation for {target_instance_count} instances:"
+            )
             for pattern_name, target_count in sorted(
-                pattern_targets.items(),
-                key=lambda x: x[1],
-                reverse=True
+                pattern_targets.items(), key=lambda x: x[1], reverse=True
             ):
                 pct = (target_count / target_instance_count) * 100
                 logger.info(f"  {pattern_name}: {target_count} ({pct:.1f}%)")
@@ -685,25 +699,21 @@ class ArchitecturePatternReplicator:
         logger.info("=" * 80)
         if use_architecture_distribution and pattern_targets:
             logger.info(
-                "LAYER 3: Configuration-coherent instance selection " +
-                "(enabled)" if use_configuration_coherence else "(disabled)"
+                "LAYER 3: Configuration-coherent instance selection " + "(enabled)"
+                if use_configuration_coherence
+                else "(disabled)"
             )
             selected_instances = self._select_instances_proportionally(
-                pattern_targets,
-                use_configuration_coherence
+                pattern_targets, use_configuration_coherence
             )
         else:
-            logger.info(
-                f"LAYER 3: Greedy spectral matching (fallback mode)"
-            )
+            logger.info("LAYER 3: Greedy spectral matching (fallback mode)")
             logger.info(
                 f"Node coverage weight: {node_coverage_weight:.2f} "
                 f"(0.0=spectral only, 1.0=coverage only)"
             )
             selected_instances = self._select_instances_greedy(
-                all_instances,
-                target_instance_count,
-                node_coverage_weight
+                all_instances, target_instance_count, node_coverage_weight
             )
 
         # Build spectral distance history for all selected instances
@@ -713,8 +723,7 @@ class ArchitecturePatternReplicator:
                 selected_instances[:i]
             )
             distance = self._compute_spectral_distance(
-                self.source_pattern_graph,
-                target_graph
+                self.source_pattern_graph, target_graph
             )
             spectral_history.append(distance)
 
@@ -723,7 +732,9 @@ class ArchitecturePatternReplicator:
             f"Replication plan complete: {len(selected_instances)} architectural instances selected"
         )
 
-        final_target = self._build_target_pattern_graph_from_instances(selected_instances)
+        final_target = self._build_target_pattern_graph_from_instances(
+            selected_instances
+        )
         logger.info(
             f"Final target pattern: {final_target.number_of_nodes()} types, "
             f"{final_target.number_of_edges()} edges"
@@ -748,37 +759,40 @@ class ArchitecturePatternReplicator:
                 actual = actual_counts.get(pattern_name, 0)
                 # Calculate distribution score based on actual instances
                 # Use same weight as instance count (30% of total)
-                actual_score = (actual / total_actual * 100) if total_actual > 0 else 0.0
+                actual_score = (
+                    (actual / total_actual * 100) if total_actual > 0 else 0.0
+                )
 
                 target_distribution[pattern_name] = {
                     "distribution_score": actual_score,
                     "source_instances": actual,
-                    "rank": 0  # Will be set after sorting
+                    "rank": 0,  # Will be set after sorting
                 }
 
             # Rank target patterns by actual count
             sorted_target = sorted(
                 target_distribution.items(),
                 key=lambda x: x[1]["source_instances"],
-                reverse=True
+                reverse=True,
             )
             for rank, (pattern_name, data) in enumerate(sorted_target, start=1):
                 data["rank"] = rank
 
             # Validate
             validation = self.analyzer.validate_proportional_sampling(
-                distribution_scores,
-                target_distribution
+                distribution_scores, target_distribution
             )
 
             # Log validation results (handle case where scipy isn't available)
-            if 'cosine_similarity' in validation:
+            if "cosine_similarity" in validation:
                 logger.info(
                     f"Validation: {validation['interpretation']} "
                     f"(cosine similarity: {validation['cosine_similarity']:.4f})"
                 )
             else:
-                logger.warning(f"Validation: {validation.get('interpretation', 'No validation available')}")
+                logger.warning(
+                    f"Validation: {validation.get('interpretation', 'No validation available')}"
+                )
 
             # Build distribution metadata
             distribution_metadata = {
@@ -786,13 +800,13 @@ class ArchitecturePatternReplicator:
                 "pattern_targets": pattern_targets,
                 "actual_counts": actual_counts,
                 "validation": validation,
-                "selection_mode": "proportional" if use_configuration_coherence else "proportional_spectral"
+                "selection_mode": "proportional"
+                if use_configuration_coherence
+                else "proportional_spectral",
             }
         else:
             logger.info("Distribution validation skipped (disabled or no distribution)")
-            distribution_metadata = {
-                "selection_mode": "greedy_spectral"
-            }
+            distribution_metadata = {"selection_mode": "greedy_spectral"}
 
         # Group selected instances by pattern for return value
         pattern_instances = {}
@@ -871,11 +885,13 @@ class ArchitecturePatternReplicator:
                             simplified_type = self.analyzer._get_resource_type_name(
                                 ["Resource"], r["type"]
                             )
-                            simplified_resources.append({
-                                "id": r["id"],
-                                "type": simplified_type,
-                                "name": r["name"],
-                            })
+                            simplified_resources.append(
+                                {
+                                    "id": r["id"],
+                                    "type": simplified_type,
+                                    "name": r["name"],
+                                }
+                            )
 
                         # Only include if at least one resource is an orphaned type
                         has_orphaned = any(
@@ -885,16 +901,22 @@ class ArchitecturePatternReplicator:
                         if has_orphaned:
                             # Create a pseudo-pattern name for these orphaned instances
                             orphaned_in_instance = {
-                                r["type"] for r in simplified_resources if r["type"] in orphaned_types
+                                r["type"]
+                                for r in simplified_resources
+                                if r["type"] in orphaned_types
                             }
                             pseudo_pattern_name = f"Orphaned: {', '.join(sorted(list(orphaned_in_instance)[:3]))}"
 
-                            orphaned_instances.append((pseudo_pattern_name, simplified_resources))
+                            orphaned_instances.append(
+                                (pseudo_pattern_name, simplified_resources)
+                            )
 
         finally:
             driver.close()
 
-        logger.info(f"Found {len(orphaned_instances)} instances containing orphaned resource types")
+        logger.info(
+            f"Found {len(orphaned_instances)} instances containing orphaned resource types"
+        )
 
         return orphaned_instances
 
@@ -932,7 +954,8 @@ class ArchitecturePatternReplicator:
                 # Fetch ALL relationships involving the selected Original resources
                 # This includes Resource→Resource, Resource→ResourceGroup, Resource→Tag, etc.
                 # We need to match the same approach as ArchitecturalPatternAnalyzer
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (source)-[r]->(target)
                     WHERE (source:Resource:Original AND source.id IN $ids)
                        OR (target:Resource:Original AND target.id IN $ids)
@@ -942,18 +965,22 @@ class ArchitecturePatternReplicator:
                            type(r) as rel_type,
                            labels(target) as target_labels,
                            target.type as target_type
-                """, ids=all_resource_ids)
+                """,
+                    ids=all_resource_ids,
+                )
 
                 # Collect all relationships
                 relationships = []
                 for record in result:
-                    relationships.append({
-                        "source_labels": record["source_labels"],
-                        "source_type": record["source_type"],
-                        "rel_type": record["rel_type"],
-                        "target_labels": record["target_labels"],
-                        "target_type": record["target_type"],
-                    })
+                    relationships.append(
+                        {
+                            "source_labels": record["source_labels"],
+                            "source_type": record["source_type"],
+                            "rel_type": record["rel_type"],
+                            "target_labels": record["target_labels"],
+                            "target_type": record["target_type"],
+                        }
+                    )
 
                 # First, add ALL resource types from selected instances as nodes
                 # This ensures orphaned types without relationships still appear in the graph
@@ -961,7 +988,9 @@ class ArchitecturePatternReplicator:
                 for pattern_name, instance in selected_instances:
                     for resource in instance:
                         rtype = resource["type"]
-                        resource_type_counts[rtype] = resource_type_counts.get(rtype, 0) + 1
+                        resource_type_counts[rtype] = (
+                            resource_type_counts.get(rtype, 0) + 1
+                        )
 
                 # Add all resource types as nodes
                 for rtype, count in resource_type_counts.items():
@@ -1026,7 +1055,9 @@ class ArchitecturePatternReplicator:
 
         # For target graph, we need to detect which patterns it has
         # Use the same pattern detection on target graph
-        target_resource_type_counts = dict(target_pattern_graph.nodes(data='count', default=0))
+        target_resource_type_counts = dict(
+            target_pattern_graph.nodes(data="count", default=0)
+        )
         target_detected_patterns = self.analyzer.detect_patterns(
             target_pattern_graph, target_resource_type_counts
         )
@@ -1094,21 +1125,25 @@ class ArchitecturePatternReplicator:
                             instances_with_type.append(instance)
 
                     if instances_with_type:
-                        patterns_with_type.append({
-                            "pattern_name": pattern_name,
-                            "instance_count": len(instances_with_type),
-                            "sample_instance": instances_with_type[0],
-                        })
+                        patterns_with_type.append(
+                            {
+                                "pattern_name": pattern_name,
+                                "instance_count": len(instances_with_type),
+                                "sample_instance": instances_with_type[0],
+                            }
+                        )
 
             if patterns_with_type:
                 # Sort by instance count (more instances = more reliable pattern)
                 patterns_with_type.sort(key=lambda x: x["instance_count"], reverse=True)
 
-                suggestions.append({
-                    "missing_type": resource_type,
-                    "available_patterns": patterns_with_type,
-                    "recommendation": f"Select more instances from '{patterns_with_type[0]['pattern_name']}' pattern"
-                })
+                suggestions.append(
+                    {
+                        "missing_type": resource_type,
+                        "available_patterns": patterns_with_type,
+                        "recommendation": f"Select more instances from '{patterns_with_type[0]['pattern_name']}' pattern",
+                    }
+                )
 
         logger.info(f"Generated {len(suggestions)} improvement recommendations")
         return suggestions
@@ -1145,16 +1180,17 @@ class ArchitecturePatternReplicator:
         # This is the fraction of source nodes NOT yet in target
         target_node_types = set(target_graph.nodes())
         missing_nodes = source_node_types - target_node_types
-        node_coverage_penalty = len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
+        node_coverage_penalty = (
+            len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
+        )
 
         # Weighted combination
         # node_coverage_weight = 0.0: score = spectral_distance (original behavior)
         # node_coverage_weight = 1.0: score = node_coverage_penalty (pure greedy)
         # node_coverage_weight = 0.5: score = balanced average
         score = (
-            (1.0 - node_coverage_weight) * spectral_distance +
-            node_coverage_weight * node_coverage_penalty
-        )
+            1.0 - node_coverage_weight
+        ) * spectral_distance + node_coverage_weight * node_coverage_penalty
 
         return score
 
@@ -1287,7 +1323,7 @@ class ArchitecturePatternReplicator:
                 if sample_resources:
                     source_resource_id = random.choice(sample_resources)
                 else:
-                    logger.warning(f"No sample resources for configuration, skipping")
+                    logger.warning("No sample resources for configuration, skipping")
                     continue
 
                 # Generate target resource ID (simulated)
@@ -1327,7 +1363,9 @@ class ArchitecturePatternReplicator:
         resource_mapping = {
             "metadata": {
                 "generation_timestamp": Path(__file__).stat().st_mtime,
-                "total_resources_mapped": sum(len(v) for v in selected_resources.values()),
+                "total_resources_mapped": sum(
+                    len(v) for v in selected_resources.values()
+                ),
                 "resource_types": len(selected_resources),
             },
             "mappings": resource_mappings,
@@ -1407,7 +1445,12 @@ class ArchitecturePatternReplicator:
                         for k, v in source_vector.items()
                     },
                     "target_distribution": {
-                        k: {"count": v, "percentage": (v / sum(target_vals)) * 100 if sum(target_vals) > 0 else 0}
+                        k: {
+                            "count": v,
+                            "percentage": (v / sum(target_vals)) * 100
+                            if sum(target_vals) > 0
+                            else 0,
+                        }
                         for k, v in target_vector.items()
                     },
                     "distribution_similarity": similarity,
@@ -1426,9 +1469,7 @@ class ArchitecturePatternReplicator:
         return distribution_analysis
 
     def _select_instances_proportionally(
-        self,
-        pattern_targets: Dict[str, int],
-        use_configuration_coherence: bool
+        self, pattern_targets: Dict[str, int], use_configuration_coherence: bool
     ) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Select instances proportionally from each pattern.
@@ -1449,13 +1490,17 @@ class ArchitecturePatternReplicator:
 
         for pattern_name, target_count in pattern_targets.items():
             if pattern_name not in self.pattern_resources:
-                logger.warning(f"Pattern {pattern_name} not found in pattern_resources, skipping")
+                logger.warning(
+                    f"Pattern {pattern_name} not found in pattern_resources, skipping"
+                )
                 continue
 
             available_instances = self.pattern_resources[pattern_name]
 
             if not available_instances:
-                logger.warning(f"No instances available for pattern {pattern_name}, skipping")
+                logger.warning(
+                    f"No instances available for pattern {pattern_name}, skipping"
+                )
                 continue
 
             # Limit to available instances
@@ -1490,7 +1535,9 @@ class ArchitecturePatternReplicator:
 
                     # Sort by similarity and take top N
                     scored_instances.sort(key=lambda x: x[0], reverse=True)
-                    chosen_instances = [inst for score, inst in scored_instances[:actual_count]]
+                    chosen_instances = [
+                        inst for score, inst in scored_instances[:actual_count]
+                    ]
 
             else:
                 # Random selection (proportional sampling without coherence)
@@ -1504,14 +1551,16 @@ class ArchitecturePatternReplicator:
             for instance in chosen_instances:
                 selected_instances.append((pattern_name, instance))
 
-        logger.info(f"Selected {len(selected_instances)} total instances across all patterns")
+        logger.info(
+            f"Selected {len(selected_instances)} total instances across all patterns"
+        )
         return selected_instances
 
     def _select_instances_greedy(
         self,
         all_instances: List[Tuple[str, List[Dict[str, Any]]]],
         target_instance_count: int,
-        node_coverage_weight: float
+        node_coverage_weight: float,
     ) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Greedy spectral distance-based instance selection (original algorithm).
@@ -1535,7 +1584,7 @@ class ArchitecturePatternReplicator:
 
         # Greedy selection: iteratively pick the instance that best improves our score
         for i in range(min(target_instance_count, len(remaining_instances))):
-            best_score = float('inf')
+            best_score = float("inf")
             best_idx = 0
             best_new_nodes = set()
 
@@ -1552,7 +1601,7 @@ class ArchitecturePatternReplicator:
                     self.source_pattern_graph,
                     hypothetical_target,
                     source_node_types,
-                    node_coverage_weight
+                    node_coverage_weight,
                 )
 
                 # Track which instance gives best score
@@ -1560,8 +1609,13 @@ class ArchitecturePatternReplicator:
                     best_score = score
                     best_idx = idx
                     best_new_nodes = set(hypothetical_target.nodes()) - (
-                        set(self._build_target_pattern_graph_from_instances(selected_instances).nodes())
-                        if selected_instances else set()
+                        set(
+                            self._build_target_pattern_graph_from_instances(
+                                selected_instances
+                            ).nodes()
+                        )
+                        if selected_instances
+                        else set()
                     )
 
             # Select the best instance
@@ -1575,7 +1629,9 @@ class ArchitecturePatternReplicator:
 
             # Calculate coverage metrics
             current_nodes = set(target_pattern_graph.nodes())
-            node_coverage = len(current_nodes & source_node_types) / len(source_node_types)
+            node_coverage = len(current_nodes & source_node_types) / len(
+                source_node_types
+            )
 
             if (i + 1) % 10 == 0 or i < 10:
                 distance = self._compute_spectral_distance(

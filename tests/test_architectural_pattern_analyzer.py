@@ -6,17 +6,14 @@ configuration analysis for architectural patterns in Azure resource graphs.
 
 Fixtures are defined in tests/conftest.py and automatically discovered by pytest.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import networkx as nx
-import numpy as np
 import pytest
-
-from src.architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
 
 
 class TestResourceTypeExtraction:
@@ -217,7 +214,9 @@ class TestPatternDetection:
         graph.add_node("disks", count=15)
         graph.add_node("networkInterfaces", count=10)
         graph.add_node("virtualNetworks", count=2)
-        graph.add_edge("virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10)
+        graph.add_edge(
+            "virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10
+        )
 
         resource_counts = {
             "virtualMachines": 10,
@@ -287,8 +286,15 @@ class TestPatternDetection:
         graph.add_node("virtualMachines", count=10)
         graph.add_node("disks", count=15)
         graph.add_node("networkInterfaces", count=10)
-        graph.add_edge("virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10)
-        graph.add_edge("virtualMachines", "networkInterfaces", relationship="DEPENDS_ON", frequency=10)
+        graph.add_edge(
+            "virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10
+        )
+        graph.add_edge(
+            "virtualMachines",
+            "networkInterfaces",
+            relationship="DEPENDS_ON",
+            frequency=10,
+        )
 
         resource_counts = {
             "virtualMachines": 10,
@@ -305,7 +311,9 @@ class TestPatternDetection:
 class TestConfigurationFingerprinting:
     """Test configuration fingerprint creation."""
 
-    def test_create_configuration_fingerprint_vm(self, analyzer, sample_configuration_data):
+    def test_create_configuration_fingerprint_vm(
+        self, analyzer, sample_configuration_data
+    ):
         """Test creating fingerprint for VM resource."""
         fingerprint = analyzer.create_configuration_fingerprint(
             sample_configuration_data["id"],
@@ -377,7 +385,9 @@ class TestConfigurationFingerprinting:
 
     def test_extract_sku_from_properties_null(self, analyzer):
         """Test SKU extraction with null properties."""
-        sku = analyzer.extract_sku_from_properties(None, "Microsoft.Compute/virtualMachines")
+        sku = analyzer.extract_sku_from_properties(
+            None, "Microsoft.Compute/virtualMachines"
+        )
 
         assert sku == "UnknownSKU"
 
@@ -393,7 +403,9 @@ class TestConfigurationSimilarity:
             "tags": {"env": "prod", "app": "web"},
         }
 
-        similarity = replicator._compute_configuration_similarity(fingerprint, fingerprint)
+        similarity = replicator._compute_configuration_similarity(
+            fingerprint, fingerprint
+        )
 
         assert similarity == 1.0
 
@@ -583,7 +595,9 @@ class TestErrorHandling:
     def test_connect_failure(self, analyzer):
         """Test handling of connection failure."""
         with pytest.raises(Exception):
-            with patch("src.architectural_pattern_analyzer.GraphDatabase.driver") as mock_driver:
+            with patch(
+                "src.architectural_pattern_analyzer.GraphDatabase.driver"
+            ) as mock_driver:
                 mock_driver.side_effect = Exception("Connection failed")
                 analyzer.connect()
 
@@ -622,10 +636,14 @@ class TestArchitectureDistribution:
         graph.add_edge("typeA", "typeB", frequency=10)
 
         # Mock the ARCHITECTURAL_PATTERNS to include Pattern A and B
-        with patch.object(analyzer, "ARCHITECTURAL_PATTERNS", {
-            "Pattern A": {"resources": ["typeA", "typeB"]},
-            "Pattern B": {"resources": ["typeC"]},
-        }):
+        with patch.object(
+            analyzer,
+            "ARCHITECTURAL_PATTERNS",
+            {
+                "Pattern A": {"resources": ["typeA", "typeB"]},
+                "Pattern B": {"resources": ["typeC"]},
+            },
+        ):
             distribution = analyzer.compute_architecture_distribution(
                 pattern_resources, graph
             )
@@ -655,15 +673,19 @@ class TestNeo4jMocking:
         # Setup mock session
         mock_session = mock_neo4j_driver.session.return_value.__enter__.return_value
         mock_result = Mock()
-        mock_result.__iter__ = Mock(return_value=iter([
-            {
-                "source_labels": ["Resource"],
-                "source_type": "Microsoft.Compute/virtualMachines",
-                "rel_type": "DEPENDS_ON",
-                "target_labels": ["Resource"],
-                "target_type": "Microsoft.Compute/disks",
-            }
-        ]))
+        mock_result.__iter__ = Mock(
+            return_value=iter(
+                [
+                    {
+                        "source_labels": ["Resource"],
+                        "source_type": "Microsoft.Compute/virtualMachines",
+                        "rel_type": "DEPENDS_ON",
+                        "target_labels": ["Resource"],
+                        "target_type": "Microsoft.Compute/disks",
+                    }
+                ]
+            )
+        )
         mock_session.run.return_value = mock_result
 
         analyzer.driver = mock_neo4j_driver
@@ -702,7 +724,10 @@ class TestBagOfWordsModel:
         assert "Microsoft.Compute/virtualMachines" in bags
         assert len(bags["Microsoft.Compute/virtualMachines"]) == 5  # 3 + 2
         # First 3 entries should be the first configuration
-        assert bags["Microsoft.Compute/virtualMachines"][0]["fingerprint"]["sku"] == "Standard_D2s_v3"
+        assert (
+            bags["Microsoft.Compute/virtualMachines"][0]["fingerprint"]["sku"]
+            == "Standard_D2s_v3"
+        )
 
     def test_build_configuration_bags_empty(self, analyzer):
         """Test building bags from empty analysis."""

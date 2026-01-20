@@ -18,4 +18,4 @@ Public API:
 from .dashboard import DashboardGenerator
 from .report_generator import CoverageReport, ReportGenerator
 
-__all__ = ["ReportGenerator", "DashboardGenerator", "CoverageReport"]
+__all__ = ["CoverageReport", "DashboardGenerator", "ReportGenerator"]

@@ -28,7 +28,6 @@ from neo4j import Driver, GraphDatabase
 from src.analysis.patterns.core.resource_type_handler import ResourceTypeHandler
 from src.analysis.patterns.detectors.orphan_detector import OrphanDetector
 from src.analysis.patterns.detectors.pattern_detector import (
-    ARCHITECTURAL_PATTERNS,
     PatternDetector,
 )
 
@@ -1342,7 +1341,9 @@ class ArchitecturalPatternAnalyzer:
                     config_to_resources[fingerprint_key].append(resource_id)
 
                 # Build configuration analysis
-                total_count = sum(len(resources) for resources in config_to_resources.values())
+                total_count = sum(
+                    len(resources) for resources in config_to_resources.values()
+                )
                 configurations = []
 
                 for fingerprint_key, resource_ids in config_to_resources.items():
@@ -1457,7 +1458,9 @@ class ArchitecturalPatternAnalyzer:
             return {}
 
         # Compute totals for normalization
-        total_instances = sum(len(instances) for instances in pattern_resources.values())
+        total_instances = sum(
+            len(instances) for instances in pattern_resources.values()
+        )
         total_resources = sum(
             sum(len(inst) for inst in instances)
             for instances in pattern_resources.values()
@@ -1670,7 +1673,7 @@ class ArchitecturalPatternAnalyzer:
             # Fallback to uniform distribution
             patterns = list(scores.keys())
             per_pattern = target_count // len(patterns)
-            return {name: per_pattern for name in patterns}
+            return dict.fromkeys(patterns, per_pattern)
 
         # Calculate target instance count per pattern
         pattern_targets = {}
@@ -1753,7 +1756,11 @@ class ArchitecturalPatternAnalyzer:
 
         # Normalize to get probability distributions
         source_probs = source_scores / source_scores.sum()
-        target_probs = target_scores / target_scores.sum() if target_scores.sum() > 0 else target_scores
+        target_probs = (
+            target_scores / target_scores.sum()
+            if target_scores.sum() > 0
+            else target_scores
+        )
 
         # Cosine similarity
         dot_product = np.dot(source_probs, target_probs)
@@ -1788,9 +1795,7 @@ class ArchitecturalPatternAnalyzer:
         elif p_value > 0.80 and cosine_sim > 0.80:
             interpretation = "Target distribution reasonably matches source"
         else:
-            interpretation = (
-                "Target distribution differs significantly from source"
-            )
+            interpretation = "Target distribution differs significantly from source"
 
         validation = {
             "target_distribution_match": round(cosine_sim, 3),

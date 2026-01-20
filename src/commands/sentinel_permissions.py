@@ -187,7 +187,9 @@ class SentinelPermissionManager:
         has_all_now, still_missing = self.check_sp_permissions()
 
         if not has_all_now:
-            logger.error(f"Permission grant verification failed. Still missing: {still_missing}")
+            logger.error(
+                f"Permission grant verification failed. Still missing: {still_missing}"
+            )
             return False
 
         logger.info("✅ All required permissions verified")

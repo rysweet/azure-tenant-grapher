@@ -13,15 +13,9 @@ This module tests the graph visualization functionality including:
 - Retry logic
 """
 
-import os
-import tempfile
-from pathlib import Path
-
 import pytest
-from click.testing import CliRunner
 
 from src.commands.visualize import visualize, visualize_command_handler
-
 
 # ============================================================================
 # UNIT TESTS (60%) - Test individual functions with mocked dependencies
@@ -191,7 +185,10 @@ class TestErrorHandling:
 
         result = cli_runner.invoke(visualize, [])
         assert result.exit_code != 0
-        assert "Failed to connect to Neo4j" in result.output or "neo4j" in result.output.lower()
+        assert (
+            "Failed to connect to Neo4j" in result.output
+            or "neo4j" in result.output.lower()
+        )
 
     def test_visualize_shows_helpful_error_message(
         self,
@@ -208,7 +205,10 @@ class TestErrorHandling:
 
         result = cli_runner.invoke(visualize, [])
         # Should provide guidance
-        assert "Ensure Neo4j is running" in result.output or "container" in result.output.lower()
+        assert (
+            "Ensure Neo4j is running" in result.output
+            or "container" in result.output.lower()
+        )
 
 
 class TestContainerAutoStart:
@@ -232,7 +232,10 @@ class TestContainerAutoStart:
 
         result = cli_runner.invoke(visualize, [])
         # Should retry and succeed
-        assert mock_graph_visualizer.return_value.generate_html_visualization.call_count >= 1
+        assert (
+            mock_graph_visualizer.return_value.generate_html_visualization.call_count
+            >= 1
+        )
 
     def test_visualize_no_container_prevents_auto_start(
         self,

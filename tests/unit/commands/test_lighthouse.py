@@ -6,7 +6,6 @@ Test pyramid: 60% unit, 30% integration, 10% E2E
 """
 
 import pytest
-from click.testing import CliRunner
 
 
 # Placeholder test class - actual tests will be implemented based on lighthouse.py structure
@@ -17,6 +16,7 @@ class TestLighthouseCommands:
         """Lighthouse command can be imported."""
         try:
             from src.commands.lighthouse import lighthouse
+
             assert lighthouse is not None
         except ImportError:
             pytest.skip("Lighthouse command not yet fully implemented")

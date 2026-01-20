@@ -108,9 +108,7 @@ class ContainerRegistryHandler(ResourceHandler):
         if network_rule_set and isinstance(network_rule_set, dict):
             default_action = network_rule_set.get("defaultAction", "Allow")
             if default_action:
-                config["network_rule_set"] = [{
-                    "default_action": default_action
-                }]
+                config["network_rule_set"] = [{"default_action": default_action}]
 
         logger.debug(f"Container Registry '{resource_name}' emitted")
 

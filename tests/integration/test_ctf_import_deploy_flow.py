@@ -11,12 +11,12 @@ Tests should FAIL initially until implementation is complete.
 Testing pyramid: 30% integration tests
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch, mock_open
 import json
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
 
+import pytest
 
 # ============================================================================
 # Fixtures
@@ -52,11 +52,11 @@ def sample_terraform_state():
                                 "layer_id": "default",
                                 "ctf_exercise": "M003",
                                 "ctf_scenario": "v2-cert",
-                                "ctf_role": "target"
-                            }
+                                "ctf_role": "target",
+                            },
                         }
                     }
-                ]
+                ],
             },
             {
                 "mode": "managed",
@@ -72,13 +72,13 @@ def sample_terraform_state():
                                 "layer_id": "default",
                                 "ctf_exercise": "M003",
                                 "ctf_scenario": "v2-cert",
-                                "ctf_role": "infrastructure"
-                            }
+                                "ctf_role": "infrastructure",
+                            },
                         }
                     }
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
 
 
@@ -97,10 +97,12 @@ def temp_terraform_dir():
 class TestImportAnnotateFlow:
     """Test integration between CTFImportService and CTFAnnotationService."""
 
-    def test_import_then_annotate_workflow(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_then_annotate_workflow(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test importing Terraform state and then annotating resources."""
-        from src.services.ctf_import_service import CTFImportService
         from src.services.ctf_annotation_service import CTFAnnotationService
+        from src.services.ctf_import_service import CTFImportService
 
         # Track Neo4j calls
         neo4j_calls = []
@@ -114,10 +116,11 @@ class TestImportAnnotateFlow:
         # Step 1: Import Terraform state
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_stats = import_service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
         assert import_stats["resources_created"] == 2
@@ -128,7 +131,7 @@ class TestImportAnnotateFlow:
         annotate_result = annotate_service.annotate_resource(
             resource_id="/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/target-vm",
             layer_id="default",
-            ctf_role="attacker"  # Change role
+            ctf_role="attacker",  # Change role
         )
 
         assert annotate_result["success"] is True
@@ -136,18 +139,24 @@ class TestImportAnnotateFlow:
         # Verify both services called Neo4j
         assert len(neo4j_calls) >= 2
         # Import should use MERGE or UNWIND
-        assert any("MERGE" in call["query"] or "UNWIND" in call["query"] for call in neo4j_calls)
+        assert any(
+            "MERGE" in call["query"] or "UNWIND" in call["query"]
+            for call in neo4j_calls
+        )
 
-    def test_import_auto_annotates_from_tags(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_auto_annotates_from_tags(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test import automatically extracts CTF properties from tags."""
         from src.services.ctf_import_service import CTFImportService
 
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
         # Verify CTF properties were extracted from tags
@@ -160,15 +169,19 @@ class TestImportAnnotateFlow:
             assert any(r.get("ctf_exercise") == "M003" for r in resources)
             assert any(r.get("ctf_scenario") == "v2-cert" for r in resources)
 
-    def test_import_then_query_workflow(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_then_query_workflow(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test importing resources and then querying them."""
-        from src.services.ctf_import_service import CTFImportService
         from src.services.ctf_deploy_service import CTFDeployService
+        from src.services.ctf_import_service import CTFImportService
 
         # Step 1: Import
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_service.import_from_state("terraform.tfstate", layer_id="default")
 
         # Step 2: Query
@@ -176,20 +189,20 @@ class TestImportAnnotateFlow:
 
         # Mock Neo4j to return imported resources
         mock_records = [
-            {"r": {
-                "id": "vm-1",
-                "name": "target-vm",
-                "layer_id": "default",
-                "ctf_exercise": "M003",
-                "ctf_scenario": "v2-cert"
-            }}
+            {
+                "r": {
+                    "id": "vm-1",
+                    "name": "target-vm",
+                    "layer_id": "default",
+                    "ctf_exercise": "M003",
+                    "ctf_scenario": "v2-cert",
+                }
+            }
         ]
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         resources = deploy_service.query_ctf_resources(
-            layer_id="default",
-            exercise="M003",
-            scenario="v2-cert"
+            layer_id="default", exercise="M003", scenario="v2-cert"
         )
 
         assert len(resources) == 1
@@ -205,66 +218,71 @@ class TestDeployCleanupFlow:
 
         # Mock resources in Neo4j
         mock_resources = [
-            {"r": {
-                "id": "vm-1",
-                "name": "target-vm",
-                "resource_type": "VirtualMachine",
-                "layer_id": "default",
-                "ctf_exercise": "M003",
-                "ctf_scenario": "v2-cert"
-            }}
+            {
+                "r": {
+                    "id": "vm-1",
+                    "name": "target-vm",
+                    "resource_type": "VirtualMachine",
+                    "layer_id": "default",
+                    "ctf_exercise": "M003",
+                    "ctf_scenario": "v2-cert",
+                }
+            }
         ]
         mock_neo4j_driver.execute_query.return_value = (mock_resources, None, None)
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         # Step 1: Deploy
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
-                mock_subprocess.return_value = Mock(returncode=0, stdout="Success", stderr="")
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
+                mock_subprocess.return_value = Mock(
+                    returncode=0, stdout="Success", stderr=""
+                )
 
                 deploy_result = service.deploy_scenario(
                     layer_id="default",
                     exercise="M003",
                     scenario="v2-cert",
-                    output_dir=str(temp_terraform_dir)
+                    output_dir=str(temp_terraform_dir),
                 )
 
                 assert deploy_result["success"] is True
 
         # Step 2: Cleanup
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0)
 
             cleanup_result = service.cleanup_scenario(
                 layer_id="default",
                 exercise="M003",
                 scenario="v2-cert",
-                terraform_dir=str(temp_terraform_dir)
+                terraform_dir=str(temp_terraform_dir),
             )
 
             assert cleanup_result["success"] is True
 
         # Verify cleanup called destroy and Neo4j delete
-        destroy_calls = [call for call in mock_subprocess.call_args_list if "destroy" in str(call)]
+        destroy_calls = [
+            call for call in mock_subprocess.call_args_list if "destroy" in str(call)
+        ]
         assert len(destroy_calls) > 0
 
     def test_deploy_dry_run_then_real_deploy(self, mock_neo4j_driver):
         """Test dry run deployment followed by real deployment."""
         from src.services.ctf_deploy_service import CTFDeployService
 
-        mock_resources = [{"r": {"id": "vm-1", "name": "test-vm", "layer_id": "default"}}]
+        mock_resources = [
+            {"r": {"id": "vm-1", "name": "test-vm", "layer_id": "default"}}
+        ]
         mock_neo4j_driver.execute_query.return_value = (mock_resources, None, None)
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         # Step 1: Dry run
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             dry_run_result = service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert",
-                dry_run=True
+                layer_id="default", exercise="M003", scenario="v2-cert", dry_run=True
             )
 
             assert dry_run_result["dry_run"] is True
@@ -272,15 +290,15 @@ class TestDeployCleanupFlow:
             assert mock_subprocess.call_count == 0
 
         # Step 2: Real deploy
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 mock_subprocess.return_value = Mock(returncode=0)
 
                 real_result = service.deploy_scenario(
                     layer_id="default",
                     exercise="M003",
                     scenario="v2-cert",
-                    dry_run=False
+                    dry_run=False,
                 )
 
                 assert real_result["success"] is True
@@ -295,8 +313,8 @@ class TestFullImportDeployCleanupCycle:
         self, mock_neo4j_driver, sample_terraform_state, temp_terraform_dir
     ):
         """Test complete workflow: import → deploy → cleanup."""
-        from src.services.ctf_import_service import CTFImportService
         from src.services.ctf_deploy_service import CTFDeployService
+        from src.services.ctf_import_service import CTFImportService
 
         neo4j_calls = []
 
@@ -304,13 +322,21 @@ class TestFullImportDeployCleanupCycle:
             neo4j_calls.append({"query": args[0], "params": kwargs})
             # Return mock resources for query operations
             if "MATCH" in args[0]:
-                return ([{"r": {
-                    "id": "vm-1",
-                    "name": "target-vm",
-                    "layer_id": "default",
-                    "ctf_exercise": "M003",
-                    "ctf_scenario": "v2-cert"
-                }}], None, None)
+                return (
+                    [
+                        {
+                            "r": {
+                                "id": "vm-1",
+                                "name": "target-vm",
+                                "layer_id": "default",
+                                "ctf_exercise": "M003",
+                                "ctf_scenario": "v2-cert",
+                            }
+                        }
+                    ],
+                    None,
+                    None,
+                )
             return ([], None, None)
 
         mock_neo4j_driver.execute_query.side_effect = track_neo4j_calls
@@ -318,10 +344,11 @@ class TestFullImportDeployCleanupCycle:
         # Step 1: Import Terraform state
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_stats = import_service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
         assert import_stats["resources_created"] == 2
@@ -329,28 +356,28 @@ class TestFullImportDeployCleanupCycle:
         # Step 2: Deploy scenario
         deploy_service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 mock_subprocess.return_value = Mock(returncode=0)
 
                 deploy_result = deploy_service.deploy_scenario(
                     layer_id="default",
                     exercise="M003",
                     scenario="v2-cert",
-                    output_dir=str(temp_terraform_dir)
+                    output_dir=str(temp_terraform_dir),
                 )
 
         assert deploy_result["success"] is True
 
         # Step 3: Cleanup scenario
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0)
 
             cleanup_result = deploy_service.cleanup_scenario(
                 layer_id="default",
                 exercise="M003",
                 scenario="v2-cert",
-                terraform_dir=str(temp_terraform_dir)
+                terraform_dir=str(temp_terraform_dir),
             )
 
         assert cleanup_result["success"] is True
@@ -358,7 +385,10 @@ class TestFullImportDeployCleanupCycle:
         # Verify all stages called Neo4j appropriately
         assert len(neo4j_calls) >= 3
         # Should have: import (MERGE/UNWIND), query (MATCH), cleanup (DELETE)
-        assert any("MERGE" in call["query"] or "UNWIND" in call["query"] for call in neo4j_calls)
+        assert any(
+            "MERGE" in call["query"] or "UNWIND" in call["query"]
+            for call in neo4j_calls
+        )
         assert any("MATCH" in call["query"] for call in neo4j_calls)
         assert any("DELETE" in call["query"] for call in neo4j_calls)
 
@@ -368,17 +398,17 @@ class TestFullImportDeployCleanupCycle:
 
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             # First import
             stats1 = import_service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
             # Second import (same data)
             stats2 = import_service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
         # First creates, second updates
@@ -386,19 +416,25 @@ class TestFullImportDeployCleanupCycle:
         assert stats2["resources_updated"] == 2
         assert stats2["resources_created"] == 0
 
-    def test_lifecycle_with_layer_isolation(self, mock_neo4j_driver, sample_terraform_state):
+    def test_lifecycle_with_layer_isolation(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test multiple scenarios in different layers don't interfere."""
-        from src.services.ctf_import_service import CTFImportService
         from src.services.ctf_deploy_service import CTFDeployService
+        from src.services.ctf_import_service import CTFImportService
 
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
         # Import into layer1
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_service.import_from_state("terraform.tfstate", layer_id="layer1")
 
         # Import into layer2
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             import_service.import_from_state("terraform.tfstate", layer_id="layer2")
 
         # Query each layer separately
@@ -437,9 +473,7 @@ class TestErrorHandlingIntegration:
 
         with pytest.raises(ValueError, match="No resources found"):
             service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="default", exercise="M003", scenario="v2-cert"
             )
 
     def test_cleanup_handles_partial_failures(self, mock_neo4j_driver):
@@ -448,14 +482,12 @@ class TestErrorHandlingIntegration:
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             # Terraform destroy fails
             mock_subprocess.return_value = Mock(returncode=1, stderr="Terraform error")
 
             result = service.cleanup_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="default", exercise="M003", scenario="v2-cert"
             )
 
             # Should still attempt Neo4j cleanup
@@ -463,41 +495,54 @@ class TestErrorHandlingIntegration:
             # But report failure
             assert result["success"] is False
 
-    def test_import_handles_neo4j_timeout(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_handles_neo4j_timeout(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test import handles Neo4j timeout during batch insert."""
-        from src.services.ctf_import_service import CTFImportService
         from neo4j.exceptions import ClientError
+
+        from src.services.ctf_import_service import CTFImportService
 
         mock_neo4j_driver.execute_query.side_effect = ClientError("Query timeout")
 
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             with pytest.raises(ClientError):
-                import_service.import_from_state("terraform.tfstate", layer_id="default")
+                import_service.import_from_state(
+                    "terraform.tfstate", layer_id="default"
+                )
 
 
 class TestConcurrency:
     """Test concurrent operations and race conditions."""
 
-    def test_concurrent_imports_different_layers(self, mock_neo4j_driver, sample_terraform_state):
+    def test_concurrent_imports_different_layers(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test importing into different layers concurrently."""
-        from src.services.ctf_import_service import CTFImportService
         import threading
+
+        from src.services.ctf_import_service import CTFImportService
 
         import_service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
         results = []
 
         def import_layer(layer_id):
-            with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
-                stats = import_service.import_from_state("terraform.tfstate", layer_id=layer_id)
+            with patch(
+                "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+            ):
+                stats = import_service.import_from_state(
+                    "terraform.tfstate", layer_id=layer_id
+                )
                 results.append((layer_id, stats))
 
         # Run imports concurrently
         threads = [
-            threading.Thread(target=import_layer, args=(f"layer{i}",))
-            for i in range(3)
+            threading.Thread(target=import_layer, args=(f"layer{i}",)) for i in range(3)
         ]
 
         for thread in threads:
@@ -524,11 +569,11 @@ class TestConcurrency:
         mock_neo4j_driver.execute_query.return_value = (
             [{"r": {"id": "vm-1", "layer_id": "default"}}],
             None,
-            None
+            None,
         )
 
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 mock_subprocess.return_value = Mock(returncode=0)
 
                 # If deploy and cleanup happen concurrently, at least one should succeed
@@ -537,7 +582,7 @@ class TestConcurrency:
                     layer_id="default",
                     exercise="M003",
                     scenario="v2-cert",
-                    dry_run=True  # Use dry run to avoid actual terraform
+                    dry_run=True,  # Use dry run to avoid actual terraform
                 )
 
                 assert deploy_result is not None

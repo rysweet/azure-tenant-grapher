@@ -99,15 +99,21 @@ class CosmosDBHandler(ResourceHandler):
         ip_rules = properties.get("ipRules", [])
         if ip_rules:
             # Cosmos DB expects comma-separated CIDR ranges
-            config["ip_range_filter"] = ",".join([rule.get("ipAddressOrRange", "") for rule in ip_rules if rule.get("ipAddressOrRange")])
+            config["ip_range_filter"] = ",".join(
+                [
+                    rule.get("ipAddressOrRange", "")
+                    for rule in ip_rules
+                    if rule.get("ipAddressOrRange")
+                ]
+            )
 
         # Optional: virtual_network_rule (security - HIGH for VNet restrictions)
         # Maps to Azure property: virtualNetworkRules
         vnet_rules = properties.get("virtualNetworkRules", [])
         if vnet_rules:
-            config["virtual_network_rule"] = [{
-                "id": rule.get("id")
-            } for rule in vnet_rules if rule.get("id")]
+            config["virtual_network_rule"] = [
+                {"id": rule.get("id")} for rule in vnet_rules if rule.get("id")
+            ]
 
         logger.debug(
             f"Cosmos DB '{resource_name}' emitted with "

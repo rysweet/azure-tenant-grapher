@@ -46,7 +46,9 @@ def _parse_remaining_resources(stderr: str, stdout: str) -> Optional[Dict[str, A
 
         # Pattern 1: Extract resource addresses from error messages
         # Terraform typically reports: "Error: deleting Resource (resource_id): ..."
-        resource_pattern = re.compile(r"Error:.*?deleting\s+(\w+)\s+\(([^)]+)\)", re.IGNORECASE)
+        resource_pattern = re.compile(
+            r"Error:.*?deleting\s+(\w+)\s+\(([^)]+)\)", re.IGNORECASE
+        )
         matches = resource_pattern.findall(combined_output)
 
         for resource_type, resource_id in matches:
@@ -55,7 +57,9 @@ def _parse_remaining_resources(stderr: str, stdout: str) -> Optional[Dict[str, A
                 remaining["resources"].append(resource_addr)
 
         # Pattern 2: Extract from "still exists" messages
-        exists_pattern = re.compile(r"([a-z_]+\.[a-z_0-9]+).*still exists", re.IGNORECASE)
+        exists_pattern = re.compile(
+            r"([a-z_]+\.[a-z_0-9]+).*still exists", re.IGNORECASE
+        )
         exists_matches = exists_pattern.findall(combined_output)
 
         for resource_addr in exists_matches:
@@ -84,7 +88,7 @@ def _parse_remaining_resources(stderr: str, stdout: str) -> Optional[Dict[str, A
         return {
             "count": 0,
             "resources": [],
-            "error_summary": "Destroy failed - check Terraform output for details"
+            "error_summary": "Destroy failed - check Terraform output for details",
         }
 
     except Exception as e:

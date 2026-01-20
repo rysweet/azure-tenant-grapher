@@ -1,6 +1,5 @@
 """Verify the public API is correctly exposed."""
 
-import sys
 import inspect
 
 # Direct imports from the modules

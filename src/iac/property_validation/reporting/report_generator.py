@@ -219,4 +219,4 @@ class ReportGenerator:
         }.get(criticality, "⚪")
 
 
-__all__ = ["ReportGenerator", "CoverageReport"]
+__all__ = ["CoverageReport", "ReportGenerator"]

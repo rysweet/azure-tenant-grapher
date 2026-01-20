@@ -11,10 +11,9 @@ Coverage areas:
 - Property validation
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from typing import Dict, Any, List
+from unittest.mock import Mock, patch
 
+import pytest
 
 # ============================================================================
 # Fixtures
@@ -37,10 +36,7 @@ def sample_resource():
         "name": "target-vm",
         "resource_type": "Microsoft.Compute/virtualMachines",
         "location": "eastus",
-        "tags": {
-            "Environment": "CTF",
-            "Role": "target"
-        }
+        "tags": {"Environment": "CTF", "Role": "target"},
     }
 
 
@@ -65,7 +61,7 @@ def sample_resources_list():
             "name": "ctf-nsg",
             "resource_type": "NetworkSecurityGroup",
             "location": "eastus",
-        }
+        },
     ]
 
 
@@ -97,7 +93,9 @@ class TestCTFAnnotationServiceInit:
 class TestAnnotateResource:
     """Test annotating individual resources with CTF properties."""
 
-    def test_annotate_resource_with_all_properties(self, mock_neo4j_driver, sample_resource):
+    def test_annotate_resource_with_all_properties(
+        self, mock_neo4j_driver, sample_resource
+    ):
         """Test annotating a resource with all CTF properties."""
         from src.services.ctf_annotation_service import CTFAnnotationService
 
@@ -109,7 +107,7 @@ class TestAnnotateResource:
             layer_id="default",
             ctf_exercise="M003",
             ctf_scenario="v2-cert",
-            ctf_role="target"
+            ctf_role="target",
         )
 
         assert result["success"] is True
@@ -133,7 +131,7 @@ class TestAnnotateResource:
 
         result = service.annotate_resource(
             resource_id="vm-001",
-            layer_id="default"  # Use non-base layer
+            layer_id="default",  # Use non-base layer
         )
 
         assert result["success"] is True
@@ -154,11 +152,11 @@ class TestAnnotateResource:
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         # Patch the structlog logger that the service actually uses
-        with patch('src.services.ctf_annotation_service.logger.warning') as mock_warning:
+        with patch(
+            "src.services.ctf_annotation_service.logger.warning"
+        ) as mock_warning:
             result = service.annotate_resource(
-                resource_id="nonexistent-vm",
-                layer_id="default",
-                ctf_exercise="M003"
+                resource_id="nonexistent-vm", layer_id="default", ctf_exercise="M003"
             )
 
             # Should succeed but log warning
@@ -175,8 +173,7 @@ class TestAnnotateResource:
         # Invalid layer_id with special characters
         with pytest.raises(ValueError, match="Invalid layer_id"):
             service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default'; DROP TABLE Resource; --"
+                resource_id="vm-001", layer_id="default'; DROP TABLE Resource; --"
             )
 
     def test_annotate_resource_validates_exercise_format(self, mock_neo4j_driver):
@@ -189,18 +186,14 @@ class TestAnnotateResource:
         valid_exercises = ["M003", "M003-v2", "test_exercise", "Exercise-123"]
         for exercise in valid_exercises:
             result = service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default",
-                ctf_exercise=exercise
+                resource_id="vm-001", layer_id="default", ctf_exercise=exercise
             )
             assert result["success"] is True
 
         # Invalid exercise IDs
         with pytest.raises(ValueError, match="Invalid ctf_exercise"):
             service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default",
-                ctf_exercise="M003; DELETE"
+                resource_id="vm-001", layer_id="default", ctf_exercise="M003; DELETE"
             )
 
     def test_annotate_resource_idempotent(self, mock_neo4j_driver):
@@ -214,14 +207,14 @@ class TestAnnotateResource:
             resource_id="vm-001",
             layer_id="default",
             ctf_exercise="M003",
-            ctf_scenario="v2-cert"
+            ctf_scenario="v2-cert",
         )
 
         result2 = service.annotate_resource(
             resource_id="vm-001",
             layer_id="default",
             ctf_exercise="M003",
-            ctf_scenario="v2-cert"
+            ctf_scenario="v2-cert",
         )
 
         assert result1["success"] is True
@@ -240,8 +233,7 @@ class TestRoleDetermination:
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         role = service.determine_role(
-            resource_type="Microsoft.Compute/virtualMachines",
-            resource_name="test-vm"
+            resource_type="Microsoft.Compute/virtualMachines", resource_name="test-vm"
         )
 
         assert role == "target"
@@ -255,13 +247,12 @@ class TestRoleDetermination:
         infrastructure_types = [
             "Microsoft.Network/virtualNetworks",
             "Microsoft.Network/networkSecurityGroups",
-            "Microsoft.Storage/storageAccounts"
+            "Microsoft.Storage/storageAccounts",
         ]
 
         for resource_type in infrastructure_types:
             role = service.determine_role(
-                resource_type=resource_type,
-                resource_name="test-resource"
+                resource_type=resource_type, resource_name="test-resource"
             )
             assert role == "infrastructure"
 
@@ -272,20 +263,27 @@ class TestRoleDetermination:
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         # Names with role keywords
-        assert service.determine_role(
-            resource_type="VirtualMachine",
-            resource_name="attacker-vm-001"
-        ) == "attacker"
+        assert (
+            service.determine_role(
+                resource_type="VirtualMachine", resource_name="attacker-vm-001"
+            )
+            == "attacker"
+        )
 
-        assert service.determine_role(
-            resource_type="VirtualMachine",
-            resource_name="target-server"
-        ) == "target"
+        assert (
+            service.determine_role(
+                resource_type="VirtualMachine", resource_name="target-server"
+            )
+            == "target"
+        )
 
-        assert service.determine_role(
-            resource_type="LogAnalyticsWorkspace",
-            resource_name="monitoring-workspace"
-        ) == "monitoring"
+        assert (
+            service.determine_role(
+                resource_type="LogAnalyticsWorkspace",
+                resource_name="monitoring-workspace",
+            )
+            == "monitoring"
+        )
 
     def test_determine_role_explicit_overrides_heuristic(self, mock_neo4j_driver):
         """Test explicit role parameter overrides heuristic determination."""
@@ -297,13 +295,15 @@ class TestRoleDetermination:
         result = service.annotate_resource(
             resource_id="vm-001",
             layer_id="default",
-            ctf_role="infrastructure"  # Explicit override
+            ctf_role="infrastructure",  # Explicit override
         )
 
         call_args = mock_neo4j_driver.execute_query.call_args
         assert call_args[1]["ctf_role"] == "infrastructure"
 
-    def test_determine_role_unknown_type_defaults_to_infrastructure(self, mock_neo4j_driver):
+    def test_determine_role_unknown_type_defaults_to_infrastructure(
+        self, mock_neo4j_driver
+    ):
         """Test unknown resource types default to 'infrastructure' role."""
         from src.services.ctf_annotation_service import CTFAnnotationService
 
@@ -311,7 +311,7 @@ class TestRoleDetermination:
 
         role = service.determine_role(
             resource_type="Microsoft.UnknownService/unknownType",
-            resource_name="unknown-resource"
+            resource_name="unknown-resource",
         )
 
         assert role == "infrastructure"
@@ -320,7 +320,9 @@ class TestRoleDetermination:
 class TestBatchAnnotation:
     """Test batch annotation operations."""
 
-    def test_annotate_batch_multiple_resources(self, mock_neo4j_driver, sample_resources_list):
+    def test_annotate_batch_multiple_resources(
+        self, mock_neo4j_driver, sample_resources_list
+    ):
         """Test batch annotation of multiple resources."""
         from src.services.ctf_annotation_service import CTFAnnotationService
 
@@ -329,10 +331,10 @@ class TestBatchAnnotation:
             [
                 {"resource_id": "vm-target-001"},
                 {"resource_id": "vnet-001"},
-                {"resource_id": "nsg-001"}
+                {"resource_id": "nsg-001"},
             ],
             None,
-            None
+            None,
         )
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
@@ -341,7 +343,7 @@ class TestBatchAnnotation:
             resources=sample_resources_list,
             layer_id="default",
             ctf_exercise="M003",
-            ctf_scenario="v2-cert"
+            ctf_scenario="v2-cert",
         )
 
         assert results["success_count"] == 3
@@ -358,28 +360,28 @@ class TestBatchAnnotation:
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
-        results = service.annotate_batch(
-            resources=[],
-            layer_id="default"
-        )
+        results = service.annotate_batch(resources=[], layer_id="default")
 
         assert results["success_count"] == 0
         assert results["failure_count"] == 0
         # Should not call Neo4j for empty batch
         mock_neo4j_driver.execute_query.assert_not_called()
 
-    def test_annotate_batch_partial_failure_continues(self, mock_neo4j_driver, sample_resources_list):
+    def test_annotate_batch_partial_failure_continues(
+        self, mock_neo4j_driver, sample_resources_list
+    ):
         """Test batch operation handles failures gracefully."""
         from src.services.ctf_annotation_service import CTFAnnotationService
 
         # Simulate batch query failing
-        mock_neo4j_driver.execute_query.side_effect = Exception("Simulated batch failure")
+        mock_neo4j_driver.execute_query.side_effect = Exception(
+            "Simulated batch failure"
+        )
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         results = service.annotate_batch(
-            resources=sample_resources_list,
-            layer_id="default"
+            resources=sample_resources_list, layer_id="default"
         )
 
         # When batch fails, all resources should be marked as failed
@@ -405,9 +407,7 @@ class TestSecurityValidation:
         # Attempting to annotate base layer should require explicit permission
         with pytest.raises(ValueError, match="Cannot modify base layer"):
             service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="base",
-                ctf_exercise="M003"
+                resource_id="vm-001", layer_id="base", ctf_exercise="M003"
             )
 
         # With explicit flag, should succeed
@@ -415,7 +415,7 @@ class TestSecurityValidation:
             resource_id="vm-001",
             layer_id="base",
             ctf_exercise="M003",
-            allow_base_modification=True
+            allow_base_modification=True,
         )
         assert result["success"] is True
 
@@ -425,11 +425,9 @@ class TestSecurityValidation:
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('src.services.ctf_annotation_service.audit_logger') as mock_audit:
+        with patch("src.services.ctf_annotation_service.audit_logger") as mock_audit:
             service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default",
-                ctf_exercise="M003"
+                resource_id="vm-001", layer_id="default", ctf_exercise="M003"
             )
 
             # Should log audit entry
@@ -447,7 +445,7 @@ class TestSecurityValidation:
 
         malicious_inputs = [
             "'; DROP DATABASE; --",
-            "\" OR \"1\"=\"1",
+            '" OR "1"="1',
             "<script>alert('xss')</script>",
             "../../etc/passwd",
         ]
@@ -455,8 +453,7 @@ class TestSecurityValidation:
         for malicious_input in malicious_inputs:
             with pytest.raises(ValueError, match="Invalid.*format"):
                 service.annotate_resource(
-                    resource_id="vm-001",
-                    layer_id=malicious_input
+                    resource_id="vm-001", layer_id=malicious_input
                 )
 
 
@@ -465,18 +462,18 @@ class TestErrorHandling:
 
     def test_neo4j_connection_failure(self, mock_neo4j_driver):
         """Test graceful handling of Neo4j connection failures."""
-        from src.services.ctf_annotation_service import CTFAnnotationService
         from neo4j.exceptions import ServiceUnavailable
 
-        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable("Connection failed")
+        from src.services.ctf_annotation_service import CTFAnnotationService
+
+        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable(
+            "Connection failed"
+        )
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         with pytest.raises(ServiceUnavailable):
-            service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default"
-            )
+            service.annotate_resource(resource_id="vm-001", layer_id="default")
 
     def test_missing_required_parameters(self, mock_neo4j_driver):
         """Test missing required parameters raise appropriate errors."""
@@ -486,32 +483,24 @@ class TestErrorHandling:
 
         # Missing resource_id
         with pytest.raises(ValueError, match="resource_id is required"):
-            service.annotate_resource(
-                resource_id=None,
-                layer_id="default"
-            )
+            service.annotate_resource(resource_id=None, layer_id="default")
 
         # Missing layer_id
         with pytest.raises(ValueError, match="layer_id is required"):
-            service.annotate_resource(
-                resource_id="vm-001",
-                layer_id=None
-            )
+            service.annotate_resource(resource_id="vm-001", layer_id=None)
 
     def test_handles_neo4j_timeout(self, mock_neo4j_driver):
         """Test handling of Neo4j query timeouts."""
-        from src.services.ctf_annotation_service import CTFAnnotationService
         from neo4j.exceptions import ClientError
+
+        from src.services.ctf_annotation_service import CTFAnnotationService
 
         mock_neo4j_driver.execute_query.side_effect = ClientError("Query timeout")
 
         service = CTFAnnotationService(neo4j_driver=mock_neo4j_driver)
 
         with pytest.raises(ClientError, match="Query timeout"):
-            service.annotate_resource(
-                resource_id="vm-001",
-                layer_id="default"
-            )
+            service.annotate_resource(resource_id="vm-001", layer_id="default")
 
 
 # ============================================================================

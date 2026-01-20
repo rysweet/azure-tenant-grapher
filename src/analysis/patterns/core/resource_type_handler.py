@@ -25,9 +25,7 @@ class ResourceTypeHandler:
     """
 
     @staticmethod
-    def get_resource_type_name(
-        labels: List[str], azure_type: Optional[str]
-    ) -> str:
+    def get_resource_type_name(labels: List[str], azure_type: Optional[str]) -> str:
         """
         Determine standardized resource type name from labels and Azure type.
 

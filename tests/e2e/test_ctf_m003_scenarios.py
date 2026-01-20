@@ -12,13 +12,12 @@ These tests represent the top 10% of the testing pyramid.
 Tests should FAIL initially until full implementation is complete.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import subprocess
-import json
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch
 
+import pytest
 
 # ============================================================================
 # Fixtures
@@ -36,7 +35,7 @@ def neo4j_test_container():
         yield {
             "uri": neo4j.get_connection_url(),
             "user": "neo4j",
-            "password": neo4j.get_password()
+            "password": neo4j.get_password(),
         }
 
 
@@ -71,23 +70,23 @@ def m003_scenarios():
         "v1-base": {
             "description": "Basic M003 scenario",
             "resources": 3,
-            "roles": ["target", "infrastructure"]
+            "roles": ["target", "infrastructure"],
         },
         "v2-cert": {
             "description": "Certificate authentication scenario",
             "resources": 5,
-            "roles": ["target", "attacker", "infrastructure"]
+            "roles": ["target", "attacker", "infrastructure"],
         },
         "v3-ews": {
             "description": "Exchange Web Services scenario",
             "resources": 4,
-            "roles": ["target", "infrastructure", "monitoring"]
+            "roles": ["target", "infrastructure", "monitoring"],
         },
         "v4-blob": {
             "description": "Blob storage scenario",
             "resources": 6,
-            "roles": ["target", "infrastructure"]
-        }
+            "roles": ["target", "infrastructure"],
+        },
     }
 
 
@@ -102,17 +101,17 @@ class TestM003V1BaseScenario:
 
     def test_v1_base_full_lifecycle(self, mock_neo4j_connection, temp_workspace):
         """Test complete v1-base scenario: import → deploy → cleanup."""
-        from src.cli.ctf_commands import ctf_import, ctf_deploy, ctf_clear
+        from src.cli.ctf_commands import ctf_clear, ctf_deploy, ctf_import
 
         driver, session = mock_neo4j_connection
 
         # Step 1: Import M003 v1-base scenario
-        with patch('sys.argv', ['atg', 'ctf', 'import', '--scenario', 'M003-v1-base']):
+        with patch("sys.argv", ["atg", "ctf", "import", "--scenario", "M003-v1-base"]):
             result = ctf_import(
                 terraform_state=str(temp_workspace / "state" / "terraform.tfstate"),
                 layer_id="e2e-test-v1",
                 exercise="M003",
-                scenario="v1-base"
+                scenario="v1-base",
             )
 
         assert result["success"] is True
@@ -122,39 +121,37 @@ class TestM003V1BaseScenario:
         session.run.return_value = [
             {"r": {"id": "vm-1", "ctf_scenario": "v1-base"}},
             {"r": {"id": "vnet-1", "ctf_scenario": "v1-base"}},
-            {"r": {"id": "nsg-1", "ctf_scenario": "v1-base"}}
+            {"r": {"id": "nsg-1", "ctf_scenario": "v1-base"}},
         ]
 
         resources = session.run(
             "MATCH (r:Resource {layer_id: $layer_id, ctf_scenario: $scenario}) RETURN r",
             layer_id="e2e-test-v1",
-            scenario="v1-base"
+            scenario="v1-base",
         )
 
         assert len(list(resources)) == 3
 
         # Step 3: Deploy scenario
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0, stdout="Success")
 
             result = ctf_deploy(
                 layer_id="e2e-test-v1",
                 exercise="M003",
                 scenario="v1-base",
-                output_dir=str(temp_workspace / "terraform")
+                output_dir=str(temp_workspace / "terraform"),
             )
 
         assert result["success"] is True
         assert result["resources_deployed"] == 3
 
         # Step 4: Cleanup
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0)
 
             result = ctf_clear(
-                layer_id="e2e-test-v1",
-                exercise="M003",
-                scenario="v1-base"
+                layer_id="e2e-test-v1", exercise="M003", scenario="v1-base"
             )
 
         assert result["success"] is True
@@ -166,14 +163,20 @@ class TestM003V1BaseScenario:
 
         result = subprocess.run(
             [
-                "atg", "ctf", "import",
-                "--state", str(temp_workspace / "state" / "terraform.tfstate"),
-                "--layer", "e2e-test-v1",
-                "--exercise", "M003",
-                "--scenario", "v1-base"
+                "atg",
+                "ctf",
+                "import",
+                "--state",
+                str(temp_workspace / "state" / "terraform.tfstate"),
+                "--layer",
+                "e2e-test-v1",
+                "--exercise",
+                "M003",
+                "--scenario",
+                "v1-base",
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0
@@ -186,7 +189,7 @@ class TestM003V2CertScenario:
 
     def test_v2_cert_with_certificate_auth(self, mock_neo4j_connection, temp_workspace):
         """Test v2-cert scenario with certificate authentication."""
-        from src.cli.ctf_commands import ctf_import, ctf_deploy
+        from src.cli.ctf_commands import ctf_import
 
         driver, session = mock_neo4j_connection
 
@@ -195,7 +198,7 @@ class TestM003V2CertScenario:
             terraform_state=str(temp_workspace / "state" / "terraform.tfstate"),
             layer_id="e2e-test-v2",
             exercise="M003",
-            scenario="v2-cert"
+            scenario="v2-cert",
         )
 
         assert result["success"] is True
@@ -206,7 +209,7 @@ class TestM003V2CertScenario:
 
         attacker_resources = session.run(
             "MATCH (r:Resource {layer_id: $layer_id, ctf_role: 'attacker'}) RETURN r",
-            layer_id="e2e-test-v2"
+            layer_id="e2e-test-v2",
         )
 
         assert len(list(attacker_resources)) >= 1
@@ -223,7 +226,7 @@ class TestM003V2CertScenario:
             {"r": {"id": "vm-attacker", "ctf_role": "attacker"}},
             {"r": {"id": "vnet", "ctf_role": "infrastructure"}},
             {"r": {"id": "nsg", "ctf_role": "infrastructure"}},
-            {"r": {"id": "storage", "ctf_role": "infrastructure"}}
+            {"r": {"id": "storage", "ctf_role": "infrastructure"}},
         ]
 
         session.run.return_value = mock_resources
@@ -231,9 +234,7 @@ class TestM003V2CertScenario:
         service = CTFDeployService(neo4j_driver=driver)
 
         resources = service.query_ctf_resources(
-            layer_id="e2e-test-v2",
-            exercise="M003",
-            scenario="v2-cert"
+            layer_id="e2e-test-v2", exercise="M003", scenario="v2-cert"
         )
 
         # Count by role
@@ -261,7 +262,7 @@ class TestM003V3EWSScenario:
             terraform_state="terraform.tfstate",
             layer_id="e2e-test-v3",
             exercise="M003",
-            scenario="v3-ews"
+            scenario="v3-ews",
         )
 
         assert result["success"] is True
@@ -271,7 +272,7 @@ class TestM003V3EWSScenario:
 
         monitoring = session.run(
             "MATCH (r:Resource {layer_id: $layer_id, ctf_role: 'monitoring'}) RETURN r",
-            layer_id="e2e-test-v3"
+            layer_id="e2e-test-v3",
         )
 
         assert len(list(monitoring)) >= 1
@@ -284,11 +285,13 @@ class TestM003V3EWSScenario:
 
         # Mock monitoring resources
         mock_resources = [
-            {"r": {
-                "id": "law-1",
-                "resource_type": "Microsoft.OperationalInsights/workspaces",
-                "ctf_role": "monitoring"
-            }}
+            {
+                "r": {
+                    "id": "law-1",
+                    "resource_type": "Microsoft.OperationalInsights/workspaces",
+                    "ctf_role": "monitoring",
+                }
+            }
         ]
 
         session.run.return_value = mock_resources
@@ -299,11 +302,14 @@ class TestM003V3EWSScenario:
             layer_id="e2e-test-v3",
             exercise="M003",
             scenario="v3-ews",
-            role="monitoring"
+            role="monitoring",
         )
 
         assert len(monitoring_resources) >= 1
-        assert any("OperationalInsights" in r["r"]["resource_type"] for r in monitoring_resources)
+        assert any(
+            "OperationalInsights" in r["r"]["resource_type"]
+            for r in monitoring_resources
+        )
 
 
 @pytest.mark.e2e
@@ -320,7 +326,7 @@ class TestM003V4BlobScenario:
             terraform_state="terraform.tfstate",
             layer_id="e2e-test-v4",
             exercise="M003",
-            scenario="v4-blob"
+            scenario="v4-blob",
         )
 
         assert result["success"] is True
@@ -333,7 +339,7 @@ class TestM003V4BlobScenario:
 
         storage = session.run(
             "MATCH (r:Resource {layer_id: $layer_id}) WHERE r.resource_type =~ '.*Storage.*' RETURN r",
-            layer_id="e2e-test-v4"
+            layer_id="e2e-test-v4",
         )
 
         assert len(list(storage)) >= 1
@@ -344,8 +350,9 @@ class TestM003V4BlobScenario:
 
         for scenario_id, scenario in m003_scenarios.items():
             if scenario_id != "v4-blob":
-                assert v4_count >= scenario["resources"], \
+                assert v4_count >= scenario["resources"], (
                     f"v4-blob should have most resources, but {scenario_id} has {scenario['resources']}"
+                )
 
 
 @pytest.mark.e2e
@@ -365,7 +372,7 @@ class TestMultiScenarioManagement:
                 terraform_state=f"terraform-{scenario_id}.tfstate",
                 layer_id=f"e2e-multi-{scenario_id}",
                 exercise="M003",
-                scenario=scenario_id
+                scenario=scenario_id,
             )
 
             results[scenario_id] = result
@@ -376,12 +383,17 @@ class TestMultiScenarioManagement:
         # Verify layer isolation - query each layer separately
         for scenario_id in m003_scenarios.keys():
             session.run.return_value = [
-                {"r": {"layer_id": f"e2e-multi-{scenario_id}", "ctf_scenario": scenario_id}}
+                {
+                    "r": {
+                        "layer_id": f"e2e-multi-{scenario_id}",
+                        "ctf_scenario": scenario_id,
+                    }
+                }
             ]
 
             resources = session.run(
                 "MATCH (r:Resource {layer_id: $layer_id}) RETURN r",
-                layer_id=f"e2e-multi-{scenario_id}"
+                layer_id=f"e2e-multi-{scenario_id}",
             )
 
             # Each layer should have its own resources
@@ -398,7 +410,7 @@ class TestMultiScenarioManagement:
             {"exercise": "M003", "scenario": "v1-base", "count": 3},
             {"exercise": "M003", "scenario": "v2-cert", "count": 5},
             {"exercise": "M003", "scenario": "v3-ews", "count": 4},
-            {"exercise": "M003", "scenario": "v4-blob", "count": 6}
+            {"exercise": "M003", "scenario": "v4-blob", "count": 6},
         ]
 
         result = ctf_list(layer_id="e2e-multi")
@@ -413,13 +425,11 @@ class TestMultiScenarioManagement:
         driver, session = mock_neo4j_connection
 
         # Clear only v1-base
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0)
 
             result = ctf_clear(
-                layer_id="e2e-multi",
-                exercise="M003",
-                scenario="v1-base"
+                layer_id="e2e-multi", exercise="M003", scenario="v1-base"
             )
 
         assert result["success"] is True
@@ -456,13 +466,22 @@ class TestErrorRecovery:
 
         terraform_state = {
             "resources": [
-                {"type": "vm", "instances": [{"attributes": {"id": "1", "name": "vm1"}}]},
-                {"type": "vm", "instances": [{"attributes": {"id": "2", "name": "vm2"}}]},
-                {"type": "vm", "instances": [{"attributes": {"id": "3", "name": "vm3"}}]},
+                {
+                    "type": "vm",
+                    "instances": [{"attributes": {"id": "1", "name": "vm1"}}],
+                },
+                {
+                    "type": "vm",
+                    "instances": [{"attributes": {"id": "2", "name": "vm2"}}],
+                },
+                {
+                    "type": "vm",
+                    "instances": [{"attributes": {"id": "3", "name": "vm3"}}],
+                },
             ]
         }
 
-        with patch('builtins.open', create=True):
+        with patch("builtins.open", create=True):
             stats = service.import_from_state("terraform.tfstate", layer_id="e2e-test")
 
         # Should have partial success
@@ -478,17 +497,14 @@ class TestErrorRecovery:
         # Mock resources exist
         session.run.return_value = [{"r": {"id": "vm-1"}}]
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             # Terraform fails
             mock_subprocess.return_value = Mock(
-                returncode=1,
-                stderr="Terraform error: timeout"
+                returncode=1, stderr="Terraform error: timeout"
             )
 
             result = ctf_deploy(
-                layer_id="e2e-test",
-                exercise="M003",
-                scenario="v1-base"
+                layer_id="e2e-test", exercise="M003", scenario="v1-base"
             )
 
         # Should report failure with details
@@ -516,7 +532,7 @@ class TestPerformance:
                     "instances": [
                         {"attributes": {"id": f"vm-{i}", "name": f"vm-{i}"}}
                         for i in range(100)
-                    ]
+                    ],
                 }
             ]
         }
@@ -524,11 +540,14 @@ class TestPerformance:
         service = CTFImportService(neo4j_driver=driver)
 
         import time
+
         start = time.time()
 
-        with patch('builtins.open', create=True):
-            with patch('json.loads', return_value=large_state):
-                stats = service.import_from_state("terraform.tfstate", layer_id="perf-test")
+        with patch("builtins.open", create=True):
+            with patch("json.loads", return_value=large_state):
+                stats = service.import_from_state(
+                    "terraform.tfstate", layer_id="perf-test"
+                )
 
         duration = time.time() - start
 
@@ -544,19 +563,16 @@ class TestPerformance:
 
         # Mock large result set
         session.run.return_value = [
-            {"r": {"id": f"vm-{i}", "layer_id": "perf-test"}}
-            for i in range(1000)
+            {"r": {"id": f"vm-{i}", "layer_id": "perf-test"}} for i in range(1000)
         ]
 
         service = CTFDeployService(neo4j_driver=driver)
 
         import time
+
         start = time.time()
 
-        resources = service.query_ctf_resources(
-            layer_id="perf-test",
-            exercise="M003"
-        )
+        resources = service.query_ctf_resources(layer_id="perf-test", exercise="M003")
 
         duration = time.time() - start
 

@@ -11,11 +11,10 @@ Coverage areas:
 - Error handling for invalid Terraform files
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch, mock_open
-from typing import Dict, Any, List
 import json
+from unittest.mock import Mock, mock_open, patch
 
+import pytest
 
 # ============================================================================
 # Fixtures
@@ -41,7 +40,7 @@ def sample_terraform_state():
                 "mode": "managed",
                 "type": "azurerm_virtual_machine",
                 "name": "target",
-                "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+                "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
                 "instances": [
                     {
                         "attributes": {
@@ -53,17 +52,17 @@ def sample_terraform_state():
                                 "layer_id": "default",
                                 "ctf_exercise": "M003",
                                 "ctf_scenario": "v2-cert",
-                                "ctf_role": "target"
-                            }
+                                "ctf_role": "target",
+                            },
                         }
                     }
-                ]
+                ],
             },
             {
                 "mode": "managed",
                 "type": "azurerm_virtual_network",
                 "name": "ctf_vnet",
-                "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+                "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
                 "instances": [
                     {
                         "attributes": {
@@ -75,13 +74,13 @@ def sample_terraform_state():
                                 "layer_id": "default",
                                 "ctf_exercise": "M003",
                                 "ctf_scenario": "v2-cert",
-                                "ctf_role": "infrastructure"
-                            }
+                                "ctf_role": "infrastructure",
+                            },
                         }
                     }
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
 
 
@@ -102,12 +101,12 @@ def sample_terraform_state_missing_tags():
                             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Storage/storageAccounts/teststorage",
                             "name": "teststorage",
                             "location": "eastus",
-                            "tags": {}  # No CTF tags
+                            "tags": {},  # No CTF tags
                         }
                     }
-                ]
+                ],
             }
-        ]
+        ],
     }
 
 
@@ -131,7 +130,9 @@ class TestCTFImportServiceInit:
         """Test service can use default driver if none provided."""
         from src.services.ctf_import_service import CTFImportService
 
-        with patch('src.services.ctf_import_service.get_neo4j_driver') as mock_get_driver:
+        with patch(
+            "src.services.ctf_import_service.get_neo4j_driver"
+        ) as mock_get_driver:
             mock_get_driver.return_value = Mock()
             service = CTFImportService()
             assert service.neo4j_driver is not None
@@ -147,7 +148,9 @@ class TestParseTerraformState:
         service = CTFImportService(neo4j_driver=Mock())
 
         # Mock file reading
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             resources = service.parse_terraform_state("terraform.tfstate")
 
             assert len(resources) == 2
@@ -169,7 +172,7 @@ class TestParseTerraformState:
 
         service = CTFImportService(neo4j_driver=Mock())
 
-        with patch('builtins.open', mock_open(read_data="invalid json{")):
+        with patch("builtins.open", mock_open(read_data="invalid json{")):
             with pytest.raises(ValueError, match="Invalid JSON"):
                 service.parse_terraform_state("invalid.tfstate")
 
@@ -181,7 +184,7 @@ class TestParseTerraformState:
 
         invalid_state = {"version": 4, "terraform_version": "1.5.0"}  # No resources
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(invalid_state))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(invalid_state))):
             resources = service.parse_terraform_state("terraform.tfstate")
             # Should return empty list, not fail
             assert resources == []
@@ -192,7 +195,9 @@ class TestParseTerraformState:
 
         service = CTFImportService(neo4j_driver=Mock())
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             resources = service.parse_terraform_state("terraform.tfstate")
 
             # Should extract instances from each resource
@@ -214,14 +219,16 @@ class TestParseTerraformState:
                         {"attributes": {"id": "vm-1", "name": "vm-1"}},
                         {"attributes": {"id": "vm-2", "name": "vm-2"}},
                         {"attributes": {"id": "vm-3", "name": "vm-3"}},
-                    ]
+                    ],
                 }
             ]
         }
 
         service = CTFImportService(neo4j_driver=Mock())
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(state_with_multiple))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(state_with_multiple))
+        ):
             resources = service.parse_terraform_state("terraform.tfstate")
 
             # Should return all instances as separate resources
@@ -246,7 +253,7 @@ class TestExtractCTFProperties:
                     "layer_id": "default",
                     "ctf_exercise": "M003",
                     "ctf_scenario": "v2-cert",
-                    "ctf_role": "target"
+                    "ctf_role": "target",
                 }
             }
         }
@@ -284,7 +291,7 @@ class TestExtractCTFProperties:
             "attributes": {
                 "tags": {
                     "layer_id": "default",
-                    "ctf_exercise": "M003"
+                    "ctf_exercise": "M003",
                     # Missing scenario and role
                 }
             }
@@ -310,7 +317,7 @@ class TestExtractCTFProperties:
                     "Owner": "Security Team",
                     "layer_id": "default",
                     "ctf_exercise": "M003",
-                    "CostCenter": "12345"
+                    "CostCenter": "12345",
                 }
             }
         }
@@ -345,14 +352,17 @@ class TestMapResourceToNeo4j:
                     "layer_id": "default",
                     "ctf_exercise": "M003",
                     "ctf_scenario": "v2-cert",
-                    "ctf_role": "target"
-                }
-            }
+                    "ctf_role": "target",
+                },
+            },
         }
 
         neo4j_resource = service.map_resource_to_neo4j(terraform_resource)
 
-        assert neo4j_resource["id"] == "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/target-vm"
+        assert (
+            neo4j_resource["id"]
+            == "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/target-vm"
+        )
         assert neo4j_resource["name"] == "target-vm"
         assert neo4j_resource["resource_type"] == "azurerm_virtual_machine"
         assert neo4j_resource["location"] == "eastus"
@@ -372,9 +382,9 @@ class TestMapResourceToNeo4j:
             "name": "rg",
             "attributes": {
                 "id": "/subscriptions/test-sub/resourceGroups/test-rg",
-                "name": "test-rg"
+                "name": "test-rg",
                 # Missing location, tags
-            }
+            },
         }
 
         neo4j_resource = service.map_resource_to_neo4j(minimal_resource)
@@ -399,7 +409,7 @@ class TestMapResourceToNeo4j:
         for tf_type, expected_azure_type in terraform_types_to_azure:
             resource = {
                 "type": tf_type,
-                "attributes": {"id": "test-id", "name": "test-name"}
+                "attributes": {"id": "test-id", "name": "test-name"},
             }
             mapped = service.map_resource_to_neo4j(resource)
             # Should normalize to Azure format or keep Terraform format consistently
@@ -415,10 +425,11 @@ class TestImportFromState:
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             stats = service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
             assert stats["resources_created"] == 2
@@ -428,16 +439,20 @@ class TestImportFromState:
             # Verify Neo4j query was called
             mock_neo4j_driver.execute_query.assert_called()
 
-    def test_import_from_state_with_layer_id_override(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_from_state_with_layer_id_override(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test import with layer_id override (overrides Terraform tags)."""
         from src.services.ctf_import_service import CTFImportService
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             service.import_from_state(
                 state_file="terraform.tfstate",
-                layer_id="custom-layer"  # Override
+                layer_id="custom-layer",  # Override
             )
 
             # Should use custom layer_id, not tag value
@@ -452,11 +467,13 @@ class TestImportFromState:
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state_missing_tags))):
-            with patch('logging.warning') as mock_warning:
+        with patch(
+            "builtins.open",
+            mock_open(read_data=json.dumps(sample_terraform_state_missing_tags)),
+        ):
+            with patch("logging.warning") as mock_warning:
                 stats = service.import_from_state(
-                    state_file="terraform.tfstate",
-                    layer_id="default"
+                    state_file="terraform.tfstate", layer_id="default"
                 )
 
                 # Should succeed but log warning
@@ -464,23 +481,25 @@ class TestImportFromState:
                 assert stats["warnings"] == 1
                 mock_warning.assert_called()
 
-    def test_import_from_state_idempotent(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_from_state_idempotent(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test importing same state twice is idempotent."""
         from src.services.ctf_import_service import CTFImportService
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             # First import
             stats1 = service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
             # Second import (same data)
             stats2 = service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
             # First creates, second updates
@@ -488,16 +507,19 @@ class TestImportFromState:
             assert stats2["resources_updated"] == 2
             assert stats2["resources_created"] == 0
 
-    def test_import_from_state_batch_operation(self, mock_neo4j_driver, sample_terraform_state):
+    def test_import_from_state_batch_operation(
+        self, mock_neo4j_driver, sample_terraform_state
+    ):
         """Test import uses batch operation for performance."""
         from src.services.ctf_import_service import CTFImportService
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_terraform_state))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(sample_terraform_state))
+        ):
             service.import_from_state(
-                state_file="terraform.tfstate",
-                layer_id="default"
+                state_file="terraform.tfstate", layer_id="default"
             )
 
             # Should use UNWIND for batch operation
@@ -511,16 +533,21 @@ class TestErrorHandling:
 
     def test_import_neo4j_connection_failure(self, mock_neo4j_driver):
         """Test handling Neo4j connection failures during import."""
-        from src.services.ctf_import_service import CTFImportService
         from neo4j.exceptions import ServiceUnavailable
 
-        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable("Connection failed")
+        from src.services.ctf_import_service import CTFImportService
+
+        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable(
+            "Connection failed"
+        )
 
         service = CTFImportService(neo4j_driver=mock_neo4j_driver)
 
-        state = {"resources": [{"type": "test", "instances": [{"attributes": {"id": "1"}}]}]}
+        state = {
+            "resources": [{"type": "test", "instances": [{"attributes": {"id": "1"}}]}]
+        }
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(state))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(state))):
             with pytest.raises(ServiceUnavailable):
                 service.import_from_state("terraform.tfstate", layer_id="default")
 
@@ -548,7 +575,7 @@ class TestErrorHandling:
             ]
         }
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(state))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(state))):
             stats = service.import_from_state("terraform.tfstate", layer_id="default")
 
             # Should have some failures but continue
@@ -565,12 +592,12 @@ class TestErrorHandling:
             "type": "azurerm_vm",
             "instances": [
                 {"attributes": {}}  # Missing 'id' and 'name'
-            ]
+            ],
         }
 
         state = {"resources": [invalid_resource]}
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(state))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(state))):
             stats = service.import_from_state("terraform.tfstate", layer_id="default")
 
             # Should log error but not crash

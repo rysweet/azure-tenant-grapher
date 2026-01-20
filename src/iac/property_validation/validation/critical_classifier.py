@@ -10,7 +10,7 @@ Philosophy:
 
 from typing import Dict, Set
 
-from ..models import PropertyDefinition, Criticality
+from ..models import Criticality, PropertyDefinition
 
 
 class CriticalClassifier:

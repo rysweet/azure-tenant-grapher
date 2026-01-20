@@ -16,6 +16,7 @@ from azure.identity import ClientSecretCredential  # type: ignore[import-untyped
 # Microsoft Graph is optional - only needed for cross-tenant identity mapping
 try:
     from msgraph import GraphServiceClient  # type: ignore[import-untyped]
+
     MSGRAPH_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     # msgraph-sdk may not be available or import path changed

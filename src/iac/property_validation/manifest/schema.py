@@ -181,7 +181,9 @@ class ResourceManifest:
     def get_critical_properties(self) -> list[PropertyMapping]:
         """Get all CRITICAL properties."""
         return [
-            prop for prop in self.properties if prop.criticality == CriticalityLevel.CRITICAL
+            prop
+            for prop in self.properties
+            if prop.criticality == CriticalityLevel.CRITICAL
         ]
 
     def get_required_properties(self) -> list[PropertyMapping]:

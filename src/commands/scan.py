@@ -647,8 +647,6 @@ async def _run_dashboard_mode(
     return None
 
 
-
-
 @click.command("build")
 @click.option(
     "--tenant-id",

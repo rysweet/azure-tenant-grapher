@@ -15,13 +15,14 @@ import logging
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class TerraformSchemaError(Exception):
     """Raised when Terraform schema operations fail."""
+
     pass
 
 
@@ -49,7 +50,7 @@ class TerraformScraper:
         self,
         terraform_dir: Optional[Path] = None,
         cache_dir: Optional[Path] = None,
-        cache_ttl_hours: int = DEFAULT_TTL_HOURS
+        cache_ttl_hours: int = DEFAULT_TTL_HOURS,
     ):
         """Initialize Terraform scraper with cache configuration."""
         self.terraform_dir = terraform_dir or Path.cwd()
@@ -69,15 +70,11 @@ class TerraformScraper:
         """Verify Terraform CLI is available."""
         try:
             result = subprocess.run(
-                ["terraform", "version"],
-                capture_output=True,
-                text=True,
-                timeout=10
+                ["terraform", "version"], capture_output=True, text=True, timeout=10
             )
             if result.returncode != 0:
                 raise TerraformSchemaError(
-                    "Terraform CLI not working properly. "
-                    f"Error: {result.stderr}"
+                    f"Terraform CLI not working properly. Error: {result.stderr}"
                 )
             logger.info(f"Found Terraform: {result.stdout.splitlines()[0]}")
         except FileNotFoundError:
@@ -106,7 +103,7 @@ class TerraformScraper:
             return False
 
         try:
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 data = json.load(f)
                 cached_time = datetime.fromisoformat(data.get("cached_at", ""))
                 expiry_time = cached_time + timedelta(hours=self.cache_ttl_hours)
@@ -120,7 +117,7 @@ class TerraformScraper:
             return None
 
         try:
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 data = json.load(f)
                 return data.get("schema")
         except (json.JSONDecodeError, OSError) as e:
@@ -129,10 +126,7 @@ class TerraformScraper:
 
     def _write_cache(self, cache_path: Path, schema: Dict[str, Any]) -> None:
         """Write schema to cache with timestamp."""
-        cache_data = {
-            "cached_at": datetime.now().isoformat(),
-            "schema": schema
-        }
+        cache_data = {"cached_at": datetime.now().isoformat(), "schema": schema}
 
         try:
             with open(cache_path, "w") as f:
@@ -149,7 +143,7 @@ class TerraformScraper:
                 capture_output=True,
                 text=True,
                 cwd=self.terraform_dir,
-                timeout=120  # 2 minutes max
+                timeout=120,  # 2 minutes max
             )
 
             if result.returncode != 0:
@@ -199,9 +193,7 @@ class TerraformScraper:
         return schema_data
 
     def get_resource_schema(
-        self,
-        resource_type: str,
-        force_refresh: bool = False
+        self, resource_type: str, force_refresh: bool = False
     ) -> Dict[str, Any]:
         """Get schema for a specific Terraform resource type.
 
@@ -225,7 +217,9 @@ class TerraformScraper:
         all_schemas = self._fetch_all_schemas(force_refresh)
 
         # Find the resource in provider schemas
-        for provider_name, provider_data in all_schemas.get("provider_schemas", {}).items():
+        for provider_name, provider_data in all_schemas.get(
+            "provider_schemas", {}
+        ).items():
             resource_schemas = provider_data.get("resource_schemas", {})
             if resource_type in resource_schemas:
                 return resource_schemas[resource_type]
@@ -238,9 +232,7 @@ class TerraformScraper:
         )
 
     def get_provider_schema(
-        self,
-        provider_name: str,
-        force_refresh: bool = False
+        self, provider_name: str, force_refresh: bool = False
     ) -> Dict[str, Any]:
         """Get full schema for a specific provider.
 
@@ -262,8 +254,7 @@ class TerraformScraper:
         if provider_name not in provider_schemas:
             available = list(provider_schemas.keys())
             raise TerraformSchemaError(
-                f"Provider '{provider_name}' not found. "
-                f"Available: {available}"
+                f"Provider '{provider_name}' not found. Available: {available}"
             )
 
         return provider_schemas[provider_name]
@@ -300,7 +291,9 @@ class TerraformScraper:
         all_schemas = self._fetch_all_schemas()
         resource_types = []
 
-        for provider_name, provider_data in all_schemas.get("provider_schemas", {}).items():
+        for provider_name, provider_data in all_schemas.get(
+            "provider_schemas", {}
+        ).items():
             if provider and provider != provider_name:
                 continue
             resource_schemas = provider_data.get("resource_schemas", {})
@@ -309,8 +302,7 @@ class TerraformScraper:
         return sorted(resource_types)
 
     def extract_required_properties(
-        self,
-        resource_type: str
+        self, resource_type: str
     ) -> Dict[str, Dict[str, Any]]:
         """Extract only required properties from a resource schema.
 
@@ -338,9 +330,7 @@ class TerraformScraper:
         return required
 
     def extract_all_properties(
-        self,
-        resource_type: str,
-        include_nested: bool = True
+        self, resource_type: str, include_nested: bool = True
     ) -> Dict[str, Dict[str, Any]]:
         """Extract all properties from a resource schema.
 
@@ -364,10 +354,7 @@ class TerraformScraper:
         if include_nested:
             # Add nested blocks as well
             for block_name, block_schema in block.get("block_types", {}).items():
-                properties[block_name] = {
-                    "type": "block",
-                    "block": block_schema
-                }
+                properties[block_name] = {"type": "block", "block": block_schema}
 
         return properties
 

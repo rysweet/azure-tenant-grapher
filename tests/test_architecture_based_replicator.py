@@ -6,18 +6,15 @@ spectral matching, proportional sampling, and configuration coherence.
 
 Fixtures are defined in tests/conftest.py and automatically discovered by pytest.
 """
+
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import networkx as nx
-import numpy as np
 import pytest
 
-from src.architecture_based_replicator import ArchitecturePatternReplicator
 from src.architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
 
 
@@ -28,8 +25,15 @@ class TestInitialization:
         graph.add_node("virtualMachines", count=10)
         graph.add_node("disks", count=15)
         graph.add_node("networkInterfaces", count=10)
-        graph.add_edge("virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10)
-        graph.add_edge("virtualMachines", "networkInterfaces", relationship="DEPENDS_ON", frequency=10)
+        graph.add_edge(
+            "virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10
+        )
+        graph.add_edge(
+            "virtualMachines",
+            "networkInterfaces",
+            relationship="DEPENDS_ON",
+            frequency=10,
+        )
         return graph
 
     @pytest.fixture
@@ -522,8 +526,14 @@ class TestGreedySelection:
         }
 
         all_instances = [
-            ("Virtual Machine Workload", sample_pattern_resources["Virtual Machine Workload"][0]),
-            ("Virtual Machine Workload", sample_pattern_resources["Virtual Machine Workload"][1]),
+            (
+                "Virtual Machine Workload",
+                sample_pattern_resources["Virtual Machine Workload"][0],
+            ),
+            (
+                "Virtual Machine Workload",
+                sample_pattern_resources["Virtual Machine Workload"][1],
+            ),
         ]
 
         with patch.object(
@@ -580,24 +590,33 @@ class TestTargetGraphBuilding:
     ):
         """Test building target graph from selected instances."""
         selected_instances = [
-            ("Virtual Machine Workload", sample_pattern_resources["Virtual Machine Workload"][0])
+            (
+                "Virtual Machine Workload",
+                sample_pattern_resources["Virtual Machine Workload"][0],
+            )
         ]
 
         # Mock Neo4j session
         mock_session = mock_neo4j_driver.session.return_value.__enter__.return_value
         mock_result = Mock()
-        mock_result.__iter__ = Mock(return_value=iter([
-            {
-                "source_labels": ["Resource"],
-                "source_type": "Microsoft.Compute/virtualMachines",
-                "rel_type": "DEPENDS_ON",
-                "target_labels": ["Resource"],
-                "target_type": "Microsoft.Compute/disks",
-            }
-        ]))
+        mock_result.__iter__ = Mock(
+            return_value=iter(
+                [
+                    {
+                        "source_labels": ["Resource"],
+                        "source_type": "Microsoft.Compute/virtualMachines",
+                        "rel_type": "DEPENDS_ON",
+                        "target_labels": ["Resource"],
+                        "target_type": "Microsoft.Compute/disks",
+                    }
+                ]
+            )
+        )
         mock_session.run.return_value = mock_result
 
-        with patch("src.architecture_based_replicator.GraphDatabase.driver") as mock_driver:
+        with patch(
+            "src.architecture_based_replicator.GraphDatabase.driver"
+        ) as mock_driver:
             mock_driver.return_value = mock_neo4j_driver
 
             graph = replicator._build_target_pattern_graph_from_instances(
@@ -635,7 +654,11 @@ class TestOrphanedNodeHandling:
             assert isinstance(orphaned_instances, list)
 
     def test_find_orphaned_node_instances_with_orphans(
-        self, replicator, sample_pattern_graph, sample_detected_patterns, mock_neo4j_driver
+        self,
+        replicator,
+        sample_pattern_graph,
+        sample_detected_patterns,
+        mock_neo4j_driver,
     ):
         """Test finding orphaned instances when orphans exist."""
         replicator.source_pattern_graph = sample_pattern_graph
@@ -651,20 +674,30 @@ class TestOrphanedNodeHandling:
         # Mock Neo4j session
         mock_session = mock_neo4j_driver.session.return_value.__enter__.return_value
         mock_result = Mock()
-        mock_result.__iter__ = Mock(return_value=iter([
-            {
-                "rg_id": "rg-1",
-                "resources": [
-                    {"id": "action1", "type": "Microsoft.Insights/actiongroups", "name": "action-1"}
-                ],
-            }
-        ]))
+        mock_result.__iter__ = Mock(
+            return_value=iter(
+                [
+                    {
+                        "rg_id": "rg-1",
+                        "resources": [
+                            {
+                                "id": "action1",
+                                "type": "Microsoft.Insights/actiongroups",
+                                "name": "action-1",
+                            }
+                        ],
+                    }
+                ]
+            )
+        )
         mock_session.run.return_value = mock_result
 
         with patch.object(
             replicator.analyzer, "identify_orphaned_nodes", return_value=orphaned_nodes
         ):
-            with patch("src.architecture_based_replicator.GraphDatabase.driver") as mock_driver:
+            with patch(
+                "src.architecture_based_replicator.GraphDatabase.driver"
+            ) as mock_driver:
                 mock_driver.return_value = mock_neo4j_driver
 
                 orphaned_instances = replicator._find_orphaned_node_instances()
@@ -691,7 +724,11 @@ class TestReplicationPlanGeneration:
             replicator.generate_replication_plan()
 
     def test_generate_replication_plan_architecture_distribution_enabled(
-        self, replicator, sample_pattern_graph, sample_detected_patterns, sample_pattern_resources
+        self,
+        replicator,
+        sample_pattern_graph,
+        sample_detected_patterns,
+        sample_pattern_resources,
     ):
         """Test plan generation with architecture distribution enabled."""
         replicator.source_pattern_graph = sample_pattern_graph
@@ -714,15 +751,22 @@ class TestReplicationPlanGeneration:
                 },
             }
 
-            with patch.object(replicator.analyzer, "compute_pattern_targets") as mock_targets:
+            with patch.object(
+                replicator.analyzer, "compute_pattern_targets"
+            ) as mock_targets:
                 mock_targets.return_value = {
                     "Virtual Machine Workload": 2,
                     "Web Application": 1,
                 }
 
-                with patch.object(replicator, "_select_instances_proportionally") as mock_select:
+                with patch.object(
+                    replicator, "_select_instances_proportionally"
+                ) as mock_select:
                     mock_select.return_value = [
-                        ("Virtual Machine Workload", sample_pattern_resources["Virtual Machine Workload"][0])
+                        (
+                            "Virtual Machine Workload",
+                            sample_pattern_resources["Virtual Machine Workload"][0],
+                        )
                     ]
 
                     with patch.object(
@@ -730,24 +774,35 @@ class TestReplicationPlanGeneration:
                     ) as mock_build:
                         mock_build.return_value = sample_pattern_graph
 
-                        with patch.object(replicator.analyzer, "validate_proportional_sampling") as mock_validate:
+                        with patch.object(
+                            replicator.analyzer, "validate_proportional_sampling"
+                        ) as mock_validate:
                             mock_validate.return_value = {
                                 "target_distribution_match": 0.95,
                                 "interpretation": "Close match",
                             }
 
-                            selected, history, metadata = replicator.generate_replication_plan(
-                                target_instance_count=3,
-                                use_architecture_distribution=True,
+                            selected, history, metadata = (
+                                replicator.generate_replication_plan(
+                                    target_instance_count=3,
+                                    use_architecture_distribution=True,
+                                )
                             )
 
                             assert isinstance(selected, list)
                             assert isinstance(history, list)
                             assert metadata is not None
-                            assert metadata["selection_mode"] in ["proportional", "proportional_spectral"]
+                            assert metadata["selection_mode"] in [
+                                "proportional",
+                                "proportional_spectral",
+                            ]
 
     def test_generate_replication_plan_greedy_fallback(
-        self, replicator, sample_pattern_graph, sample_detected_patterns, sample_pattern_resources
+        self,
+        replicator,
+        sample_pattern_graph,
+        sample_detected_patterns,
+        sample_pattern_resources,
     ):
         """Test plan generation with greedy fallback mode."""
         replicator.source_pattern_graph = sample_pattern_graph
@@ -756,7 +811,10 @@ class TestReplicationPlanGeneration:
 
         with patch.object(replicator, "_select_instances_greedy") as mock_greedy:
             mock_greedy.return_value = [
-                ("Virtual Machine Workload", sample_pattern_resources["Virtual Machine Workload"][0])
+                (
+                    "Virtual Machine Workload",
+                    sample_pattern_resources["Virtual Machine Workload"][0],
+                )
             ]
 
             with patch.object(
@@ -808,7 +866,10 @@ class TestConfigurationBasedPlan:
             ) as mock_bags:
                 mock_bags.return_value = {
                     "Microsoft.Compute/virtualMachines": [
-                        {"fingerprint": {"sku": "Standard_D2s_v3"}, "sample_resources": ["vm1"]}
+                        {
+                            "fingerprint": {"sku": "Standard_D2s_v3"},
+                            "sample_resources": ["vm1"],
+                        }
                     ]
                     * 10
                 }
@@ -856,8 +917,12 @@ class TestDistributionSimilarity:
 
         target_distributions = {
             "Microsoft.Compute/virtualMachines": {
-                json.dumps({"sku": "Standard_D2s_v3", "location": "eastus"}, sort_keys=True): 3,
-                json.dumps({"sku": "Standard_D4s_v3", "location": "eastus"}, sort_keys=True): 2,
+                json.dumps(
+                    {"sku": "Standard_D2s_v3", "location": "eastus"}, sort_keys=True
+                ): 3,
+                json.dumps(
+                    {"sku": "Standard_D4s_v3", "location": "eastus"}, sort_keys=True
+                ): 2,
             }
         }
 
@@ -873,7 +938,9 @@ class TestDistributionSimilarity:
             )
 
             assert "Microsoft.Compute/virtualMachines" in result
-            assert "distribution_similarity" in result["Microsoft.Compute/virtualMachines"]
+            assert (
+                "distribution_similarity" in result["Microsoft.Compute/virtualMachines"]
+            )
 
 
 class TestErrorHandling:
@@ -889,13 +956,20 @@ class TestErrorHandling:
 
     def test_build_target_graph_neo4j_error(self, replicator):
         """Test target graph building with Neo4j error."""
-        with patch("src.architecture_based_replicator.GraphDatabase.driver") as mock_driver:
+        with patch(
+            "src.architecture_based_replicator.GraphDatabase.driver"
+        ) as mock_driver:
             mock_driver.side_effect = Exception("Connection failed")
 
             with pytest.raises(Exception, match="Connection failed"):
-                replicator._build_target_pattern_graph_from_instances([
-                    ("Pattern", [{"id": "res1", "type": "virtualMachines", "name": "res1"}])
-                ])
+                replicator._build_target_pattern_graph_from_instances(
+                    [
+                        (
+                            "Pattern",
+                            [{"id": "res1", "type": "virtualMachines", "name": "res1"}],
+                        )
+                    ]
+                )
 
 
 if __name__ == "__main__":

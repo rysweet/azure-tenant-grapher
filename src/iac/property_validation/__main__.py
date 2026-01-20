@@ -13,7 +13,6 @@ import sys
 
 from .cli import main
 
-
 if __name__ == "__main__":
     try:
         exit_code = main()

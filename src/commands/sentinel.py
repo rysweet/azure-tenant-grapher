@@ -450,7 +450,9 @@ class SentinelSetupOrchestrator:
             test_file.write_text("test")
             test_file.unlink()
         except Exception as e:
-            raise ValueError(f"Output directory not writable: {self.output_dir}: {e}") from e
+            raise ValueError(
+                f"Output directory not writable: {self.output_dir}: {e}"
+            ) from e
 
         return True
 
@@ -828,6 +830,7 @@ def setup_sentinel_command(
 
     if client_id and client_secret:
         from azure.identity import ClientSecretCredential
+
         from src.commands.sentinel_permissions import (
             SentinelPermissionManager,
             get_sp_object_id_from_client_id,
@@ -845,7 +848,7 @@ def setup_sentinel_command(
                 return 1
 
             # Step 2: Check and grant permissions if needed
-            click.echo(f"Checking service principal permissions...")
+            click.echo("Checking service principal permissions...")
             perm_manager = SentinelPermissionManager(subscription_id, sp_object_id)
 
             if not perm_manager.ensure_permissions():
@@ -862,7 +865,9 @@ def setup_sentinel_command(
             click.echo("✅ Service principal has all required permissions")
 
             # Step 3: Create credential
-            logger.info(f"Creating credential with tenant_id={tenant_id}, client_id={client_id[:8]}...")
+            logger.info(
+                f"Creating credential with tenant_id={tenant_id}, client_id={client_id[:8]}..."
+            )
             credential = ClientSecretCredential(
                 tenant_id=tenant_id,
                 client_id=client_id,

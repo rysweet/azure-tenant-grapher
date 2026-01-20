@@ -47,9 +47,7 @@ class PropertyExtractor:
                 # Pattern: properties["key"] (Azure read)
                 self._add_azure_read(key, line_num, snippet)
 
-    def process_method_calls(
-        self, calls: List[Tuple[int, str, str, str, str]]
-    ) -> None:
+    def process_method_calls(self, calls: List[Tuple[int, str, str, str, str]]) -> None:
         """Process method calls (var.method()).
 
         Args:
