@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.services.scale_up_service import ScaleUpResult, ScaleUpService
+from src.services.scale_up import ScaleUpResult, ScaleUpService
 from src.utils.session_manager import Neo4jSessionManager
 
 # =========================================================================
