@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
+from src.services.id_abstraction_service import get_id_abstraction_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,9 +49,19 @@ class IdentityReferences:
 class IdentityCollector:
     """Collects identity references from Azure resources."""
 
-    def __init__(self):
-        """Initialize the identity collector."""
-        logger.debug("IdentityCollector initialized")
+    def __init__(self, tenant_seed: Optional[str] = None):
+        """Initialize the identity collector.
+
+        Args:
+            tenant_seed: Tenant-specific seed for ID abstraction. If None, IDs are not abstracted.
+        """
+        self.tenant_seed = tenant_seed
+        self._id_service = (
+            get_id_abstraction_service(tenant_seed) if tenant_seed else None
+        )
+        logger.debug(
+            f"IdentityCollector initialized (abstraction={'enabled' if tenant_seed else 'disabled'})"
+        )
 
     def collect_identity_references(
         self, resources: List[Dict[str, Any]]
@@ -125,15 +137,21 @@ class IdentityCollector:
         if identity_type in ["SystemAssigned", "SystemAssigned,UserAssigned"]:
             principal_id = identity.get("principalId")
             if principal_id:
+                # ISSUE #475: Abstract principal ID to prevent tenant ID leakage
+                abstracted_id = (
+                    self._id_service.abstract_principal_id(principal_id)
+                    if self._id_service
+                    else principal_id
+                )
                 identities.append(
                     IdentityReference(
-                        id=principal_id,
+                        id=abstracted_id,
                         type="ManagedIdentity",
                         source_resource_id=resource_id,
                     )
                 )
                 logger.debug(
-                    f"Found system-assigned identity {principal_id} in resource {resource_id}"
+                    f"Found system-assigned identity {abstracted_id} in resource {resource_id}"
                 )
 
         # Handle user-assigned managed identities
@@ -154,9 +172,15 @@ class IdentityCollector:
                     if isinstance(identity_details, dict):
                         principal_id = identity_details.get("principalId")
                         if principal_id:
+                            # ISSUE #475: Abstract principal ID to prevent tenant ID leakage
+                            abstracted_id = (
+                                self._id_service.abstract_principal_id(principal_id)
+                                if self._id_service
+                                else principal_id
+                            )
                             identities.append(
                                 IdentityReference(
-                                    id=principal_id,
+                                    id=abstracted_id,
                                     type="ManagedIdentity",
                                     source_resource_id=resource_id,
                                 )
@@ -195,6 +219,13 @@ class IdentityCollector:
         principal_type = props.get("principalType", "Unknown")
 
         if principal_id:
+            # ISSUE #475: Abstract principal ID to prevent tenant ID leakage
+            abstracted_id = (
+                self._id_service.abstract_principal_id(principal_id)
+                if self._id_service
+                else principal_id
+            )
+
             # Map Azure principal types to our types
             type_mapping = {
                 "User": "User",
@@ -210,12 +241,12 @@ class IdentityCollector:
 
             identities.append(
                 IdentityReference(
-                    id=principal_id, type=identity_type, source_resource_id=resource_id
+                    id=abstracted_id, type=identity_type, source_resource_id=resource_id
                 )
             )
 
             logger.debug(
-                f"Found {identity_type} principal {principal_id} in role assignment {resource_id}"
+                f"Found {identity_type} principal {abstracted_id} in role assignment {resource_id}"
             )
 
         return identities
