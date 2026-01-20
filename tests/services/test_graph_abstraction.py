@@ -107,7 +107,7 @@ class TestStratifiedSampler:
     def test_get_type_distribution(self):
         """Test querying type distribution from Neo4j."""
         # Mock Neo4j driver and session with proper context manager
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         mock_session = MagicMock()
         mock_context_manager = MagicMock()
         mock_context_manager.__enter__ = MagicMock(return_value=mock_session)
@@ -139,7 +139,7 @@ class TestGraphAbstractionService:
 
     def test_get_resource_count(self):
         """Test getting total resource count."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         mock_session = MagicMock()
         mock_context_manager = MagicMock()
         mock_context_manager.__enter__ = MagicMock(return_value=mock_session)
@@ -158,7 +158,7 @@ class TestGraphAbstractionService:
     @pytest.mark.asyncio
     async def test_abstract_tenant_graph_validates_input(self):
         """Test input validation for abstract_tenant_graph."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         service = GraphAbstractionService(mock_driver)
 
         # Test negative sample size
@@ -176,7 +176,7 @@ class TestGraphAbstractionService:
     @pytest.mark.asyncio
     async def test_abstract_tenant_graph_no_resources(self):
         """Test error when tenant has no resources."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         mock_session = MagicMock()
         mock_context_manager = MagicMock()
         mock_context_manager.__enter__ = MagicMock(return_value=mock_session)
@@ -196,7 +196,7 @@ class TestGraphAbstractionService:
     async def test_abstract_tenant_graph_sample_exceeds_source(self):
         """Test handling when sample size exceeds source size."""
         # Setup mocks with proper context manager
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         mock_session = MagicMock()
         mock_context_manager = MagicMock()
         mock_context_manager.__enter__ = MagicMock(return_value=mock_session)
@@ -453,7 +453,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_tenant_not_found(self):
         """Test error when tenant has no resources."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         mock_session = MagicMock()
         mock_context_manager = MagicMock()
         mock_context_manager.__enter__ = MagicMock(return_value=mock_session)
@@ -472,7 +472,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_invalid_sample_size(self):
         """Test error with invalid sample sizes."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         service = GraphAbstractionService(mock_driver)
 
         with pytest.raises(ValueError, match="Sample size must be positive"):
@@ -484,7 +484,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_invalid_tenant_id(self):
         """Test error with invalid tenant ID."""
-        mock_driver = Mock(spec=Driver)
+        mock_driver = MagicMock()
         service = GraphAbstractionService(mock_driver)
 
         with pytest.raises(ValueError, match="non-empty string"):
