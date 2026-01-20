@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import cast
 
@@ -23,8 +24,8 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--target-tenant-id",
-    required=True,
-    help="Target Azure tenant ID",
+    required=False,
+    help="Target Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
 )
 @click.option(
     "--resource-group",
@@ -87,7 +88,7 @@ logger = logging.getLogger(__name__)
 )
 def deploy_command(
     iac_dir: str,
-    target_tenant_id: str,
+    target_tenant_id: str | None,
     resource_group: str,
     location: str,
     subscription_id: str | None,
@@ -108,7 +109,10 @@ def deploy_command(
 
     Examples:
 
-        # Deploy Terraform with auto-detection
+        # Deploy Terraform with auto-detection (using AZURE_TENANT_ID from .env)
+        atg deploy --iac-dir ./output/iac --resource-group my-rg
+
+        # Deploy Terraform with explicit tenant ID
         atg deploy --iac-dir ./output/iac --target-tenant-id <TENANT_ID> --resource-group my-rg
 
         # Dry-run Bicep deployment
@@ -130,6 +134,15 @@ def deploy_command(
             click.echo(f"Error: IaC directory does not exist: {iac_dir}", err=True)
             raise SystemExit(1)
 
+        # Use tenant ID from flag or fall back to environment variable
+        effective_tenant_id = target_tenant_id or os.environ.get("AZURE_TENANT_ID")
+        if not effective_tenant_id:
+            click.echo(
+                "❌ No target tenant ID provided and AZURE_TENANT_ID not set in environment.",
+                err=True,
+            )
+            raise SystemExit(1)
+
         # Route to agent mode if --agent flag is set
         if agent:
             click.echo(f"Starting autonomous deployment agent from {iac_dir}...")
@@ -140,7 +153,7 @@ def deploy_command(
             # Create agent deployer
             deployer = AgentDeployer(
                 iac_dir=iac_path,
-                target_tenant_id=target_tenant_id,
+                target_tenant_id=effective_tenant_id,
                 resource_group=resource_group,
                 location=location,
                 subscription_id=subscription_id,
@@ -168,7 +181,7 @@ def deploy_command(
         # Deploy control plane (IaC)
         result = deploy_iac(
             iac_dir=iac_path,
-            target_tenant_id=target_tenant_id,
+            target_tenant_id=effective_tenant_id,
             resource_group=resource_group,
             location=location,
             subscription_id=subscription_id,
@@ -185,31 +198,42 @@ def deploy_command(
             source_subscription_id = None
 
             # Try to get from environment variables first
-            import os
             source_tenant_id = os.getenv("ATG_SOURCE_TENANT_ID")
             source_subscription_id = os.getenv("ATG_SOURCE_SUBSCRIPTION_ID")
 
             # If not in environment, prompt user (interactive mode only)
             if not source_tenant_id or not source_subscription_id:
-                click.echo("⚠️  Data plane replication requires source tenant/subscription IDs")
-                click.echo("    Set ATG_SOURCE_TENANT_ID and ATG_SOURCE_SUBSCRIPTION_ID environment variables")
+                click.echo(
+                    "⚠️  Data plane replication requires source tenant/subscription IDs"
+                )
+                click.echo(
+                    "    Set ATG_SOURCE_TENANT_ID and ATG_SOURCE_SUBSCRIPTION_ID environment variables"
+                )
                 click.echo("    or provide them interactively below:")
 
                 if not source_tenant_id:
-                    source_tenant_id = click.prompt("Source tenant ID", type=str, default="")
+                    source_tenant_id = click.prompt(
+                        "Source tenant ID", type=str, default=""
+                    )
                 if not source_subscription_id:
-                    source_subscription_id = click.prompt("Source subscription ID", type=str, default="")
+                    source_subscription_id = click.prompt(
+                        "Source subscription ID", type=str, default=""
+                    )
 
                 # If still empty, skip dataplane replication
                 if not source_tenant_id or not source_subscription_id:
-                    click.echo("⚠️  Skipping data plane replication (missing source configuration)")
+                    click.echo(
+                        "⚠️  Skipping data plane replication (missing source configuration)"
+                    )
                     click.echo("    Control plane deployment completed successfully.")
-                    click.echo("    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication.")
+                    click.echo(
+                        "    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication."
+                    )
                 else:
                     # Execute dataplane replication
                     from ..deployment.dataplane_orchestrator import (
-                        orchestrate_dataplane_replication,
                         ReplicationMode,
+                        orchestrate_dataplane_replication,
                     )
 
                     try:
@@ -217,7 +241,7 @@ def deploy_command(
                             iac_dir=Path(iac_dir),
                             mode=ReplicationMode(dataplane),
                             source_tenant_id=source_tenant_id,
-                            target_tenant_id=target_tenant_id,
+                            target_tenant_id=effective_tenant_id,
                             source_subscription_id=source_subscription_id,
                             target_subscription_id=subscription_id or "",
                             sp_client_id=sp_client_id,
@@ -225,22 +249,32 @@ def deploy_command(
                         )
 
                         # Display dataplane results
-                        click.echo(f"\nData plane replication {dataplane_result['status']}")
-                        click.echo(f"  Resources processed: {dataplane_result['resources_processed']}")
-                        click.echo(f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}")
-                        if dataplane_result['errors']:
+                        click.echo(
+                            f"\nData plane replication {dataplane_result['status']}"
+                        )
+                        click.echo(
+                            f"  Resources processed: {dataplane_result['resources_processed']}"
+                        )
+                        click.echo(
+                            f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}"
+                        )
+                        if dataplane_result["errors"]:
                             click.echo(f"  Errors: {len(dataplane_result['errors'])}")
-                        if dataplane_result['warnings']:
-                            click.echo(f"  Warnings: {len(dataplane_result['warnings'])}")
+                        if dataplane_result["warnings"]:
+                            click.echo(
+                                f"  Warnings: {len(dataplane_result['warnings'])}"
+                            )
 
                     except Exception as e:
                         click.echo(f"⚠️  Data plane replication failed: {e}", err=True)
-                        click.echo("    Control plane deployment completed successfully.")
+                        click.echo(
+                            "    Control plane deployment completed successfully."
+                        )
             else:
                 # Execute dataplane replication with environment variables
                 from ..deployment.dataplane_orchestrator import (
-                    orchestrate_dataplane_replication,
                     ReplicationMode,
+                    orchestrate_dataplane_replication,
                 )
 
                 try:
@@ -248,7 +282,7 @@ def deploy_command(
                         iac_dir=Path(iac_dir),
                         mode=ReplicationMode(dataplane),
                         source_tenant_id=source_tenant_id,
-                        target_tenant_id=target_tenant_id,
+                        target_tenant_id=effective_tenant_id,
                         source_subscription_id=source_subscription_id,
                         target_subscription_id=subscription_id or "",
                         sp_client_id=sp_client_id,
@@ -257,11 +291,15 @@ def deploy_command(
 
                     # Display dataplane results
                     click.echo(f"\nData plane replication {dataplane_result['status']}")
-                    click.echo(f"  Resources processed: {dataplane_result['resources_processed']}")
-                    click.echo(f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}")
-                    if dataplane_result['errors']:
+                    click.echo(
+                        f"  Resources processed: {dataplane_result['resources_processed']}"
+                    )
+                    click.echo(
+                        f"  Plugins executed: {', '.join(dataplane_result['plugins_executed']) or 'none'}"
+                    )
+                    if dataplane_result["errors"]:
                         click.echo(f"  Errors: {len(dataplane_result['errors'])}")
-                    if dataplane_result['warnings']:
+                    if dataplane_result["warnings"]:
                         click.echo(f"  Warnings: {len(dataplane_result['warnings'])}")
 
                 except Exception as e:
