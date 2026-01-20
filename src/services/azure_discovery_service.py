@@ -722,7 +722,7 @@ class AzureDiscoveryService:
                             child_resources.append(subnet_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             str(f"Failed to fetch subnets for {vnet_name}: {e}")
                         )
 
@@ -781,7 +781,7 @@ class AzureDiscoveryService:
                             child_resources.append(runbook_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             f"Failed to fetch runbooks for {account_name}: {e}"
                         )
 
@@ -841,7 +841,7 @@ class AzureDiscoveryService:
                             child_resources.append(link_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             str(f"Failed to fetch DNS links for {zone_name}: {e}")
                         )
 
@@ -903,7 +903,7 @@ class AzureDiscoveryService:
                             child_resources.append(ext_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             f"Failed to fetch VM extensions for {vm_name}: {e}"
                         )
 
@@ -967,7 +967,7 @@ class AzureDiscoveryService:
                             child_resources.append(db_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             f"Failed to fetch databases for {server_name}: {e}"
                         )
 
@@ -1041,7 +1041,7 @@ class AzureDiscoveryService:
                             pass
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             f"Failed to fetch PostgreSQL configs for {server_name}: {e}"
                         )
 
@@ -1108,7 +1108,7 @@ class AzureDiscoveryService:
                             child_resources.append(webhook_dict)
 
                     except Exception as e:
-                        logger.debug(
+                        logger.warning(
                             f"Failed to fetch webhooks for {registry_name}: {e}"
                         )
 
