@@ -54,7 +54,7 @@ async def scale_up_template_command_handler(
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.table import Table
 
-    from src.services.scale_up_service import ScaleUpService
+    from src.services.scale_up import ScaleUpService
 
     console = Console()
 
@@ -229,7 +229,7 @@ async def scale_up_scenario_command_handler(
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.table import Table
 
-    from src.services.scale_up_service import ScaleUpService
+    from src.services.scale_up import ScaleUpService
 
     console = Console()
 
