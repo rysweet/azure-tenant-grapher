@@ -266,6 +266,7 @@ def emit_private_dns_zone_vnet_link(
     available_vnets: Optional[set] = None,
     available_dns_zones: Optional[set] = None,
     missing_references: Optional[List[Dict[str, str]]] = None,
+    translator: Optional["PrivateEndpointTranslator"] = None,
 ) -> Optional[Dict[str, Any]]:
     """Generate azurerm_private_dns_zone_virtual_network_link resource configuration.
 
@@ -276,6 +277,7 @@ def emit_private_dns_zone_vnet_link(
         available_vnets: Set of available VNet names for validation
         available_dns_zones: Set of available Private DNS Zone names for validation
         missing_references: List to append missing reference information to
+        translator: Optional translator for cross-subscription resource IDs
 
     Returns:
         Terraform resource configuration dictionary or None if invalid
@@ -298,6 +300,13 @@ def emit_private_dns_zone_vnet_link(
     # Extract VNet reference
     vnet_info = properties.get("virtualNetwork", {})
     vnet_id = vnet_info.get("id", "")
+
+    # Translate vnet_id if translator provided (cross-tenant deployment)
+    if translator and vnet_id:
+        vnet_id = translator.translate_resource_id(
+            vnet_id, "Microsoft.Network/virtualNetworks"
+        )
+
     vnet_name = extract(vnet_id, "virtualNetworks")
 
     if vnet_name == "unknown":
