@@ -10,6 +10,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.services.id_abstraction_service import get_id_abstraction_service
+
 from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
@@ -27,11 +29,13 @@ class BicepEmitter(IaCEmitter):
         target_tenant_id: Optional[str] = None,
         identity_mapping: Optional[Dict[str, Any]] = None,
         source_tenant_id: Optional[str] = None,
+        tenant_seed: Optional[str] = None,
     ) -> None:
         """Initialize BicepEmitter with optional cross-tenant translation.
 
         Bug #70 fix: Add cross-tenant translation support for Bicep templates.
         Bug #107 fix: Add source_tenant_id parameter for same-tenant detection.
+        Issue #475: Add tenant_seed for ID abstraction to prevent GUID leakage.
 
         Args:
             config: Optional emitter-specific configuration
@@ -39,6 +43,7 @@ class BicepEmitter(IaCEmitter):
             target_tenant_id: Target tenant ID for cross-tenant translation
             identity_mapping: Identity mapping dictionary for Entra ID translation
             source_tenant_id: Source tenant ID for same-tenant detection (Bug #107)
+            tenant_seed: Tenant-specific seed for ID abstraction (Issue #475)
         """
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
@@ -46,6 +51,10 @@ class BicepEmitter(IaCEmitter):
         self.target_tenant_id = target_tenant_id
         self.identity_mapping = identity_mapping
         self.source_tenant_id = source_tenant_id  # Bug #107 fix
+        self.tenant_seed = tenant_seed
+        self._id_service = (
+            get_id_abstraction_service(tenant_seed) if tenant_seed else None
+        )
 
     def emit(
         self,
@@ -178,7 +187,13 @@ class BicepEmitter(IaCEmitter):
             pid = props.get("principalId")
             ptype = (props.get("principalType") or "").lower()
             if pid:
-                entry = {"id": pid}
+                # ISSUE #475: Abstract principal ID to prevent tenant GUID leakage
+                abstracted_pid = (
+                    self._id_service.abstract_principal_id(pid)
+                    if self._id_service
+                    else pid
+                )
+                entry = {"id": abstracted_pid}
                 if ptype == "user":
                     aad_users.append(entry)
                 elif ptype == "group":
