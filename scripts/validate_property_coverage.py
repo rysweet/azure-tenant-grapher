@@ -4,6 +4,7 @@
 This script runs the property validation system without requiring
 the full iac module dependencies.
 """
+
 import sys
 from pathlib import Path
 

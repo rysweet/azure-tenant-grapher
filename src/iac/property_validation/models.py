@@ -106,10 +106,10 @@ class HandlerPropertyUsage:
 
 
 __all__ = [
+    "CoverageMetrics",
     "Criticality",
+    "HandlerPropertyUsage",
     "PropertyDefinition",
     "PropertyGap",
-    "CoverageMetrics",
     "PropertyUsage",
-    "HandlerPropertyUsage",
 ]

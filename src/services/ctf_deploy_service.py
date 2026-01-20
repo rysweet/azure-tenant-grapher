@@ -36,7 +36,6 @@ Usage:
 Issue #552: CTF Overlay System Implementation
 """
 
-import logging
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -71,7 +70,7 @@ class CTFDeployService:
         ctf_scenario: str,
         output_dir: Path,
         auto_import: bool = True,
-        deploy_args: Optional[List[str]] = None
+        deploy_args: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Deploy a CTF scenario from Neo4j resources.
 
@@ -103,24 +102,19 @@ class CTFDeployService:
 
         # Query resources for this scenario
         logger.info(
-            f"Querying resources for {ctf_exercise}/{ctf_scenario} "
-            f"in layer {layer_id}"
+            f"Querying resources for {ctf_exercise}/{ctf_scenario} in layer {layer_id}"
         )
 
         resources = self._query_ctf_resources(
-            layer_id=layer_id,
-            ctf_exercise=ctf_exercise,
-            ctf_scenario=ctf_scenario
+            layer_id=layer_id, ctf_exercise=ctf_exercise, ctf_scenario=ctf_scenario
         )
 
         if not resources:
-            logger.warning(
-                f"No resources found for {ctf_exercise}/{ctf_scenario}"
-            )
+            logger.warning(f"No resources found for {ctf_exercise}/{ctf_scenario}")
             return {
                 "success": False,
                 "resources_deployed": 0,
-                "error": "No resources found for scenario"
+                "error": "No resources found for scenario",
             }
 
         # Export resources to Terraform
@@ -130,7 +124,7 @@ class CTFDeployService:
             resources=resources,
             layer_id=layer_id,
             ctf_exercise=ctf_exercise,
-            ctf_scenario=ctf_scenario
+            ctf_scenario=ctf_scenario,
         )
 
         # Create output directory and write Terraform files
@@ -157,7 +151,7 @@ class CTFDeployService:
                     state_file=state_file,
                     layer_id=layer_id,
                     ctf_exercise=ctf_exercise,
-                    ctf_scenario=ctf_scenario
+                    ctf_scenario=ctf_scenario,
                 )
 
         return {
@@ -165,7 +159,7 @@ class CTFDeployService:
             "resources_deployed": len(resources),
             "terraform_dir": str(output_dir),
             **({"deploy_output": deploy_output} if deploy_output else {}),
-            **({"import_result": import_result} if import_result else {})
+            **({"import_result": import_result} if import_result else {}),
         }
 
     def _query_ctf_resources(
@@ -173,7 +167,7 @@ class CTFDeployService:
         layer_id: str,
         ctf_exercise: str,
         ctf_scenario: str,
-        ctf_role: Optional[str] = None
+        ctf_role: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Query Neo4j for resources matching CTF properties.
 
@@ -195,7 +189,7 @@ class CTFDeployService:
         params = {
             "layer_id": layer_id,
             "ctf_exercise": ctf_exercise,
-            "ctf_scenario": ctf_scenario
+            "ctf_scenario": ctf_scenario,
         }
 
         if ctf_role:
@@ -215,14 +209,16 @@ class CTFDeployService:
 
         resources = []
         for record in result_records:
-            resources.append({
-                "id": record["id"],
-                "name": record["name"],
-                "resource_type": record["resource_type"],
-                "location": record.get("location"),
-                "ctf_role": record.get("ctf_role"),
-                "properties": record.get("properties", {})
-            })
+            resources.append(
+                {
+                    "id": record["id"],
+                    "name": record["name"],
+                    "resource_type": record["resource_type"],
+                    "location": record.get("location"),
+                    "ctf_role": record.get("ctf_role"),
+                    "properties": record.get("properties", {}),
+                }
+            )
 
         return resources
 
@@ -231,7 +227,7 @@ class CTFDeployService:
         resources: List[Dict[str, Any]],
         layer_id: str,
         ctf_exercise: str,
-        ctf_scenario: str
+        ctf_scenario: str,
     ) -> str:
         """Export resources to Terraform HCL format.
 
@@ -265,14 +261,14 @@ class CTFDeployService:
             block = f"""
 resource "{tf_type}" "{tf_name}" {{
   name                = "{resource_name}"
-  location            = "{resource.get('location', 'eastus')}"
+  location            = "{resource.get("location", "eastus")}"
   resource_group_name = "ctf-resources"
 
   tags = {{
     layer_id     = "{layer_id}"
     ctf_exercise = "{ctf_exercise}"
     ctf_scenario = "{ctf_scenario}"
-    ctf_role     = "{resource.get('ctf_role', 'infrastructure')}"
+    ctf_role     = "{resource.get("ctf_role", "infrastructure")}"
   }}
 }}
 """
@@ -319,11 +315,7 @@ provider "azurerm" {
 
         return mapping.get(azure_type)
 
-    def _deploy_terraform(
-        self,
-        terraform_dir: Path,
-        deploy_args: List[str]
-    ) -> str:
+    def _deploy_terraform(self, terraform_dir: Path, deploy_args: List[str]) -> str:
         """Deploy Terraform configuration.
 
         Args:
@@ -338,30 +330,20 @@ provider "azurerm" {
         """
         # Initialize Terraform
         init_result = subprocess.run(
-            ["terraform", "init"],
-            cwd=terraform_dir,
-            capture_output=True,
-            text=True
+            ["terraform", "init"], cwd=terraform_dir, capture_output=True, text=True
         )
 
         if init_result.returncode != 0:
-            raise RuntimeError(
-                f"Terraform init failed: {init_result.stderr}"
-            )
+            raise RuntimeError(f"Terraform init failed: {init_result.stderr}")
 
         # Apply Terraform configuration
         apply_cmd = ["terraform", "apply"] + deploy_args
         apply_result = subprocess.run(
-            apply_cmd,
-            cwd=terraform_dir,
-            capture_output=True,
-            text=True
+            apply_cmd, cwd=terraform_dir, capture_output=True, text=True
         )
 
         if apply_result.returncode != 0:
-            raise RuntimeError(
-                f"Terraform apply failed: {apply_result.stderr}"
-            )
+            raise RuntimeError(f"Terraform apply failed: {apply_result.stderr}")
 
         return apply_result.stdout
 

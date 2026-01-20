@@ -8,7 +8,8 @@ Issue #475 - ID Leakage Audit
 """
 
 import pytest
-from src.services.identity_collector import IdentityCollector, IdentityReference
+
+from src.services.identity_collector import IdentityCollector
 
 
 class TestIdentityCollectorIdAbstraction:
@@ -22,7 +23,7 @@ class TestIdentityCollectorIdAbstraction:
         identity = {
             "type": "SystemAssigned",
             "principalId": "9a2b3c4d-1234-5678-90ab-cdef12345678",  # Source tenant GUID
-            "tenantId": "source-tenant-id"
+            "tenantId": "source-tenant-id",
         }
 
         # Act
@@ -35,12 +36,14 @@ class TestIdentityCollectorIdAbstraction:
         principal_id = identities[0].id
 
         # CRITICAL: Principal ID must NOT be a GUID
-        assert not self._is_guid(principal_id), \
+        assert not self._is_guid(principal_id), (
             f"Principal ID leaked as GUID: {principal_id}"
+        )
 
         # CRITICAL: Must be abstracted (human-readable)
-        assert principal_id.startswith("principal-"), \
+        assert principal_id.startswith("principal-"), (
             f"Principal ID not abstracted: {principal_id}"
+        )
 
     def test_user_assigned_identity_principal_id_abstracted(self):
         """Verify user-assigned identity principal IDs are abstracted."""
@@ -52,9 +55,9 @@ class TestIdentityCollectorIdAbstraction:
             "userAssignedIdentities": {
                 "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1": {
                     "principalId": "8b3c4d5e-2345-6789-01bc-def123456789",
-                    "clientId": "7c4d5e6f-3456-7890-12cd-ef1234567890"
+                    "clientId": "7c4d5e6f-3456-7890-12cd-ef1234567890",
                 }
-            }
+            },
         }
 
         # Act
@@ -81,8 +84,8 @@ class TestIdentityCollectorIdAbstraction:
             "properties": {
                 "principalId": "6d5e7f8g-4567-8901-23de-f12345678901",
                 "roleDefinitionId": "/subscriptions/sub1/providers/Microsoft.Authorization/roleDefinitions/rd1",
-                "scope": "/subscriptions/sub1"
-            }
+                "scope": "/subscriptions/sub1",
+            },
         }
 
         # Act
@@ -93,12 +96,14 @@ class TestIdentityCollectorIdAbstraction:
         principal_id = identities[0].id
 
         # CRITICAL: No GUID leakage
-        assert not self._is_guid(principal_id), \
+        assert not self._is_guid(principal_id), (
             f"Role assignment principal ID leaked: {principal_id}"
+        )
 
     @staticmethod
     def _is_guid(value: str) -> bool:
         """Check if value is a GUID."""
         import re
+
         guid_pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         return bool(re.match(guid_pattern, value, re.IGNORECASE))

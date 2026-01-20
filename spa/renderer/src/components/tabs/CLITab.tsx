@@ -726,7 +726,7 @@ const CLITab: React.FC = () => {
     if (currentProcessId) {
       try {
         const response = await axios.post(`http://localhost:3001/api/cancel/${currentProcessId}`);
-        
+
         if (response.data.status === 'not_running') {
           writeToTerminal('Process already completed', '33'); // Yellow color
         } else if (response.data.status === 'cancelled') {

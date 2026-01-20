@@ -10,10 +10,9 @@ Coverage areas:
 - Error handling for deployment failures
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch, call
-from typing import Dict, Any, List
+from unittest.mock import Mock, patch
 
+import pytest
 
 # ============================================================================
 # Fixtures
@@ -48,7 +47,7 @@ def sample_ctf_resources():
             "layer_id": "default",
             "ctf_exercise": "M003",
             "ctf_scenario": "v2-cert",
-            "ctf_role": "target"
+            "ctf_role": "target",
         },
         {
             "id": "vnet-001",
@@ -58,8 +57,8 @@ def sample_ctf_resources():
             "layer_id": "default",
             "ctf_exercise": "M003",
             "ctf_scenario": "v2-cert",
-            "ctf_role": "infrastructure"
-        }
+            "ctf_role": "infrastructure",
+        },
     ]
 
 
@@ -71,13 +70,14 @@ def sample_ctf_resources():
 class TestCTFDeployServiceInit:
     """Test CTFDeployService initialization."""
 
-    def test_service_creation_with_dependencies(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_service_creation_with_dependencies(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test service creation with all dependencies."""
         from src.services.ctf_deploy_service import CTFDeployService
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         assert service is not None
@@ -88,8 +88,10 @@ class TestCTFDeployServiceInit:
         """Test service creation uses default dependencies if not provided."""
         from src.services.ctf_deploy_service import CTFDeployService
 
-        with patch('src.services.ctf_deploy_service.get_neo4j_driver') as mock_driver:
-            with patch('src.services.ctf_deploy_service.TerraformEmitter') as mock_emitter:
+        with patch("src.services.ctf_deploy_service.get_neo4j_driver") as mock_driver:
+            with patch(
+                "src.services.ctf_deploy_service.TerraformEmitter"
+            ) as mock_emitter:
                 mock_driver.return_value = Mock()
                 mock_emitter.return_value = Mock()
 
@@ -112,9 +114,7 @@ class TestQueryCTFResources:
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         resources = service.query_ctf_resources(
-            layer_id="default",
-            exercise="M003",
-            scenario="v2-cert"
+            layer_id="default", exercise="M003", scenario="v2-cert"
         )
 
         assert len(resources) == 2
@@ -134,7 +134,7 @@ class TestQueryCTFResources:
 
         target_resources = [
             {"id": "vm-1", "name": "target-vm-1", "ctf_role": "target"},
-            {"id": "vm-2", "name": "target-vm-2", "ctf_role": "target"}
+            {"id": "vm-2", "name": "target-vm-2", "ctf_role": "target"},
         ]
 
         mock_records = [{"r": res} for res in target_resources]
@@ -143,10 +143,7 @@ class TestQueryCTFResources:
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         resources = service.query_ctf_resources(
-            layer_id="default",
-            exercise="M003",
-            scenario="v2-cert",
-            role="target"
+            layer_id="default", exercise="M003", scenario="v2-cert", role="target"
         )
 
         assert len(resources) == 2
@@ -163,7 +160,7 @@ class TestQueryCTFResources:
 
         vm_resources = [
             {"id": "vm-1", "resource_type": "VirtualMachine"},
-            {"id": "vm-2", "resource_type": "VirtualMachine"}
+            {"id": "vm-2", "resource_type": "VirtualMachine"},
         ]
 
         mock_records = [{"r": res} for res in vm_resources]
@@ -172,9 +169,7 @@ class TestQueryCTFResources:
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         resources = service.query_ctf_resources(
-            layer_id="default",
-            exercise="M003",
-            resource_type="VirtualMachine"
+            layer_id="default", exercise="M003", resource_type="VirtualMachine"
         )
 
         assert len(resources) == 2
@@ -189,9 +184,7 @@ class TestQueryCTFResources:
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
         resources = service.query_ctf_resources(
-            layer_id="nonexistent",
-            exercise="M999",
-            scenario="v99-fake"
+            layer_id="nonexistent", exercise="M999", scenario="v99-fake"
         )
 
         assert resources == []
@@ -221,13 +214,11 @@ class TestGenerateTerraformConfig:
         from src.services.ctf_deploy_service import CTFDeployService
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         terraform_config = service.generate_terraform_config(
-            resources=sample_ctf_resources,
-            output_dir="/tmp/terraform"
+            resources=sample_ctf_resources, output_dir="/tmp/terraform"
         )
 
         assert terraform_config is not None
@@ -236,20 +227,20 @@ class TestGenerateTerraformConfig:
         # Verify TerraformEmitter was called
         mock_terraform_emitter.generate_ctf_scenario.assert_called()
 
-    def test_generate_config_writes_to_file(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_generate_config_writes_to_file(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test Terraform config is written to file system."""
         from src.services.ctf_deploy_service import CTFDeployService
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('builtins.open', create=True) as mock_file:
-            with patch('pathlib.Path.mkdir') as mock_mkdir:
+        with patch("builtins.open", create=True) as mock_file:
+            with patch("pathlib.Path.mkdir") as mock_mkdir:
                 service.generate_terraform_config(
-                    resources=[],
-                    output_dir="/tmp/terraform"
+                    resources=[], output_dir="/tmp/terraform"
                 )
 
                 # Verify directory creation
@@ -274,30 +265,28 @@ class TestGenerateTerraformConfig:
         mock_terraform_emitter.generate_ctf_scenario.side_effect = capture_generate_call
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         service.generate_terraform_config(
-            resources=sample_ctf_resources,
-            output_dir="/tmp/terraform"
+            resources=sample_ctf_resources, output_dir="/tmp/terraform"
         )
 
         # Should generate config for each resource
         assert len(generated_configs) >= len(sample_ctf_resources)
 
-    def test_generate_config_handles_empty_resources(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_generate_config_handles_empty_resources(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test generating config with no resources."""
         from src.services.ctf_deploy_service import CTFDeployService
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         terraform_config = service.generate_terraform_config(
-            resources=[],
-            output_dir="/tmp/terraform"
+            resources=[], output_dir="/tmp/terraform"
         )
 
         # Should generate minimal config (provider, etc.)
@@ -320,40 +309,40 @@ class TestDeployScenario:
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
-            mock_subprocess.return_value = Mock(returncode=0, stdout="Success", stderr="")
+        with patch("subprocess.run") as mock_subprocess:
+            mock_subprocess.return_value = Mock(
+                returncode=0, stdout="Success", stderr=""
+            )
 
             result = service.deploy_scenario(
                 layer_id="default",
                 exercise="M003",
                 scenario="v2-cert",
-                output_dir="/tmp/terraform"
+                output_dir="/tmp/terraform",
             )
 
             assert result["success"] is True
             assert result["resources_deployed"] == 2
             assert result["terraform_exitcode"] == 0
 
-    def test_deploy_scenario_queries_resources_first(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_deploy_scenario_queries_resources_first(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test deploy queries resources before generating Terraform."""
         from src.services.ctf_deploy_service import CTFDeployService
 
         mock_neo4j_driver.execute_query.return_value = ([], None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="default", exercise="M003", scenario="v2-cert"
             )
 
             # Should query Neo4j first
@@ -369,16 +358,13 @@ class TestDeployScenario:
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 service.deploy_scenario(
-                    layer_id="default",
-                    exercise="M003",
-                    scenario="v2-cert"
+                    layer_id="default", exercise="M003", scenario="v2-cert"
                 )
 
                 # Should generate Terraform config
@@ -394,22 +380,21 @@ class TestDeployScenario:
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 service.deploy_scenario(
-                    layer_id="default",
-                    exercise="M003",
-                    scenario="v2-cert"
+                    layer_id="default", exercise="M003", scenario="v2-cert"
                 )
 
                 # Should run terraform init and apply
                 calls = [call[0][0] for call in mock_subprocess.call_args_list]
                 assert any("terraform" in str(call) for call in calls)
-                assert any("init" in str(call) or "apply" in str(call) for call in calls)
+                assert any(
+                    "init" in str(call) or "apply" in str(call) for call in calls
+                )
 
     def test_deploy_scenario_dry_run_mode(
         self, mock_neo4j_driver, mock_terraform_emitter, sample_ctf_resources
@@ -421,16 +406,12 @@ class TestDeployScenario:
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             result = service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert",
-                dry_run=True
+                layer_id="default", exercise="M003", scenario="v2-cert", dry_run=True
             )
 
             # Should generate config but not run terraform
@@ -439,22 +420,21 @@ class TestDeployScenario:
             # Should not call subprocess for actual deployment
             assert mock_subprocess.call_count == 0
 
-    def test_deploy_scenario_no_resources_found(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_deploy_scenario_no_resources_found(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test deploy handles scenario with no resources."""
         from src.services.ctf_deploy_service import CTFDeployService
 
         mock_neo4j_driver.execute_query.return_value = ([], None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         with pytest.raises(ValueError, match="No resources found"):
             service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="nonexistent"
+                layer_id="default", exercise="M003", scenario="nonexistent"
             )
 
 
@@ -467,14 +447,14 @@ class TestCleanupScenario:
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             mock_subprocess.return_value = Mock(returncode=0)
 
             result = service.cleanup_scenario(
                 layer_id="default",
                 exercise="M003",
                 scenario="v2-cert",
-                terraform_dir="/tmp/terraform"
+                terraform_dir="/tmp/terraform",
             )
 
             assert result["success"] is True
@@ -486,12 +466,12 @@ class TestCleanupScenario:
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             service.cleanup_scenario(
                 layer_id="default",
                 exercise="M003",
                 scenario="v2-cert",
-                terraform_dir="/tmp/terraform"
+                terraform_dir="/tmp/terraform",
             )
 
             # Should run terraform destroy
@@ -504,11 +484,9 @@ class TestCleanupScenario:
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('subprocess.run') as mock_subprocess:
+        with patch("subprocess.run") as mock_subprocess:
             service.cleanup_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="default", exercise="M003", scenario="v2-cert"
             )
 
             # Should delete from Neo4j
@@ -525,18 +503,16 @@ class TestCleanupScenario:
 
         with pytest.raises(ValueError, match="Cannot cleanup base layer"):
             service.cleanup_scenario(
-                layer_id="base",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="base", exercise="M003", scenario="v2-cert"
             )
 
         # With explicit flag, should succeed
-        with patch('subprocess.run'):
+        with patch("subprocess.run"):
             result = service.cleanup_scenario(
                 layer_id="base",
                 exercise="M003",
                 scenario="v2-cert",
-                allow_base_cleanup=True
+                allow_base_cleanup=True,
             )
             assert result["success"] is True
 
@@ -544,7 +520,9 @@ class TestCleanupScenario:
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
-    def test_deploy_terraform_failure(self, mock_neo4j_driver, mock_terraform_emitter, sample_ctf_resources):
+    def test_deploy_terraform_failure(
+        self, mock_neo4j_driver, mock_terraform_emitter, sample_ctf_resources
+    ):
         """Test handling of Terraform apply failure."""
         from src.services.ctf_deploy_service import CTFDeployService
 
@@ -552,46 +530,43 @@ class TestErrorHandling:
         mock_neo4j_driver.execute_query.return_value = (mock_records, None, None)
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
-        with patch('subprocess.run') as mock_subprocess:
-            with patch('builtins.open', create=True):
+        with patch("subprocess.run") as mock_subprocess:
+            with patch("builtins.open", create=True):
                 # Simulate terraform failure
                 mock_subprocess.return_value = Mock(
-                    returncode=1,
-                    stdout="",
-                    stderr="Error: Terraform failed"
+                    returncode=1, stdout="", stderr="Error: Terraform failed"
                 )
 
                 result = service.deploy_scenario(
-                    layer_id="default",
-                    exercise="M003",
-                    scenario="v2-cert"
+                    layer_id="default", exercise="M003", scenario="v2-cert"
                 )
 
                 assert result["success"] is False
                 assert result["terraform_exitcode"] == 1
                 assert "error" in result
 
-    def test_deploy_neo4j_connection_failure(self, mock_neo4j_driver, mock_terraform_emitter):
+    def test_deploy_neo4j_connection_failure(
+        self, mock_neo4j_driver, mock_terraform_emitter
+    ):
         """Test handling of Neo4j connection failure during deploy."""
-        from src.services.ctf_deploy_service import CTFDeployService
         from neo4j.exceptions import ServiceUnavailable
 
-        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable("Connection failed")
+        from src.services.ctf_deploy_service import CTFDeployService
+
+        mock_neo4j_driver.execute_query.side_effect = ServiceUnavailable(
+            "Connection failed"
+        )
 
         service = CTFDeployService(
-            neo4j_driver=mock_neo4j_driver,
-            terraform_emitter=mock_terraform_emitter
+            neo4j_driver=mock_neo4j_driver, terraform_emitter=mock_terraform_emitter
         )
 
         with pytest.raises(ServiceUnavailable):
             service.deploy_scenario(
-                layer_id="default",
-                exercise="M003",
-                scenario="v2-cert"
+                layer_id="default", exercise="M003", scenario="v2-cert"
             )
 
     def test_cleanup_terraform_not_found(self, mock_neo4j_driver):
@@ -600,13 +575,15 @@ class TestErrorHandling:
 
         service = CTFDeployService(neo4j_driver=mock_neo4j_driver)
 
-        with patch('pathlib.Path.exists', return_value=False):
-            with pytest.raises(FileNotFoundError, match="Terraform directory not found"):
+        with patch("pathlib.Path.exists", return_value=False):
+            with pytest.raises(
+                FileNotFoundError, match="Terraform directory not found"
+            ):
                 service.cleanup_scenario(
                     layer_id="default",
                     exercise="M003",
                     scenario="v2-cert",
-                    terraform_dir="/nonexistent/terraform"
+                    terraform_dir="/nonexistent/terraform",
                 )
 
 

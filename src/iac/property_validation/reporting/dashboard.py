@@ -85,7 +85,9 @@ class DashboardGenerator:
         pass
 
     def generate_dashboard(
-        self, reports: Dict[str, CoverageReport], historical_data: Optional[List[HandlerCoverageSnapshot]] = None
+        self,
+        reports: Dict[str, CoverageReport],
+        historical_data: Optional[List[HandlerCoverageSnapshot]] = None,
     ) -> str:
         """Generate complete HTML dashboard.
 
@@ -117,7 +119,9 @@ class DashboardGenerator:
         output_path.write_text(html)
 
     def _prepare_dashboard_data(
-        self, reports: Dict[str, CoverageReport], historical_data: List[HandlerCoverageSnapshot]
+        self,
+        reports: Dict[str, CoverageReport],
+        historical_data: List[HandlerCoverageSnapshot],
     ) -> DashboardData:
         """Prepare dashboard data from reports.
 
@@ -423,7 +427,7 @@ class DashboardGenerator:
 <body>
     <div class="container">
         <h1>📊 Property Validation Coverage Dashboard</h1>
-        <div class="timestamp">Generated: {data.timestamp.strftime('%Y-%m-%d %H:%M:%S')}</div>
+        <div class="timestamp">Generated: {data.timestamp.strftime("%Y-%m-%d %H:%M:%S")}</div>
 
         <div class="overview">
             <div class="metric-card">
@@ -538,8 +542,8 @@ class DashboardGenerator:
                     gaps_items.append(
                         f'<div class="gap-item">'
                         f'<span class="badge {criticality_class}">{gap["criticality"].upper()}</span> '
-                        f'<strong>{gap["property"]}</strong>: {gap["reason"]}<br>'
-                        f'<small>Suggested: {gap["suggestion"]}</small>'
+                        f"<strong>{gap['property']}</strong>: {gap['reason']}<br>"
+                        f"<small>Suggested: {gap['suggestion']}</small>"
                         f"</div>"
                     )
                 gaps_html = "".join(gaps_items)
@@ -557,23 +561,23 @@ class DashboardGenerator:
 
             rows_html.append(
                 f"""<tr>
-                <td>{row['handler_name']}</td>
+                <td>{row["handler_name"]}</td>
                 <td>
                     <div class="coverage-bar">
-                        <div class="coverage-fill {coverage_class}" style="width: {row['coverage']:.1f}%"></div>
+                        <div class="coverage-fill {coverage_class}" style="width: {row["coverage"]:.1f}%"></div>
                     </div>
-                    {row['coverage']:.1f}%
+                    {row["coverage"]:.1f}%
                 </td>
-                <td>{row['quality_score']:.1f}</td>
-                <td>{row['total']}</td>
-                <td>{row['covered']}</td>
-                <td>{row['missing']}</td>
+                <td>{row["quality_score"]:.1f}</td>
+                <td>{row["total"]}</td>
+                <td>{row["covered"]}</td>
+                <td>{row["missing"]}</td>
                 <td>{critical_badge}</td>
                 <td>{high_badge}</td>
-                <td>{row['medium']}</td>
-                <td>{row['low']}</td>
+                <td>{row["medium"]}</td>
+                <td>{row["low"]}</td>
                 <td>
-                    {f'<button class="expand-btn" onclick="toggleGaps(this)">Show Gaps</button><div class="gap-details">{gaps_html}</div>' if gaps_html else 'None'}
+                    {f'<button class="expand-btn" onclick="toggleGaps(this)">Show Gaps</button><div class="gap-details">{gaps_html}</div>' if gaps_html else "None"}
                 </td>
             </tr>"""
             )
@@ -595,9 +599,9 @@ class DashboardGenerator:
                 </tr>
             </thead>
             <tbody>
-                {''.join(rows_html)}
+                {"".join(rows_html)}
             </tbody>
         </table>"""
 
 
-__all__ = ["DashboardGenerator", "HandlerCoverageSnapshot", "DashboardData"]
+__all__ = ["DashboardData", "DashboardGenerator", "HandlerCoverageSnapshot"]

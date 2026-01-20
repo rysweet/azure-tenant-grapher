@@ -6,7 +6,6 @@ Test pyramid: 60% unit, 30% integration, 10% E2E
 """
 
 import pytest
-from click.testing import CliRunner
 
 
 # Placeholder test class - actual tests will be implemented based on auth.py structure
@@ -17,6 +16,7 @@ class TestAuthCommands:
         """App registration command can be imported."""
         try:
             from src.commands.auth import app_registration
+
             assert app_registration is not None
         except ImportError:
             pytest.skip("App registration command not yet fully implemented")

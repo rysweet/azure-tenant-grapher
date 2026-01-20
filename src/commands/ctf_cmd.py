@@ -103,7 +103,7 @@ def ctf_import(
     layer_id: str,
     exercise: str,
     scenario: str,
-    format_type: str
+    format_type: str,
 ) -> None:
     """Import Terraform resources with CTF annotations.
 
@@ -119,7 +119,9 @@ def ctf_import(
         atg ctf import --terraform-dir ./terraform/m003 --exercise M003 --scenario v2-cert
     """
     if not terraform_dir and not state_file:
-        click.echo("Error: Either --terraform-dir or --state-file must be provided", err=True)
+        click.echo(
+            "Error: Either --terraform-dir or --state-file must be provided", err=True
+        )
         raise click.Abort()
 
     try:
@@ -132,13 +134,13 @@ def ctf_import(
             state_file=state_file,
             layer_id=layer_id,
             ctf_exercise=exercise,
-            ctf_scenario=scenario
+            ctf_scenario=scenario,
         )
 
         if format_type == "json":
             click.echo(json.dumps(result, indent=2))
         else:
-            click.echo(f"\nImport completed:")
+            click.echo("\nImport completed:")
             click.echo(f"  Resources imported: {result['resources_imported']}")
             click.echo(f"  Resources failed: {result['resources_failed']}")
 
@@ -200,7 +202,7 @@ def ctf_deploy(
     scenario: str,
     output_dir: Path,
     auto_import: bool,
-    format_type: str
+    format_type: str,
 ) -> None:
     """Deploy CTF scenario from Neo4j resources.
 
@@ -226,20 +228,22 @@ def ctf_deploy(
             ctf_scenario=scenario,
             output_dir=output_dir,
             auto_import=auto_import,
-            deploy_args=None  # Don't actually deploy, just export
+            deploy_args=None,  # Don't actually deploy, just export
         )
 
         if format_type == "json":
             click.echo(json.dumps(result, indent=2))
         else:
-            click.echo(f"\nDeployment completed:")
+            click.echo("\nDeployment completed:")
             click.echo(f"  Resources exported: {result['resources_deployed']}")
             click.echo(f"  Terraform directory: {result['terraform_dir']}")
 
             if result.get("import_result"):
                 import_result = result["import_result"]
-                click.echo(f"\nAuto-import results:")
-                click.echo(f"  Resources imported: {import_result['resources_imported']}")
+                click.echo("\nAuto-import results:")
+                click.echo(
+                    f"  Resources imported: {import_result['resources_imported']}"
+                )
                 click.echo(f"  Resources failed: {import_result['resources_failed']}")
 
     except Exception as e:
@@ -282,7 +286,7 @@ def ctf_list(
     exercise: Optional[str],
     scenario: Optional[str],
     role: Optional[str],
-    format_type: str
+    format_type: str,
 ) -> None:
     """List CTF scenarios and resources.
 
@@ -339,7 +343,9 @@ def ctf_list(
         LIMIT 100
         """
 
-        result_records, _, _ = deploy_service.neo4j_driver.execute_query(query, **params)
+        result_records, _, _ = deploy_service.neo4j_driver.execute_query(
+            query, **params
+        )
 
         resources = [dict(record) for record in result_records]
 
@@ -350,7 +356,9 @@ def ctf_list(
             click.echo("-" * 80)
 
             for resource in resources:
-                click.echo(f"  {resource['exercise']}/{resource['scenario']} - {resource['name']}")
+                click.echo(
+                    f"  {resource['exercise']}/{resource['scenario']} - {resource['name']}"
+                )
                 click.echo(f"    Role: {resource['role']}")
                 click.echo(f"    Type: {resource['resource_type']}")
                 click.echo(f"    Layer: {resource['layer_id']}")
@@ -399,7 +407,7 @@ def ctf_clear(
     exercise: str,
     scenario: str,
     confirm: bool,
-    format_type: str
+    format_type: str,
 ) -> None:
     """Clear CTF scenario annotations.
 
@@ -418,8 +426,7 @@ def ctf_clear(
 
         if confirm:
             click.confirm(
-                f"Are you sure you want to clear {exercise}/{scenario}?",
-                abort=True
+                f"Are you sure you want to clear {exercise}/{scenario}?", abort=True
             )
 
         # Remove CTF properties from resources
@@ -429,10 +436,7 @@ def ctf_clear(
           AND r.ctf_scenario = $scenario
         """
 
-        params = {
-            "exercise": exercise,
-            "scenario": scenario
-        }
+        params = {"exercise": exercise, "scenario": scenario}
 
         if layer_id:
             query += " AND r.layer_id = $layer_id"
@@ -443,14 +447,18 @@ def ctf_clear(
         RETURN count(r) AS cleared_count
         """
 
-        result_records, _, _ = deploy_service.neo4j_driver.execute_query(query, **params)
+        result_records, _, _ = deploy_service.neo4j_driver.execute_query(
+            query, **params
+        )
 
         cleared_count = result_records[0]["cleared_count"] if result_records else 0
 
         if format_type == "json":
             click.echo(json.dumps({"cleared_count": cleared_count}, indent=2))
         else:
-            click.echo(f"\nCleared {cleared_count} resources from {exercise}/{scenario}")
+            click.echo(
+                f"\nCleared {cleared_count} resources from {exercise}/{scenario}"
+            )
 
     except Exception as e:
         logger.error(f"CTF clear failed: {e}")

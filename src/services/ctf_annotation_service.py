@@ -57,23 +57,23 @@ class CTFAnnotationService:
     """
 
     # Valid characters for CTF properties (alphanumeric, dash, underscore)
-    _VALID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
+    _VALID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
     # Role determination heuristics
     _ROLE_HEURISTICS = {
-        'attacker': ['attacker', 'attack', 'offensive'],
-        'target': ['target', 'victim', 'vulnerable'],
-        'monitoring': ['monitor', 'log', 'analytics', 'insight'],
-        'infrastructure': ['vnet', 'network', 'storage', 'nsg', 'subnet']
+        "attacker": ["attacker", "attack", "offensive"],
+        "target": ["target", "victim", "vulnerable"],
+        "monitoring": ["monitor", "log", "analytics", "insight"],
+        "infrastructure": ["vnet", "network", "storage", "nsg", "subnet"],
     }
 
     # Resource type to role mapping
     _TYPE_TO_ROLE = {
-        'Microsoft.Compute/virtualMachines': 'target',
-        'Microsoft.Network/virtualNetworks': 'infrastructure',
-        'Microsoft.Network/networkSecurityGroups': 'infrastructure',
-        'Microsoft.Storage/storageAccounts': 'infrastructure',
-        'Microsoft.OperationalInsights/workspaces': 'monitoring',
+        "Microsoft.Compute/virtualMachines": "target",
+        "Microsoft.Network/virtualNetworks": "infrastructure",
+        "Microsoft.Network/networkSecurityGroups": "infrastructure",
+        "Microsoft.Storage/storageAccounts": "infrastructure",
+        "Microsoft.OperationalInsights/workspaces": "monitoring",
     }
 
     def __init__(self, neo4j_driver: Any) -> None:
@@ -97,7 +97,7 @@ class CTFAnnotationService:
         ctf_exercise: Optional[str] = None,
         ctf_scenario: Optional[str] = None,
         ctf_role: Optional[str] = None,
-        allow_base_modification: bool = False
+        allow_base_modification: bool = False,
     ) -> Dict[str, Any]:
         """Annotate a single resource with CTF properties.
 
@@ -154,10 +154,7 @@ class CTFAnnotationService:
         SET r.layer_id = $layer_id
         """
 
-        params = {
-            "id": resource_id,
-            "layer_id": layer_id
-        }
+        params = {"id": resource_id, "layer_id": layer_id}
 
         # Add optional CTF properties
         if ctf_exercise is not None:
@@ -195,7 +192,7 @@ class CTFAnnotationService:
         return {
             "success": True,
             "resource_id": resource_id,
-            **({"warning": warning} if warning else {})
+            **({"warning": warning} if warning else {}),
         }
 
     def annotate_batch(
@@ -203,7 +200,7 @@ class CTFAnnotationService:
         resources: List[Dict[str, Any]],
         layer_id: str,
         ctf_exercise: Optional[str] = None,
-        ctf_scenario: Optional[str] = None
+        ctf_scenario: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Annotate multiple resources with CTF properties in batch.
 
@@ -225,7 +222,7 @@ class CTFAnnotationService:
                 "success_count": 0,
                 "failure_count": 0,
                 "results": [],
-                "failed_resources": []
+                "failed_resources": [],
             }
 
         # Validate batch parameters
@@ -247,13 +244,15 @@ class CTFAnnotationService:
             resource_name = resource.get("name", "")
             ctf_role = self.determine_role(resource_type, resource_name)
 
-            batch_data.append({
-                "id": resource_id,
-                "layer_id": layer_id,
-                "ctf_exercise": ctf_exercise,
-                "ctf_scenario": ctf_scenario,
-                "ctf_role": ctf_role
-            })
+            batch_data.append(
+                {
+                    "id": resource_id,
+                    "layer_id": layer_id,
+                    "ctf_exercise": ctf_exercise,
+                    "ctf_scenario": ctf_scenario,
+                    "ctf_role": ctf_role,
+                }
+            )
 
         # Execute batch annotation using UNWIND
         query = """
@@ -273,8 +272,7 @@ class CTFAnnotationService:
 
         try:
             result_records, _, _ = self.neo4j_driver.execute_query(
-                query,
-                resources=batch_data
+                query, resources=batch_data
             )
 
             success_count = len(result_records)
@@ -289,14 +287,10 @@ class CTFAnnotationService:
             "success_count": success_count,
             "failure_count": failure_count,
             "results": results,
-            "failed_resources": failed_resources
+            "failed_resources": failed_resources,
         }
 
-    def determine_role(
-        self,
-        resource_type: str,
-        resource_name: str
-    ) -> str:
+    def determine_role(self, resource_type: str, resource_name: str) -> str:
         """Determine CTF role from resource type and name.
 
         Uses heuristics based on:

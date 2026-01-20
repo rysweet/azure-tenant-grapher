@@ -14,10 +14,8 @@ This module tests the core Azure tenant scanning functionality including:
 """
 
 import pytest
-from click.testing import CliRunner
 
-from src.commands.scan import build, scan, test_scan, build_command_handler
-
+from src.commands.scan import build, build_command_handler, scan, test_scan
 
 # ============================================================================
 # UNIT TESTS (60%) - Test individual functions with mocked dependencies
@@ -31,7 +29,9 @@ class TestParameterValidation:
         """Scan command requires --tenant-id parameter."""
         result = cli_runner.invoke(scan, [])
         assert result.exit_code != 0
-        assert "tenant-id" in result.output.lower() or "required" in result.output.lower()
+        assert (
+            "tenant-id" in result.output.lower() or "required" in result.output.lower()
+        )
 
     def test_scan_accepts_valid_tenant_id(
         self,
@@ -45,7 +45,9 @@ class TestParameterValidation:
         """Scan accepts valid UUID tenant ID."""
         result = cli_runner.invoke(scan, ["--tenant-id", sample_tenant_id])
         # May fail due to other reasons, but not parameter validation
-        assert "tenant-id" not in result.output.lower() if result.exit_code != 0 else True
+        assert (
+            "tenant-id" not in result.output.lower() if result.exit_code != 0 else True
+        )
 
     def test_build_alias_works(
         self,
@@ -103,12 +105,12 @@ class TestNeo4jContainerManagement:
         mock_azure_tenant_grapher,
     ):
         """Scan skips container startup with --no-container flag."""
-        cli_runner.invoke(
-            scan, ["--tenant-id", sample_tenant_id, "--no-container"]
-        )
+        cli_runner.invoke(scan, ["--tenant-id", sample_tenant_id, "--no-container"])
         # Should still be called in handler, but earlier logic may skip
         # Actual behavior depends on implementation
-        assert mock_neo4j_startup.called or not mock_neo4j_startup.called  # Flexible check
+        assert (
+            mock_neo4j_startup.called or not mock_neo4j_startup.called
+        )  # Flexible check
 
 
 class TestVersionMismatchDetection:
@@ -243,9 +245,7 @@ class TestErrorHandling:
         """Scan handles Azure authentication failures gracefully."""
         from azure.core.exceptions import ClientAuthenticationError
 
-        mock_azure_credentials.side_effect = ClientAuthenticationError(
-            "Auth failed"
-        )
+        mock_azure_credentials.side_effect = ClientAuthenticationError("Auth failed")
 
         result = cli_runner.invoke(scan, ["--tenant-id", sample_tenant_id])
         # Should fail but with clear error message
@@ -310,9 +310,7 @@ class TestFlagCombinations:
         mock_azure_tenant_grapher,
     ):
         """Scan respects --debug flag for verbose output."""
-        result = cli_runner.invoke(
-            scan, ["--tenant-id", sample_tenant_id, "--debug"]
-        )
+        result = cli_runner.invoke(scan, ["--tenant-id", sample_tenant_id, "--debug"])
         assert result is not None
 
 

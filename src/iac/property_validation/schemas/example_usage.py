@@ -4,9 +4,8 @@ This demonstrates how to use AzureScraper and TerraformScraper to extract
 resource property schemas for validation purposes.
 """
 
-from pathlib import Path
-from azure_scraper import AzureScraper, AzureSchemaError
-from terraform_scraper import TerraformScraper, TerraformSchemaError
+from azure_scraper import AzureSchemaError, AzureScraper
+from terraform_scraper import TerraformSchemaError, TerraformScraper
 
 
 def demo_azure_scraper():
@@ -26,7 +25,9 @@ def demo_azure_scraper():
         # Example: Get schema for a resource type
         print("Example usage:")
         print(">>> scraper = AzureScraper()")
-        print(">>> schema = scraper.get_resource_schema('Microsoft.Compute', 'virtualMachines')")
+        print(
+            ">>> schema = scraper.get_resource_schema('Microsoft.Compute', 'virtualMachines')"
+        )
         print(">>> print(schema['api_versions'])")
         print("['2023-03-01', '2023-07-01', ...]")
         print()
@@ -56,7 +57,9 @@ def demo_terraform_scraper():
         print(f"Cache TTL: {scraper.cache_ttl_hours} hours\n")
 
         print("Example usage:")
-        print(">>> scraper = TerraformScraper(terraform_dir=Path('/path/to/terraform'))")
+        print(
+            ">>> scraper = TerraformScraper(terraform_dir=Path('/path/to/terraform'))"
+        )
         print(">>> schema = scraper.get_resource_schema('azurerm_virtual_machine')")
         print(">>> attrs = schema['block']['attributes']")
         print(">>> print(attrs['location']['type'])")
@@ -82,7 +85,9 @@ def demo_terraform_scraper():
 
         # Extract required properties
         print("Extract only required properties:")
-        print(">>> required = scraper.extract_required_properties('azurerm_virtual_machine')")
+        print(
+            ">>> required = scraper.extract_required_properties('azurerm_virtual_machine')"
+        )
         print(">>> print(list(required.keys()))")
         print("['name', 'location', 'resource_group_name', ...]")
         print()
@@ -90,7 +95,9 @@ def demo_terraform_scraper():
         # Cache management
         print("Cache management:")
         print(">>> scraper.clear_cache()  # Clear all cached schemas")
-        print(">>> schema = scraper.get_resource_schema('azurerm_vm', force_refresh=True)")
+        print(
+            ">>> schema = scraper.get_resource_schema('azurerm_vm', force_refresh=True)"
+        )
         print()
 
     except TerraformSchemaError as e:
@@ -108,12 +115,16 @@ def demo_validation_workflow():
     print("   tf_scraper = TerraformScraper(terraform_dir=Path('./terraform'))")
     print()
     print("2. Get schemas for comparison:")
-    print("   azure_schema = azure_scraper.get_resource_schema('Microsoft.Compute', 'virtualMachines')")
+    print(
+        "   azure_schema = azure_scraper.get_resource_schema('Microsoft.Compute', 'virtualMachines')"
+    )
     print("   tf_schema = tf_scraper.get_resource_schema('azurerm_virtual_machine')")
     print()
     print("3. Extract properties:")
     print("   azure_props = azure_schema['properties']")
-    print("   tf_required = tf_scraper.extract_required_properties('azurerm_virtual_machine')")
+    print(
+        "   tf_required = tf_scraper.extract_required_properties('azurerm_virtual_machine')"
+    )
     print()
     print("4. Validate Terraform config against schemas:")
     print("   for prop_name, prop_value in tf_config.items():")
@@ -136,8 +147,12 @@ def demo_caching_behavior():
     print()
     print("# Default: 24-hour cache")
     print(">>> scraper = TerraformScraper(cache_ttl_hours=24)")
-    print(">>> schema = scraper.get_resource_schema('azurerm_vm')  # Fetches from Terraform")
-    print(">>> schema = scraper.get_resource_schema('azurerm_vm')  # Uses cache (fast!)")
+    print(
+        ">>> schema = scraper.get_resource_schema('azurerm_vm')  # Fetches from Terraform"
+    )
+    print(
+        ">>> schema = scraper.get_resource_schema('azurerm_vm')  # Uses cache (fast!)"
+    )
     print()
     print("# After 24 hours, cache expires and is refreshed automatically")
     print()

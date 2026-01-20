@@ -73,12 +73,12 @@ class TestSubnetExtractionScanSource:
 
         # Verify scan_id and tenant_id are copied from parent VNet
         assert subnet_resource is not None
-        assert (
-            subnet_resource["scan_id"] == "scan-abc-123"
-        ), "scan_id must be copied from parent VNet"
-        assert (
-            subnet_resource["tenant_id"] == "tenant-xyz-456"
-        ), "tenant_id must be copied from parent VNet"
+        assert subnet_resource["scan_id"] == "scan-abc-123", (
+            "scan_id must be copied from parent VNet"
+        )
+        assert subnet_resource["tenant_id"] == "tenant-xyz-456", (
+            "tenant_id must be copied from parent VNet"
+        )
 
     def test_all_subnets_get_scan_id_and_tenant_id(
         self, rule, vnet_with_subnets, mock_db_ops
@@ -88,23 +88,23 @@ class TestSubnetExtractionScanSource:
         rule.emit(vnet_with_subnets, mock_db_ops)
 
         # Verify upsert_resource was called for each subnet
-        assert (
-            mock_db_ops.upsert_resource.call_count == 2
-        ), "Should create 2 subnet resources"
+        assert mock_db_ops.upsert_resource.call_count == 2, (
+            "Should create 2 subnet resources"
+        )
 
         # Verify each subnet resource has scan_id and tenant_id
         for call in mock_db_ops.upsert_resource.call_args_list:
             subnet_resource = call[0][0]  # First positional arg
             assert "scan_id" in subnet_resource, "Subnet resource must include scan_id"
-            assert (
-                "tenant_id" in subnet_resource
-            ), "Subnet resource must include tenant_id"
-            assert (
-                subnet_resource["scan_id"] == "scan-abc-123"
-            ), "scan_id must match parent VNet"
-            assert (
-                subnet_resource["tenant_id"] == "tenant-xyz-456"
-            ), "tenant_id must match parent VNet"
+            assert "tenant_id" in subnet_resource, (
+                "Subnet resource must include tenant_id"
+            )
+            assert subnet_resource["scan_id"] == "scan-abc-123", (
+                "scan_id must match parent VNet"
+            )
+            assert subnet_resource["tenant_id"] == "tenant-xyz-456", (
+                "tenant_id must match parent VNet"
+            )
 
     def test_subnet_without_parent_scan_id_has_none(self, rule):
         """Test that subnets get None for scan_id/tenant_id if parent VNet doesn't have them."""
@@ -135,12 +135,12 @@ class TestSubnetExtractionScanSource:
 
         # scan_id and tenant_id should be None (not missing from dict)
         assert subnet_resource is not None
-        assert (
-            subnet_resource["scan_id"] is None
-        ), "scan_id should be None if parent doesn't have it"
-        assert (
-            subnet_resource["tenant_id"] is None
-        ), "tenant_id should be None if parent doesn't have it"
+        assert subnet_resource["scan_id"] is None, (
+            "scan_id should be None if parent doesn't have it"
+        )
+        assert subnet_resource["tenant_id"] is None, (
+            "tenant_id should be None if parent doesn't have it"
+        )
 
     def test_subnet_resource_structure_complete(self, rule, vnet_with_subnets):
         """Test that subnet resource has all required fields including new scan_id/tenant_id."""

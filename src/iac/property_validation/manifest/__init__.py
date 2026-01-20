@@ -15,6 +15,7 @@ Public API (the "studs"):
     PropertyType: Property type enumeration
 """
 
+from .generator import ManifestGenerator
 from .schema import (
     CriticalityLevel,
     PropertyMapping,
@@ -22,15 +23,14 @@ from .schema import (
     ProviderVersion,
     ResourceManifest,
 )
-from .generator import ManifestGenerator
 from .validator import ManifestValidator
 
 __all__ = [
-    "PropertyMapping",
-    "ResourceManifest",
-    "ProviderVersion",
     "CriticalityLevel",
-    "PropertyType",
     "ManifestGenerator",
     "ManifestValidator",
+    "PropertyMapping",
+    "PropertyType",
+    "ProviderVersion",
+    "ResourceManifest",
 ]

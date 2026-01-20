@@ -167,9 +167,21 @@ def _register_all_handlers() -> None:
     _ = (cosmosdb, postgresql, sql_database, sql_server)
 
     # DevTest handlers
-    from .devtest import devtest_lab, devtest_schedule, devtest_vm
+    from .devtest import (
+        devtest_lab,
+        devtest_policy,
+        devtest_schedule,
+        devtest_virtual_network,
+        devtest_vm,
+    )
 
-    _ = (devtest_lab, devtest_schedule, devtest_vm)
+    _ = (
+        devtest_lab,
+        devtest_policy,
+        devtest_schedule,
+        devtest_virtual_network,
+        devtest_vm,
+    )
 
     # Identity handlers
     from .identity import (

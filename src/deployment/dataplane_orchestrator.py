@@ -26,7 +26,9 @@ SUPPORTED_RESOURCE_TYPES = [
 ]
 
 
-def _query_resources_for_replication(session: Any, target_subscription_id: str) -> List[Dict[str, Any]]:
+def _query_resources_for_replication(
+    session: Any, target_subscription_id: str
+) -> List[Dict[str, Any]]:
     """Query Neo4j for resources in target subscription that support data plane replication.
 
     Args:
@@ -55,12 +57,14 @@ def _query_resources_for_replication(session: Any, target_subscription_id: str) 
 
         for record in result:
             resource_node = record["r"]
-            resources.append({
-                "id": resource_node.get("id"),
-                "type": resource_node.get("type"),
-                "name": resource_node.get("name"),
-                "location": resource_node.get("location"),
-            })
+            resources.append(
+                {
+                    "id": resource_node.get("id"),
+                    "type": resource_node.get("type"),
+                    "name": resource_node.get("name"),
+                    "location": resource_node.get("location"),
+                }
+            )
 
         return resources
 
@@ -206,10 +210,14 @@ def orchestrate_dataplane_replication(
             resources_to_replicate = _query_resources_for_replication(
                 session, target_subscription_id
             )
-            logger.info(f"Discovered {len(resources_to_replicate)} resources for replication from Neo4j")
+            logger.info(
+                f"Discovered {len(resources_to_replicate)} resources for replication from Neo4j"
+            )
 
     except ImportError:
-        logger.warning("Neo4j session unavailable - install Neo4j dependencies for resource discovery")
+        logger.warning(
+            "Neo4j session unavailable - install Neo4j dependencies for resource discovery"
+        )
     except Exception as e:
         logger.warning(f"Failed to query Neo4j for resources: {e}")
         logger.warning("Continuing with empty resource list")

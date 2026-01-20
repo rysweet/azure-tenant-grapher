@@ -15,8 +15,8 @@ Public API:
 """
 
 from .models import (
-    Criticality,
     CoverageMetrics,
+    Criticality,
     PropertyDefinition,
     PropertyGap,
 )

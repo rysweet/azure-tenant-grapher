@@ -89,9 +89,7 @@ def example_1_single_handler_reports():
 
     print(f"\n💾 Saving reports to {output_dir}...")
     generator.save_report(report, output_dir / "storage_account.html", format="html")
-    generator.save_report(
-        report, output_dir / "storage_account.md", format="markdown"
-    )
+    generator.save_report(report, output_dir / "storage_account.md", format="markdown")
     generator.save_report(report, output_dir / "storage_account.json", format="json")
 
     print("✅ All reports saved successfully!")
@@ -214,8 +212,12 @@ def example_2_multi_handler_dashboard():
     html = dashboard.generate_dashboard(reports)
 
     print(f"   Generated {len(html)} characters of HTML")
-    print(f"   Overall coverage: {sum(r.metrics.coverage_percentage for r in reports.values()) / len(reports):.1f}%")
-    print(f"   Overall quality: {sum(r.quality_score for r in reports.values()) / len(reports):.1f}")
+    print(
+        f"   Overall coverage: {sum(r.metrics.coverage_percentage for r in reports.values()) / len(reports):.1f}%"
+    )
+    print(
+        f"   Overall quality: {sum(r.quality_score for r in reports.values()) / len(reports):.1f}"
+    )
 
     # Save dashboard
     output_dir = Path("output/dashboard")

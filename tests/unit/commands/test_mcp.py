@@ -6,10 +6,13 @@ Test pyramid: 60% unit, 30% integration, 10% E2E
 """
 
 import pytest
-from click.testing import CliRunner
 
-from src.commands.mcp import mcp_server, mcp_query, mcp_server_command_handler, mcp_query_command_handler
-
+from src.commands.mcp import (
+    mcp_query,
+    mcp_query_command_handler,
+    mcp_server,
+    mcp_server_command_handler,
+)
 
 # ============================================================================
 # UNIT TESTS (60%)
@@ -31,8 +34,7 @@ class TestMCPServerCommand:
     ):
         """Handler calls run_mcp_server_foreground."""
         mock_run_server = mocker.patch(
-            "src.mcp_server.run_mcp_server_foreground",
-            return_value=0
+            "src.mcp_server.run_mcp_server_foreground", return_value=0
         )
 
         await mcp_server_command_handler(mock_click_context)
@@ -45,7 +47,7 @@ class TestMCPServerCommand:
         """Handler handles server startup failures."""
         mock_run_server = mocker.patch(
             "src.mcp_server.run_mcp_server_foreground",
-            side_effect=Exception("Server failed")
+            side_effect=Exception("Server failed"),
         )
 
         with pytest.raises(SystemExit):
@@ -84,8 +86,7 @@ class TestMCPQueryParameters:
         mocker.patch.dict("os.environ", {"MCP_ENABLED": "true"})
 
         result = cli_runner.invoke(
-            mcp_query,
-            ["test query", "--tenant-id", sample_tenant_id]
+            mcp_query, ["test query", "--tenant-id", sample_tenant_id]
         )
         # May fail for other reasons, but tenant-id should be accepted
         assert result is not None
@@ -94,10 +95,9 @@ class TestMCPQueryParameters:
         """Query uses AZURE_TENANT_ID from environment."""
         mocker.patch("src.services.mcp_integration.MCPIntegrationService")
         mocker.patch("src.utils.mcp_startup.ensure_mcp_running_async")
-        mocker.patch.dict("os.environ", {
-            "AZURE_TENANT_ID": sample_tenant_id,
-            "MCP_ENABLED": "true"
-        })
+        mocker.patch.dict(
+            "os.environ", {"AZURE_TENANT_ID": sample_tenant_id, "MCP_ENABLED": "true"}
+        )
 
         result = cli_runner.invoke(mcp_query, ["test query"])
         # Should use env variable
@@ -112,10 +112,15 @@ class TestMCPQueryOutputFormats:
         self, mock_click_context, mocker, sample_tenant_id
     ):
         """Query supports JSON output format."""
-        mock_service = mocker.patch("src.services.mcp_integration.MCPIntegrationService")
+        mock_service = mocker.patch(
+            "src.services.mcp_integration.MCPIntegrationService"
+        )
         mock_instance = mocker.MagicMock()
         mock_instance.initialize.return_value = True
-        mock_instance.natural_language_command.return_value = (True, {"response": "test"})
+        mock_instance.natural_language_command.return_value = (
+            True,
+            {"response": "test"},
+        )
         mock_service.return_value = mock_instance
 
         mocker.patch("src.utils.mcp_startup.ensure_mcp_running_async")
@@ -128,7 +133,9 @@ class TestMCPQueryOutputFormats:
         mock_config.mcp.endpoint = "http://localhost:8000"
         mock_config.mcp.timeout = 30
         mock_config.mcp.api_key = None
-        mocker.patch("src.config_manager.create_config_from_env", return_value=mock_config)
+        mocker.patch(
+            "src.config_manager.create_config_from_env", return_value=mock_config
+        )
 
         await mcp_query_command_handler(
             mock_click_context,
@@ -136,7 +143,7 @@ class TestMCPQueryOutputFormats:
             tenant_id=sample_tenant_id,
             use_fallback=True,
             output_format="json",
-            debug=False
+            debug=False,
         )
         # Should complete without error
         mock_instance.natural_language_command.assert_called_once()
@@ -146,13 +153,13 @@ class TestMCPErrorHandling:
     """Test MCP error handling."""
 
     @pytest.mark.asyncio
-    async def test_mcp_query_handles_mcp_disabled(
-        self, cli_runner, mocker
-    ):
+    async def test_mcp_query_handles_mcp_disabled(self, cli_runner, mocker):
         """Query handles MCP disabled in config."""
         mock_config = mocker.MagicMock()
         mock_config.mcp.enabled = False
-        mocker.patch("src.config_manager.create_config_from_env", return_value=mock_config)
+        mocker.patch(
+            "src.config_manager.create_config_from_env", return_value=mock_config
+        )
         mocker.patch("src.config_manager.setup_logging")
         mocker.patch.dict("os.environ", {"AZURE_TENANT_ID": "test-tenant"})
 
@@ -161,15 +168,18 @@ class TestMCPErrorHandling:
         assert "not enabled" in result.output.lower()
 
     @pytest.mark.asyncio
-    async def test_mcp_query_handles_server_startup_failure(
-        self, cli_runner, mocker
-    ):
+    async def test_mcp_query_handles_server_startup_failure(self, cli_runner, mocker):
         """Query handles MCP server startup failure."""
         mock_config = mocker.MagicMock()
         mock_config.mcp.enabled = True
-        mocker.patch("src.config_manager.create_config_from_env", return_value=mock_config)
+        mocker.patch(
+            "src.config_manager.create_config_from_env", return_value=mock_config
+        )
         mocker.patch("src.config_manager.setup_logging")
-        mocker.patch("src.utils.mcp_startup.ensure_mcp_running_async", side_effect=RuntimeError("Server failed"))
+        mocker.patch(
+            "src.utils.mcp_startup.ensure_mcp_running_async",
+            side_effect=RuntimeError("Server failed"),
+        )
         mocker.patch.dict("os.environ", {"AZURE_TENANT_ID": "test-tenant"})
 
         result = cli_runner.invoke(mcp_query, ["test query"])
@@ -197,14 +207,21 @@ class TestMCPIntegration:
         mock_config.mcp.timeout = 30
         mock_config.mcp.api_key = None
 
-        mocker.patch("src.config_manager.create_config_from_env", return_value=mock_config)
+        mocker.patch(
+            "src.config_manager.create_config_from_env", return_value=mock_config
+        )
         mocker.patch("src.config_manager.setup_logging")
         mocker.patch("src.utils.mcp_startup.ensure_mcp_running_async")
 
-        mock_service = mocker.patch("src.services.mcp_integration.MCPIntegrationService")
+        mock_service = mocker.patch(
+            "src.services.mcp_integration.MCPIntegrationService"
+        )
         mock_instance = mocker.MagicMock()
         mock_instance.initialize.return_value = True
-        mock_instance.natural_language_command.return_value = (True, {"response": "Result"})
+        mock_instance.natural_language_command.return_value = (
+            True,
+            {"response": "Result"},
+        )
         mock_instance.close.return_value = None
         mock_service.return_value = mock_instance
 
@@ -214,7 +231,7 @@ class TestMCPIntegration:
             tenant_id=sample_tenant_id,
             use_fallback=False,
             output_format="json",
-            debug=False
+            debug=False,
         )
 
         mock_instance.initialize.assert_called_once()
@@ -230,13 +247,10 @@ class TestMCPIntegration:
 class TestMCPE2E:
     """Test complete MCP workflows."""
 
-    def test_mcp_server_full_execution(
-        self, cli_runner, mocker
-    ):
+    def test_mcp_server_full_execution(self, cli_runner, mocker):
         """Full MCP server execution."""
         mock_run_server = mocker.patch(
-            "src.mcp_server.run_mcp_server_foreground",
-            return_value=0
+            "src.mcp_server.run_mcp_server_foreground", return_value=0
         )
 
         result = cli_runner.invoke(mcp_server, [])

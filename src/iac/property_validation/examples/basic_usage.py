@@ -10,7 +10,7 @@ from pathlib import Path
 # Add parent directory to path for direct imports (avoiding iac.__init__)
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from property_validation.models import Criticality, PropertyDefinition
+from property_validation.models import PropertyDefinition
 from property_validation.validation import (
     CoverageCalculator,
     CriticalClassifier,
@@ -98,14 +98,14 @@ def main():
     required_set = set(schema_properties.keys())
     metrics = calculator.calculate_coverage(required_set, actual_properties, gaps)
 
-    print(f"\n   Coverage Results:")
+    print("\n   Coverage Results:")
     print(f"   - Total properties: {metrics.total_properties}")
     print(f"   - Covered: {metrics.covered_properties}")
     print(f"   - Missing: {metrics.missing_properties}")
     print(f"   - Coverage: {metrics.coverage_percentage:.1f}%")
 
     # Step 6: Analyze gaps by criticality
-    print(f"\n6. Gap analysis by criticality:")
+    print("\n6. Gap analysis by criticality:")
     print(f"   - CRITICAL gaps: {metrics.critical_gaps}")
     print(f"   - HIGH priority: {metrics.high_priority_gaps}")
     print(f"   - MEDIUM priority: {metrics.medium_priority_gaps}")

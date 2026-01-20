@@ -6,7 +6,6 @@ Test pyramid: 60% unit, 30% integration, 10% E2E
 """
 
 import pytest
-from click.testing import CliRunner
 
 
 # Placeholder test class - actual tests will be implemented based on deploy.py structure
@@ -17,6 +16,7 @@ class TestDeploymentCommands:
         """Deploy command can be imported."""
         try:
             from src.commands.deploy import deploy
+
             assert deploy is not None
         except ImportError:
             pytest.skip("Deploy command not yet fully implemented")

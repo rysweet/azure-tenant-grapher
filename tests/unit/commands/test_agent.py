@@ -6,10 +6,8 @@ Test pyramid: 60% unit, 30% integration, 10% E2E
 """
 
 import pytest
-from click.testing import CliRunner
 
 from src.commands.agent import agent_mode, agent_mode_command_handler
-
 
 # ============================================================================
 # UNIT TESTS (60%)
@@ -31,9 +29,7 @@ class TestAgentModeParameters:
         result = cli_runner.invoke(agent_mode, [])
         mock_agent_mode.assert_called_once()
 
-    def test_agent_mode_accepts_question_parameter(
-        self, cli_runner, mock_agent_mode
-    ):
+    def test_agent_mode_accepts_question_parameter(self, cli_runner, mock_agent_mode):
         """Agent mode accepts single question for non-interactive mode."""
         result = cli_runner.invoke(agent_mode, ["--question", "Show all VMs"])
         mock_agent_mode.assert_called_once_with(question="Show all VMs")
@@ -55,9 +51,7 @@ class TestAgentModeInitialization:
         self, mock_click_context, mock_agent_mode
     ):
         """Handler passes question to run_agent_mode."""
-        await agent_mode_command_handler(
-            mock_click_context, question="Test question"
-        )
+        await agent_mode_command_handler(mock_click_context, question="Test question")
         mock_agent_mode.assert_called_once_with(question="Test question")
 
 
@@ -109,24 +103,17 @@ class TestLoggingConfiguration:
 class TestAgentModeIntegration:
     """Test agent mode with multiple components."""
 
-    def test_agent_mode_interactive_workflow(
-        self, cli_runner, mock_agent_mode
-    ):
+    def test_agent_mode_interactive_workflow(self, cli_runner, mock_agent_mode):
         """Complete interactive agent mode workflow."""
         result = cli_runner.invoke(agent_mode, [])
         mock_agent_mode.assert_called_once()
 
-
-    def test_agent_mode_question_workflow(
-        self, cli_runner, mock_agent_mode
-    ):
+    def test_agent_mode_question_workflow(self, cli_runner, mock_agent_mode):
         """Complete question mode workflow."""
         result = cli_runner.invoke(
             agent_mode, ["--question", "List all storage accounts"]
         )
-        mock_agent_mode.assert_called_once_with(
-            question="List all storage accounts"
-        )
+        mock_agent_mode.assert_called_once_with(question="List all storage accounts")
 
 
 # ============================================================================
@@ -137,20 +124,14 @@ class TestAgentModeIntegration:
 class TestAgentModeE2E:
     """Test complete agent mode workflows."""
 
-    def test_agent_mode_full_interactive_session(
-        self, cli_runner, mock_agent_mode
-    ):
+    def test_agent_mode_full_interactive_session(self, cli_runner, mock_agent_mode):
         """Full interactive agent session."""
         mock_agent_mode.return_value = None
         result = cli_runner.invoke(agent_mode, [])
         assert result.exit_code == 0 or "Failed" in result.output
 
-    def test_agent_mode_full_question_session(
-        self, cli_runner, mock_agent_mode
-    ):
+    def test_agent_mode_full_question_session(self, cli_runner, mock_agent_mode):
         """Full single-question session."""
         mock_agent_mode.return_value = None
-        result = cli_runner.invoke(
-            agent_mode, ["--question", "Show tenant summary"]
-        )
+        result = cli_runner.invoke(agent_mode, ["--question", "Show tenant summary"])
         assert result.exit_code == 0 or "Failed" in result.output

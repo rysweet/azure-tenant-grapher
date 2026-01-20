@@ -158,4 +158,4 @@ class PatternDetector:
         return pattern_matches
 
 
-__all__ = ["PatternDetector", "ARCHITECTURAL_PATTERNS"]
+__all__ = ["ARCHITECTURAL_PATTERNS", "PatternDetector"]

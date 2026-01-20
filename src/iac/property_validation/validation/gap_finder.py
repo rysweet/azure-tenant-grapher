@@ -10,7 +10,7 @@ Philosophy:
 
 from typing import Dict, List, Set
 
-from ..models import PropertyDefinition, PropertyGap, Criticality
+from ..models import Criticality, PropertyDefinition, PropertyGap
 
 
 class GapFinder:
@@ -83,13 +83,13 @@ class GapFinder:
             Descriptive reason string
         """
         if criticality == Criticality.CRITICAL:
-            return f"Required property with no default - blocks deployment"
+            return "Required property with no default - blocks deployment"
         elif criticality == Criticality.HIGH:
-            return f"Security or compliance property - significant risk if missing"
+            return "Security or compliance property - significant risk if missing"
         elif criticality == Criticality.MEDIUM:
-            return f"Operational property - impacts functionality"
+            return "Operational property - impacts functionality"
         else:
-            return f"Optional feature - nice to have"
+            return "Optional feature - nice to have"
 
     def _suggest_value(self, prop_def: PropertyDefinition) -> str | None:
         """Suggest a reasonable default value for missing property.

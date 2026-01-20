@@ -8,7 +8,7 @@ Philosophy:
 - No complex statistical models
 """
 
-from typing import Dict, List, Set
+from typing import List, Set
 
 from ..models import CoverageMetrics, Criticality, PropertyGap
 
@@ -40,7 +40,9 @@ class CoverageCalculator:
         coverage_pct = (covered / total * 100.0) if total > 0 else 100.0
 
         # Count gaps by criticality
-        critical_count = sum(1 for gap in gaps if gap.criticality == Criticality.CRITICAL)
+        critical_count = sum(
+            1 for gap in gaps if gap.criticality == Criticality.CRITICAL
+        )
         high_count = sum(1 for gap in gaps if gap.criticality == Criticality.HIGH)
         medium_count = sum(1 for gap in gaps if gap.criticality == Criticality.MEDIUM)
         low_count = sum(1 for gap in gaps if gap.criticality == Criticality.LOW)

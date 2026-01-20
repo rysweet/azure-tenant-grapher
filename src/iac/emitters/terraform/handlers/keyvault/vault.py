@@ -144,7 +144,9 @@ class KeyVaultHandler(ResourceHandler):
             # IP rules
             ip_rules = network_acls.get("ipRules", [])
             if ip_rules:
-                acl_config["ip_rules"] = [rule.get("value") for rule in ip_rules if rule.get("value")]
+                acl_config["ip_rules"] = [
+                    rule.get("value") for rule in ip_rules if rule.get("value")
+                ]
 
             # Virtual network subnet IDs
             vnet_rules = network_acls.get("virtualNetworkRules", [])

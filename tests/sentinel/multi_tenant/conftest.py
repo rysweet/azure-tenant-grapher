@@ -101,13 +101,13 @@ def default_authorizations() -> List[Dict]:
         {
             "principalId": "test-principal-id",
             "roleDefinitionId": "ab8e14d6-4a74-4a29-9ba8-549422addade",  # Sentinel Contributor
-            "principalIdDisplayName": "Sentinel MSSP Management"
+            "principalIdDisplayName": "Sentinel MSSP Management",
         },
         {
             "principalId": "test-principal-id",
             "roleDefinitionId": "acdd72a7-3385-48ef-bd42-f606fba81ae7",  # Security Reader
-            "principalIdDisplayName": "Security Operations Team"
-        }
+            "principalIdDisplayName": "Security Operations Team",
+        },
     ]
 
 
@@ -132,7 +132,9 @@ def mock_managed_services_client():
     # Mock registration definitions
     mock_reg_def = Mock()
     mock_reg_def.id = "/subscriptions/test-sub/providers/Microsoft.ManagedServices/registrationDefinitions/test-def-id"
-    mock_reg_def.properties.managed_by_tenant_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    mock_reg_def.properties.managed_by_tenant_id = (
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    )
     mock_reg_def.properties.registration_definition_name = "Test Delegation"
 
     mock_client.registration_definitions.get.return_value = mock_reg_def
@@ -204,6 +206,7 @@ def mock_neo4j_session(mock_neo4j_driver):
 @pytest.fixture
 def neo4j_query_result():
     """Factory fixture for creating mock Neo4j query results."""
+
     def _create_result(data: List[Dict]) -> Mock:
         mock_result = Mock()
         mock_result.data.return_value = data
@@ -212,6 +215,7 @@ def neo4j_query_result():
         elif len(data) == 0:
             mock_result.single.return_value = None
         return mock_result
+
     return _create_result
 
 
@@ -274,7 +278,7 @@ def lighthouse_manager_config(managing_tenant_id, temp_bicep_output_dir):
     """Configuration dict for LighthouseManager initialization."""
     return {
         "managing_tenant_id": managing_tenant_id,
-        "bicep_output_dir": str(temp_bicep_output_dir)
+        "bicep_output_dir": str(temp_bicep_output_dir),
     }
 
 
@@ -285,15 +289,11 @@ def lighthouse_manager_config(managing_tenant_id, temp_bicep_output_dir):
 
 def pytest_configure(config):
     """Register custom pytest markers."""
-    config.addinivalue_line(
-        "markers", "unit: Unit tests (fast, heavily mocked)"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests (fast, heavily mocked)")
     config.addinivalue_line(
         "markers", "integration: Integration tests (multiple components)"
     )
-    config.addinivalue_line(
-        "markers", "e2e: End-to-end tests (complete workflows)"
-    )
+    config.addinivalue_line("markers", "e2e: End-to-end tests (complete workflows)")
     config.addinivalue_line(
         "markers", "requires_neo4j: Tests requiring real Neo4j instance"
     )

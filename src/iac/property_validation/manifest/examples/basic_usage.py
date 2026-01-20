@@ -107,7 +107,7 @@ def example_save_and_load_manifest(manifest: ResourceManifest) -> None:
     # Verify property lookup works
     account_tier = loaded_manifest.get_property_by_terraform_param("account_tier")
     if account_tier:
-        print(f"✓ Found 'account_tier' mapping:")
+        print("✓ Found 'account_tier' mapping:")
         print(f"  Azure path: {account_tier.azure_path}")
         print(f"  Required: {account_tier.required}")
         print(f"  Valid values: {account_tier.valid_values}")
@@ -175,7 +175,9 @@ def example_create_invalid_manifest() -> None:
     result = validator.validate(manifest)
 
     print(f"Validation result: {'✓ VALID' if result.valid else '✗ INVALID'}")
-    print(f"\nFound {len(result.get_errors())} errors and {len(result.get_warnings())} warnings:")
+    print(
+        f"\nFound {len(result.get_errors())} errors and {len(result.get_warnings())} warnings:"
+    )
     print(result.format_issues())
     print()
 
@@ -236,7 +238,9 @@ def example_generate_from_schemas() -> None:
 
     print(f"✓ Generated manifest with {len(manifest.properties)} properties")
     for prop in manifest.properties:
-        print(f"  - {prop.terraform_param} ← {prop.azure_path} ({prop.criticality.value})")
+        print(
+            f"  - {prop.terraform_param} ← {prop.azure_path} ({prop.criticality.value})"
+        )
     print()
 
 

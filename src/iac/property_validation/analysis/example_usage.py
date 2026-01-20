@@ -6,7 +6,7 @@ property mappings from handler files.
 
 from pathlib import Path
 
-from .handler_analyzer import HandlerAnalyzer, analyze_handler
+from .handler_analyzer import analyze_handler
 
 
 def analyze_single_handler(handler_path: Path) -> None:
@@ -30,7 +30,7 @@ def analyze_single_handler(handler_path: Path) -> None:
     print(f"Azure Types: {', '.join(result.handled_types)}")
     print(f"Terraform Types: {', '.join(result.terraform_types)}")
 
-    print(f"\n📊 Property Analysis:")
+    print("\n📊 Property Analysis:")
     print(f"  • Total properties: {len(result.properties)}")
     print(f"  • Terraform writes: {len(result.terraform_writes)}")
     print(f"  • Azure reads: {len(result.azure_reads)}")
@@ -38,19 +38,19 @@ def analyze_single_handler(handler_path: Path) -> None:
 
     # Show Terraform config keys
     if result.terraform_writes:
-        print(f"\n✍️  Terraform Config Keys:")
+        print("\n✍️  Terraform Config Keys:")
         for key in sorted(result.terraform_writes):
             print(f"  • {key}")
 
     # Show Azure property keys
     if result.azure_reads:
-        print(f"\n📖 Azure Property Keys:")
+        print("\n📖 Azure Property Keys:")
         for key in sorted(result.azure_reads):
             print(f"  • {key}")
 
     # Show bidirectional mappings
     if result.bidirectional_mappings:
-        print(f"\n🔄 Bidirectional Mappings:")
+        print("\n🔄 Bidirectional Mappings:")
         for tf_key, azure_key in sorted(result.bidirectional_mappings.items()):
             print(f"  • {tf_key:30} <- {azure_key}")
 
@@ -80,18 +80,16 @@ def analyze_handler_directory(handlers_dir: Path) -> None:
             results.append(result)
 
     # Summary statistics
-    print(f"\n📊 Summary Statistics:")
+    print("\n📊 Summary Statistics:")
     print(f"  • Handlers analyzed: {len(results)}")
     print(f"  • Total Terraform keys: {sum(len(r.terraform_writes) for r in results)}")
     print(f"  • Total Azure keys: {sum(len(r.azure_reads) for r in results)}")
     print(f"  • Total mappings: {sum(len(r.bidirectional_mappings) for r in results)}")
 
     # List handlers by resource count
-    print(f"\n📋 Handlers by Property Count:")
+    print("\n📋 Handlers by Property Count:")
     for result in sorted(results, key=lambda r: len(r.properties), reverse=True):
-        print(
-            f"  • {result.handler_class:40} - {len(result.properties):3} properties"
-        )
+        print(f"  • {result.handler_class:40} - {len(result.properties):3} properties")
 
 
 def compare_handlers(handler1_path: Path, handler2_path: Path) -> None:

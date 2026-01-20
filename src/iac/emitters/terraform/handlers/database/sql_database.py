@@ -84,7 +84,9 @@ class SQLDatabaseHandler(ResourceHandler):
             if tde_status == "Enabled":
                 # Note: TDE is typically enabled by default in newer Azure SQL versions
                 # We'll add a note that TDE is expected to be enabled
-                logger.info(f"SQL Database '{resource_name}': Transparent Data Encryption enabled")
+                logger.info(
+                    f"SQL Database '{resource_name}': Transparent Data Encryption enabled"
+                )
 
         # Optional: ledger_enabled (security - MEDIUM for immutable audit log)
         # Maps to Azure property: isLedgerDatabase

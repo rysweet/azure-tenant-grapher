@@ -4,7 +4,6 @@ This module creates YAML manifest files by analyzing Azure resource schemas
 and Terraform provider schemas to identify property mappings.
 """
 
-import json
 from pathlib import Path
 from typing import Any, Optional
 
@@ -99,9 +98,7 @@ class ManifestGenerator:
         """
         properties: dict[str, dict[str, Any]] = {}
 
-        def extract_recursive(
-            obj: dict[str, Any], path: str = ""
-        ) -> None:
+        def extract_recursive(obj: dict[str, Any], path: str = "") -> None:
             """Recursively extract properties from nested schema."""
             if not isinstance(obj, dict):
                 return
@@ -220,9 +217,7 @@ class ManifestGenerator:
         """
         # Determine property type
         azure_type = azure_def.get("type", "string")
-        prop_type = self._type_mappings.get(
-            azure_type.lower(), PropertyType.STRING
-        )
+        prop_type = self._type_mappings.get(azure_type.lower(), PropertyType.STRING)
 
         # Determine if required
         required = azure_def.get("required", False) or terraform_def.get(
@@ -324,7 +319,7 @@ class ManifestGenerator:
         if not manifest_path.exists():
             raise FileNotFoundError(f"Manifest not found: {manifest_path}")
 
-        with open(manifest_path, "r", encoding="utf-8") as f:
+        with open(manifest_path, encoding="utf-8") as f:
             manifest_dict = yaml.safe_load(f)
 
         return ResourceManifest.from_dict(manifest_dict)

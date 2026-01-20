@@ -265,7 +265,7 @@ class WorkstreamOrchestrator:
         code, stdout, stderr = self.run_command(cmd, timeout=3600)
 
         if code == 0:
-            self.reporter.send(f"✅ Source tenant scan completed")
+            self.reporter.send("✅ Source tenant scan completed")
             return True
         else:
             self.reporter.send(f"❌ Source tenant scan failed: {stderr[:200]}")
@@ -287,7 +287,7 @@ class WorkstreamOrchestrator:
         code, stdout, stderr = self.run_command(cmd, timeout=3600)
 
         if code == 0:
-            self.reporter.send(f"✅ Target tenant scan completed")
+            self.reporter.send("✅ Target tenant scan completed")
             return True
         else:
             self.reporter.send(f"❌ Target tenant scan failed: {stderr[:200]}")
@@ -537,11 +537,15 @@ class AutonomousEngine:
                         target_scan_success = self.orchestrator.scan_target_tenant()
 
                         if source_scan_success and target_scan_success:
-                            self.reporter.send("✅ Entra ID replication scans completed")
+                            self.reporter.send(
+                                "✅ Entra ID replication scans completed"
+                            )
                             self.status["completed_phases"].append("entra_id")
                             self.reporter.send("🎉 Entra ID replication phase complete")
                         else:
-                            self.reporter.send("⚠️ Entra ID scans failed, will retry next cycle")
+                            self.reporter.send(
+                                "⚠️ Entra ID scans failed, will retry next cycle"
+                            )
 
                         time.sleep(60)
 

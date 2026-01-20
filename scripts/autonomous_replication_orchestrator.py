@@ -498,24 +498,36 @@ print(str(f"TARGET_RESOURCES={{count}}"))
                         err_summary = err.get("summary", "")
 
                         # Categorize error types
-                        if "subnet" in err_detail.lower() or "address" in err_detail.lower():
+                        if (
+                            "subnet" in err_detail.lower()
+                            or "address" in err_detail.lower()
+                        ):
                             error_types["network"] = error_types.get("network", 0) + 1
-                        elif "resource" in err_detail.lower() and "not found" in err_detail.lower():
-                            error_types["missing_resource"] = error_types.get("missing_resource", 0) + 1
+                        elif (
+                            "resource" in err_detail.lower()
+                            and "not found" in err_detail.lower()
+                        ):
+                            error_types["missing_resource"] = (
+                                error_types.get("missing_resource", 0) + 1
+                            )
                         elif "invalid" in err_detail.lower():
-                            error_types["invalid_config"] = error_types.get("invalid_config", 0) + 1
+                            error_types["invalid_config"] = (
+                                error_types.get("invalid_config", 0) + 1
+                            )
                         else:
                             error_types["other"] = error_types.get("other", 0) + 1
 
                         logger.error(f"  Terraform error: {err_summary}: {err_detail}")
 
                     logger.info(f"Error breakdown: {error_types}")
-                    self.status["errors"].append({
-                        "iteration": self.current_iteration,
-                        "error_count": len(errors),
-                        "error_types": error_types,
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    self.status["errors"].append(
+                        {
+                            "iteration": self.current_iteration,
+                            "error_count": len(errors),
+                            "error_types": error_types,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
                     self._save_status()
 
                     # Continue to next iteration to try improvements

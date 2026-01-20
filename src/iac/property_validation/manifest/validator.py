@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .schema import CriticalityLevel, PropertyMapping, ResourceManifest
+from .schema import CriticalityLevel, ResourceManifest
 
 
 @dataclass
@@ -69,7 +69,9 @@ class ValidationResult:
             prefix = {"error": "✗", "warning": "⚠", "info": "ℹ"}[issue.severity]
             location = f" [{issue.property_path}]" if issue.property_path else ""
             code = f" ({issue.code})" if issue.code else ""
-            lines.append(f"{prefix} {issue.severity.upper()}{location}: {issue.message}{code}")
+            lines.append(
+                f"{prefix} {issue.severity.upper()}{location}: {issue.message}{code}"
+            )
 
         return "\n".join(lines)
 
@@ -157,7 +159,9 @@ class ManifestValidator:
                 manifest_path=manifest_path,
             )
 
-    def _validate_resource_type(self, manifest: ResourceManifest) -> list[ValidationIssue]:
+    def _validate_resource_type(
+        self, manifest: ResourceManifest
+    ) -> list[ValidationIssue]:
         """Validate resource type definitions."""
         issues: list[ValidationIssue] = []
 
@@ -203,7 +207,9 @@ class ManifestValidator:
 
         return issues
 
-    def _validate_provider_version(self, manifest: ResourceManifest) -> list[ValidationIssue]:
+    def _validate_provider_version(
+        self, manifest: ResourceManifest
+    ) -> list[ValidationIssue]:
         """Validate provider version constraints."""
         issues: list[ValidationIssue] = []
 
@@ -351,7 +357,7 @@ class ManifestValidator:
             return issues
 
         # Count by criticality
-        counts = {level: 0 for level in CriticalityLevel}
+        counts = dict.fromkeys(CriticalityLevel, 0)
         for prop in manifest.properties:
             counts[prop.criticality] += 1
 
@@ -379,7 +385,9 @@ class ManifestValidator:
 
         return issues
 
-    def _check_required_coverage(self, manifest: ResourceManifest) -> list[ValidationIssue]:
+    def _check_required_coverage(
+        self, manifest: ResourceManifest
+    ) -> list[ValidationIssue]:
         """Check that required properties are covered."""
         issues: list[ValidationIssue] = []
 
