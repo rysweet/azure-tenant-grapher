@@ -24,6 +24,7 @@ from ..common.exceptions import AuthenticationError, RemoteError
 from ..db.connection_manager import ConnectionManager
 from .config import ATGServerConfig, Neo4jConfig
 from .dependencies import set_config, set_connection_manager
+from .middleware import RateLimiter
 from .routers import generate, health, operations, scan
 from .routers import websocket as ws_router
 
@@ -121,6 +122,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE"],  # Explicit methods only
     allow_headers=["Authorization", "Content-Type"],  # Explicit headers only
 )
+
+# Issue #580: Add rate limiting (10 scans per hour)
+app.add_middleware(RateLimiter, requests_per_hour=10)
+logger.info("Rate limiting enabled: 10 scans per hour")
 
 
 # Exception handlers
