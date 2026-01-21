@@ -306,20 +306,30 @@ class GraphTraverser:
                 if in_degree[neighbor_id] == 0:
                     queue.append(neighbor_id)
 
-        # Check for cycles
+        # Check for cycles (only if not using max_depth filter)
         if len(sorted_resources) < len(graph.resources):
-            # Find resources involved in cycles
-            cycle_resources = [rid for rid, degree in in_degree.items() if degree > 0]
-            cycle_details = self._detect_cycle_details(
-                cycle_resources, adj_list, resource_map
-            )
+            # Check if this is due to max_depth filtering or actual cycles
+            if max_depth is None:
+                # Find resources involved in cycles
+                cycle_resources = [
+                    rid for rid, degree in in_degree.items() if degree > 0
+                ]
+                cycle_details = self._detect_cycle_details(
+                    cycle_resources, adj_list, resource_map
+                )
 
-            error_msg = (
-                f"Circular dependency detected! {len(cycle_resources)} resources "
-                f"are involved in dependency cycles:\n{cycle_details}"
-            )
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+                error_msg = (
+                    f"Circular dependency detected! {len(cycle_resources)} resources "
+                    f"are involved in dependency cycles:\n{cycle_details}"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            else:
+                # Resources filtered out by max_depth - this is expected
+                logger.debug(
+                    f"Filtered {len(graph.resources) - len(sorted_resources)} resources "
+                    f"due to max_depth={max_depth}"
+                )
 
         logger.info(
             f"Topological sort complete: {len(sorted_resources)} resources ordered"
