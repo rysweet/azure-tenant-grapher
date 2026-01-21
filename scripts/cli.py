@@ -927,6 +927,21 @@ def generate_spec(
     help="Automatically fix subnet addresses that fall outside VNet address range (Issue #333)",
 )
 @click.option(
+    "--skip-address-space-validation",
+    is_flag=True,
+    help="Skip VNet address space overlap validation (not recommended, Issue #310/GAP-012)",
+)
+@click.option(
+    "--auto-renumber-address-spaces",
+    is_flag=True,
+    help="Automatically renumber conflicting VNet address spaces (Issue #310/GAP-012)",
+)
+@click.option(
+    "--generate-address-space-conflict-report",
+    is_flag=True,
+    help="Generate detailed markdown report of VNet address space conflicts (Issue #310/GAP-012)",
+)
+@click.option(
     "--preserve-rg-structure",
     is_flag=True,
     help="Preserve source resource group structure in target deployment (creates target RGs matching source structure)",
@@ -1039,6 +1054,9 @@ async def generate_iac(
     skip_validation: bool,
     skip_subnet_validation: bool,
     auto_fix_subnets: bool,
+    skip_address_space_validation: bool,
+    auto_renumber_address_spaces: bool,
+    generate_address_space_conflict_report: bool,
     preserve_rg_structure: bool,
     naming_suffix: Optional[str],
     skip_name_validation: bool,
@@ -1115,6 +1133,9 @@ async def generate_iac(
         skip_validation=skip_validation,
         skip_subnet_validation=skip_subnet_validation,
         auto_fix_subnets=auto_fix_subnets,
+        skip_address_space_validation=skip_address_space_validation,
+        auto_renumber_address_spaces=auto_renumber_address_spaces,
+        generate_address_space_conflict_report=generate_address_space_conflict_report,
         preserve_rg_structure=preserve_rg_structure,
         domain_name=domain_name,
         naming_suffix=naming_suffix,

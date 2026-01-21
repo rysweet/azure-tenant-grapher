@@ -228,6 +228,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
     skip_name_validation: bool = False,
     skip_address_space_validation: bool = False,
     auto_renumber_address_spaces: bool = False,
+    generate_address_space_conflict_report: bool = False,
     preserve_names: bool = False,
     auto_purge_soft_deleted: bool = False,
     # Conflict detection parameters (Issue #336)
@@ -1114,6 +1115,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 auto_fix_subnets=auto_fix_subnets,
                 validate_address_spaces=not skip_address_space_validation,
                 auto_renumber_conflicts=auto_renumber_address_spaces,
+                generate_conflict_report=generate_address_space_conflict_report,
                 tenant_id=tenant_id,
                 subscription_id=subscription_id,
             )
