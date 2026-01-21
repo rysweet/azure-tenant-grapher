@@ -121,6 +121,7 @@ class TransformationEngine:
         auto_fix_subnets: bool = False,
         validate_address_spaces: bool = True,
         auto_renumber_conflicts: bool = False,
+        generate_conflict_report: bool = False,
         tenant_id: Optional[str] = None,
         subscription_id: Optional[str] = None,
     ) -> List[str]:
@@ -135,6 +136,7 @@ class TransformationEngine:
             auto_fix_subnets: Automatically fix subnet addresses outside VNet range (Issue #333)
             validate_address_spaces: Validate VNet address spaces don't overlap (Issue #334)
             auto_renumber_conflicts: Auto-renumber conflicting VNet address spaces (Issue #334)
+            generate_conflict_report: Generate detailed markdown report of VNet conflicts (Issue #310/GAP-012)
             tenant_id: Optional SOURCE Azure tenant ID for Neo4j operations
             subscription_id: Optional TARGET subscription ID for resource deployment
 
@@ -262,6 +264,13 @@ class TransformationEngine:
                     f"Auto-renumbered {len(validation_result.auto_renumbered)} VNets: "
                     f"{', '.join(validation_result.auto_renumbered)}"
                 )
+
+            # Generate conflict report if requested (Issue #310/GAP-012)
+            if generate_conflict_report and not validation_result.is_valid:
+                out_dir_path = Path(out_dir) if isinstance(out_dir, str) else out_dir
+                report_path = out_dir_path / "vnet_address_space_conflicts.md"
+                validator.generate_conflict_report(validation_result, report_path)
+                logger.info(f"📄 VNet conflict report written to: {report_path}")
 
         # Pass tenant_id and subscription_id to emitter if it supports them (use introspection)
         import inspect
