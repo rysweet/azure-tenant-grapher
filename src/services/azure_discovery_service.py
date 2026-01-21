@@ -1124,6 +1124,171 @@ class AzureDiscoveryService:
                     str(f"Failed to discover container registry webhooks: {e}")
                 )
 
+        # Discover DevTest Lab child resources (GAP-020: Issue #315)
+        devtest_labs = [
+            r for r in parent_resources if r.get("type") == "Microsoft.DevTestLab/labs"
+        ]
+        if devtest_labs:
+            logger.info(
+                f"🔍 Discovering child resources for {len(devtest_labs)} DevTest Labs..."
+            )
+            try:
+                from azure.mgmt.devtestlabs import (  # type: ignore[import-untyped]
+                    DevTestLabsClient,
+                )
+
+                devtest_client = DevTestLabsClient(self.credential, subscription_id)
+
+                for lab in devtest_labs:
+                    try:
+                        rg = lab.get("resource_group")
+                        lab_name = lab.get("name")
+
+                        if not rg or not lab_name:
+                            continue
+
+                        # Discover Virtual Machines
+                        try:
+                            vms_pager = devtest_client.virtual_machines.list(
+                                rg, lab_name
+                            )
+
+                            for vm in vms_pager:
+                                # FIX Issue #563: Include scan_id and tenant_id
+                                vm_dict = {
+                                    "id": getattr(vm, "id", None),
+                                    "name": getattr(vm, "name", None),
+                                    "type": "Microsoft.DevTestLab/labs/virtualMachines",
+                                    "location": lab.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                    "scan_id": lab.get("scan_id"),
+                                    "tenant_id": lab.get("tenant_id"),
+                                }
+                                child_resources.append(vm_dict)
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to fetch VMs for lab {lab_name}: {e}"
+                            )
+
+                        # Discover Policies
+                        try:
+                            policies_pager = devtest_client.policies.list(
+                                rg, lab_name, "default"
+                            )
+
+                            for policy in policies_pager:
+                                # FIX Issue #563: Include scan_id and tenant_id
+                                policy_dict = {
+                                    "id": getattr(policy, "id", None),
+                                    "name": getattr(policy, "name", None),
+                                    "type": "Microsoft.DevTestLab/labs/policysets/policies",
+                                    "location": lab.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                    "scan_id": lab.get("scan_id"),
+                                    "tenant_id": lab.get("tenant_id"),
+                                }
+                                child_resources.append(policy_dict)
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to fetch policies for lab {lab_name}: {e}"
+                            )
+
+                        # Discover Schedules
+                        try:
+                            schedules_pager = devtest_client.schedules.list(
+                                rg, lab_name
+                            )
+
+                            for schedule in schedules_pager:
+                                # FIX Issue #563: Include scan_id and tenant_id
+                                schedule_dict = {
+                                    "id": getattr(schedule, "id", None),
+                                    "name": getattr(schedule, "name", None),
+                                    "type": "Microsoft.DevTestLab/schedules",
+                                    "location": lab.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                    "scan_id": lab.get("scan_id"),
+                                    "tenant_id": lab.get("tenant_id"),
+                                }
+                                child_resources.append(schedule_dict)
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to fetch schedules for lab {lab_name}: {e}"
+                            )
+
+                        # Discover Virtual Networks
+                        try:
+                            vnets_pager = devtest_client.virtual_networks.list(
+                                rg, lab_name
+                            )
+
+                            for vnet in vnets_pager:
+                                # FIX Issue #563: Include scan_id and tenant_id
+                                vnet_dict = {
+                                    "id": getattr(vnet, "id", None),
+                                    "name": getattr(vnet, "name", None),
+                                    "type": "Microsoft.DevTestLab/labs/virtualnetworks",
+                                    "location": lab.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                    "scan_id": lab.get("scan_id"),
+                                    "tenant_id": lab.get("tenant_id"),
+                                }
+                                child_resources.append(vnet_dict)
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to fetch virtual networks for lab {lab_name}: {e}"
+                            )
+
+                    except Exception as e:
+                        logger.warning(f"Failed to process DevTest Lab {lab_name}: {e}")
+
+                # Log counts for each DevTest Lab child resource type
+                devtest_vm_count = len(
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.DevTestLab/labs/virtualMachines"
+                    ]
+                )
+                devtest_policy_count = len(
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.DevTestLab/labs/policysets/policies"
+                    ]
+                )
+                devtest_schedule_count = len(
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.DevTestLab/schedules"
+                    ]
+                )
+                devtest_vnet_count = len(
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.DevTestLab/labs/virtualnetworks"
+                    ]
+                )
+                logger.info(
+                    f"✅ Found {devtest_vm_count} DevTest Lab VMs, "
+                    f"{devtest_policy_count} policies, "
+                    f"{devtest_schedule_count} schedules, "
+                    f"{devtest_vnet_count} virtual networks"
+                )
+
+            except Exception as e:
+                logger.warning(f"Failed to discover DevTest Lab child resources: {e}")
+
         # Log final Phase 1.6 summary
         child_type_counts = {}
         for child in child_resources:
