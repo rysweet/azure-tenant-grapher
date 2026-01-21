@@ -17,7 +17,7 @@ from ..validation.address_space_validator import (
     AddressSpaceValidator,
 )
 from .subset import SubsetFilter, SubsetSelector
-from .traverser import TenantGraph
+from .traverser import GraphTraverser, TenantGraph
 from .validators.subnet_validator import SubnetValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
@@ -158,6 +158,27 @@ class TransformationEngine:
             transformed = self.apply(resource)
             transformed_resources.append(transformed)
         filtered_graph.resources = transformed_resources
+
+        # Apply dependency-aware topological sort (Issue #297)
+        # Sort resources by dependencies to ensure correct deployment order
+        logger.info("Applying dependency-aware topological sort...")
+        try:
+            # Create a temporary GraphTraverser for sorting (no Neo4j driver needed)
+            traverser = GraphTraverser(driver=None, transformation_rules=[])  # type: ignore[arg-type]
+            sorted_resources = traverser.topological_sort(
+                filtered_graph,
+                relationship_types=["CONTAINS", "DEPENDS_ON"],
+                max_depth=None,  # No depth limit
+            )
+            # Update graph with sorted resources
+            filtered_graph.resources = sorted_resources
+            logger.info(
+                f"Topological sort complete: {len(sorted_resources)} resources ordered by dependencies"
+            )
+        except ValueError as e:
+            # Cycle detected - log error but continue with original order
+            logger.error(f"Dependency cycle detected, using original order: {e}")
+            # Keep original order in filtered_graph.resources
 
         # Validate subnet containment (Issue #333)
         if validate_subnet_containment:

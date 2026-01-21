@@ -2,11 +2,15 @@
 
 This module provides graph traversal and data structure definitions
 for converting Neo4j tenant graphs into IaC representations.
+
+Includes dependency-aware traversal using topological sort (Kahn's algorithm)
+to ensure resources are ordered by dependencies for proper IaC deployment.
 """
 
 import logging
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, LiteralString, Optional, cast
+from typing import Any, Dict, List, LiteralString, Optional, Set, cast
 
 from neo4j import Driver
 
@@ -203,3 +207,196 @@ class GraphTraverser:
             raise
 
         return TenantGraph(resources=resources, relationships=relationships)
+
+    def topological_sort(
+        self,
+        graph: TenantGraph,
+        relationship_types: Optional[List[str]] = None,
+        max_depth: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Sort resources by dependency order using Kahn's algorithm.
+
+        Args:
+            graph: TenantGraph with resources and relationships
+            relationship_types: List of relationship types to consider (default: ["CONTAINS", "DEPENDS_ON"])
+            max_depth: Optional maximum depth for traversal (default: unlimited)
+
+        Returns:
+            List of resources sorted in dependency order (dependencies first)
+
+        Raises:
+            ValueError: If circular dependencies are detected
+        """
+        if relationship_types is None:
+            relationship_types = ["CONTAINS", "DEPENDS_ON"]
+
+        logger.info(
+            f"Performing topological sort on {len(graph.resources)} resources "
+            f"using relationship types: {relationship_types}"
+        )
+
+        # Build resource ID to resource mapping
+        resource_map = {r["id"]: r for r in graph.resources}
+
+        # Filter relationships by type
+        filtered_rels = [
+            rel for rel in graph.relationships if rel.get("type") in relationship_types
+        ]
+
+        logger.debug(
+            f"Filtered to {len(filtered_rels)} relationships from {len(graph.relationships)} total"
+        )
+
+        # Build adjacency lists and in-degree counts
+        # Graph structure: source -> [targets] (resource depends on target)
+        adj_list: Dict[str, List[str]] = defaultdict(list)
+        in_degree: Dict[str, int] = defaultdict(int)
+
+        # Initialize all resources with in_degree 0
+        for resource in graph.resources:
+            rid = resource["id"]
+            in_degree[rid] = 0
+
+        # Build graph from relationships
+        for rel in filtered_rels:
+            source = rel.get("source")
+            target = rel.get("target")
+
+            # Only consider relationships where both nodes exist
+            if source in resource_map and target in resource_map:
+                adj_list[target].append(
+                    source
+                )  # Target -> Source (reverse for topo sort)
+                in_degree[source] += 1
+
+        # Kahn's algorithm: Start with nodes that have no dependencies
+        queue: deque = deque()
+        for rid, degree in in_degree.items():
+            if degree == 0:
+                queue.append(rid)
+
+        sorted_resources: List[Dict[str, Any]] = []
+        depth_map: Dict[str, int] = {}
+
+        # Initialize depth for roots
+        for rid in queue:
+            depth_map[rid] = 0
+
+        while queue:
+            current_id = queue.popleft()
+            current_resource = resource_map[current_id]
+            current_depth = depth_map.get(current_id, 0)
+
+            # Skip if exceeds max_depth
+            if max_depth is not None and current_depth > max_depth:
+                continue
+
+            sorted_resources.append(current_resource)
+
+            # Process neighbors (resources that depend on current)
+            for neighbor_id in adj_list[current_id]:
+                in_degree[neighbor_id] -= 1
+
+                # Update depth
+                neighbor_depth = current_depth + 1
+                depth_map[neighbor_id] = max(
+                    depth_map.get(neighbor_id, 0), neighbor_depth
+                )
+
+                if in_degree[neighbor_id] == 0:
+                    queue.append(neighbor_id)
+
+        # Check for cycles
+        if len(sorted_resources) < len(graph.resources):
+            # Find resources involved in cycles
+            cycle_resources = [rid for rid, degree in in_degree.items() if degree > 0]
+            cycle_details = self._detect_cycle_details(
+                cycle_resources, adj_list, resource_map
+            )
+
+            error_msg = (
+                f"Circular dependency detected! {len(cycle_resources)} resources "
+                f"are involved in dependency cycles:\n{cycle_details}"
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        logger.info(
+            f"Topological sort complete: {len(sorted_resources)} resources ordered"
+        )
+
+        # Log depth distribution
+        depth_counts: Dict[int, int] = defaultdict(int)
+        for depth in depth_map.values():
+            depth_counts[depth] += 1
+
+        logger.info("Resource depth distribution:")
+        for depth in sorted(depth_counts.keys()):
+            logger.info(f"  Depth {depth}: {depth_counts[depth]} resources")
+
+        return sorted_resources
+
+    def _detect_cycle_details(
+        self,
+        cycle_resources: List[str],
+        adj_list: Dict[str, List[str]],
+        resource_map: Dict[str, Dict[str, Any]],
+    ) -> str:
+        """Detect and format cycle details for error messages.
+
+        Args:
+            cycle_resources: List of resource IDs involved in cycles
+            adj_list: Adjacency list (target -> [sources])
+            resource_map: Map of resource ID to resource dict
+
+        Returns:
+            Formatted string describing the cycles
+        """
+        cycle_details = []
+        visited: Set[str] = set()
+
+        for start_id in cycle_resources[:5]:  # Limit to first 5 cycles
+            if start_id in visited:
+                continue
+
+            # Try to find a cycle starting from this resource
+            path = []
+            current = start_id
+            path_set: Set[str] = set()
+
+            while current not in visited:
+                if current in path_set:
+                    # Found a cycle
+                    cycle_start_idx = path.index(current)
+                    cycle_path = path[cycle_start_idx:]
+                    cycle_path.append(current)  # Close the cycle
+
+                    # Format cycle
+                    cycle_names = []
+                    for rid in cycle_path:
+                        resource = resource_map.get(rid, {})
+                        name = resource.get("name", rid)
+                        res_type = resource.get("type", "unknown")
+                        cycle_names.append(f"{name} ({res_type})")
+
+                    cycle_details.append(" -> ".join(cycle_names))
+                    visited.update(path)
+                    break
+
+                visited.add(current)
+                path.append(current)
+                path_set.add(current)
+
+                # Move to next node in adjacency list
+                neighbors = adj_list.get(current, [])
+                if neighbors:
+                    current = neighbors[0]
+                else:
+                    break
+
+        if cycle_details:
+            return "\n".join(
+                f"  Cycle {i + 1}: {cycle}" for i, cycle in enumerate(cycle_details)
+            )
+        else:
+            return f"  {len(cycle_resources)} resources have unresolved dependencies"
