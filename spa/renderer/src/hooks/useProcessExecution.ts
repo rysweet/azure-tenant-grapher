@@ -31,9 +31,11 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     if (!currentProcessId.current) return;
 
     // Remove all listeners for this process
-    window.electronAPI.removeAllListeners('process:output');
-    window.electronAPI.removeAllListeners('process:exit');
-    window.electronAPI.removeAllListeners('process:error');
+    if (window.electronAPI?.removeAllListeners) {
+      window.electronAPI.removeAllListeners('process:output');
+      window.electronAPI.removeAllListeners('process:exit');
+      window.electronAPI.removeAllListeners('process:error');
+    }
     currentProcessId.current = null;
   }, []);
 
@@ -48,6 +50,11 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     setError(null);
 
     try {
+      // Check if electronAPI is available
+      if (!window.electronAPI?.cli?.execute) {
+        throw new Error('This feature requires the desktop app. Please run with: npm start');
+      }
+
       // Execute the command
       const result = await window.electronAPI.cli.execute(command, args);
 
@@ -108,9 +115,11 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
       };
 
       // Register listeners
-      window.electronAPI.on('process:output', handleOutput);
-      window.electronAPI.on('process:exit', handleExit);
-      window.electronAPI.on('process:error', handleError);
+      if (window.electronAPI?.on) {
+        window.electronAPI.on('process:output', handleOutput);
+        window.electronAPI.on('process:exit', handleExit);
+        window.electronAPI.on('process:error', handleError);
+      }
 
       return processId;
     } catch (err: any) {
@@ -129,7 +138,9 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     if (!currentProcessId.current) return;
 
     try {
-      await window.electronAPI.cli.cancel?.(currentProcessId.current);
+      if (window.electronAPI?.cli?.cancel) {
+        await window.electronAPI.cli.cancel(currentProcessId.current);
+      }
     } catch (err: any) {
       // Console error removed
     }

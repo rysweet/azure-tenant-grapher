@@ -149,7 +149,8 @@ const LogsTab: React.FC = () => {
               timestamp: new Date(output.timestamp),
               level: output.type === 'stderr' ? 'error' : 'info',
               source: `Process-${processId.slice(0, 8)}`,
-              message: line.trim()
+              message: line.trim(),
+              data: { pid: processId } // Add PID to log metadata for filtering
             });
           }
         });
@@ -179,6 +180,8 @@ const LogsTab: React.FC = () => {
     if (pid) {
       setPidFilter(pid);
       setFilterExpanded(true);
+      // Reset log level filters to show ALL levels when navigating via PID click
+      setSelectedLevels(['debug', 'info', 'warning', 'error']);
       // Clear the URL parameter after setting the filter
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('pid');
@@ -196,8 +199,10 @@ const LogsTab: React.FC = () => {
       const pidMatch = pidFilter === '' ||
         log.message.includes(`PID ${pidFilter}`) ||
         log.source.includes(`PID ${pidFilter}`) ||
+        log.source.includes(`Process-${pidFilter.slice(0, 8)}`) || // Match truncated processId in source
         (log.data && String(log.data).includes(`PID ${pidFilter}`)) ||
-        (log.data && typeof log.data === 'object' && 'pid' in log.data && String(log.data.pid) === pidFilter);
+        (log.data && typeof log.data === 'object' && 'pid' in log.data &&
+          (String(log.data.pid) === pidFilter || String(log.data.pid).startsWith(pidFilter) || pidFilter.startsWith(String(log.data.pid))));
       return levelMatch && searchMatch && pidMatch;
     });
 
@@ -628,10 +633,31 @@ const LogsTab: React.FC = () => {
             }}
           >
             <Typography variant="body1" gutterBottom>
-              No logs match current filters.
+              {pidFilter
+                ? `No logs found for process ID: ${pidFilter.slice(0, 12)}...`
+                : 'No logs match current filters.'}
             </Typography>
             <Typography variant="body2">
-              {allLogs.length} log{allLogs.length === 1 ? '' : 's'} available. Adjust filters to see them.
+              {pidFilter ? (
+                <>
+                  Process output may be shown in the CLI Tab terminal. System logs are displayed here.
+                  <br />
+                  <br />
+                  Debug Info:
+                  <br />
+                  - System logs: {systemLogs.length}
+                  <br />
+                  - Process logs: {processLogs.length}
+                  <br />
+                  - Total logs: {allLogs.length}
+                  <br />
+                  - PID filter: {pidFilter}
+                  <br />
+                  - WebSocket outputs count: {webSocket.outputs.size}
+                </>
+              ) : (
+                `${allLogs.length} log${allLogs.length === 1 ? '' : 's'} available. Adjust filters to see them.`
+              )}
             </Typography>
           </Box>
         ) : (
