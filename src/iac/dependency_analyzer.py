@@ -6,7 +6,9 @@ to prevent deployment failures due to missing parent resources.
 """
 
 import logging
-from dataclasses import dataclass
+import re
+from collections import defaultdict
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Set
 
 logger = logging.getLogger(__name__)
@@ -25,6 +27,23 @@ class ResourceDependency:
     def __post_init__(self):
         if self.depends_on is None:
             self.depends_on = set()
+
+
+@dataclass
+class ResourceGroupDependency:
+    """Represents a dependency relationship between two Resource Groups."""
+
+    source_rg: str
+    """Resource Group that has the dependency"""
+
+    target_rg: str
+    """Resource Group being depended upon"""
+
+    dependency_count: int
+    """Number of dependencies from source to target"""
+
+    resources: List[str] = field(default_factory=list)
+    """List of resource names with dependencies"""
 
 
 class DependencyAnalyzer:
@@ -232,3 +251,297 @@ class DependencyAnalyzer:
             logger.debug(str(f"Truncated long name to 80 chars: ...{sanitized[-20:]}"))
 
         return sanitized or "unnamed_resource"
+
+    # Cross-Resource Group Dependency Methods
+
+    def get_cross_rg_dependencies(
+        self, resources: List[Dict[str, Any]]
+    ) -> List[ResourceGroupDependency]:
+        """
+        Detect cross-Resource Group dependencies.
+
+        Identifies when resources in one RG reference resources in other RGs.
+
+        Args:
+            resources: List of resource dictionaries from Neo4j graph
+
+        Returns:
+            List of ResourceGroupDependency objects representing cross-RG deps
+        """
+        cross_rg_deps = defaultdict(lambda: {"count": 0, "resources": []})
+
+        # Build RG -> Resource mapping
+        rg_to_resources = defaultdict(list)
+        for resource in resources:
+            rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg:
+                rg_to_resources[rg].append(resource)
+
+        # Analyze each resource for cross-RG references
+        for resource in resources:
+            source_rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if not source_rg:
+                continue
+
+            # Extract Azure Resource IDs from properties
+            resource_ids = self._extract_azure_resource_ids(resource)
+
+            for resource_id in resource_ids:
+                # Parse RG from Azure Resource ID
+                target_rg = self._extract_rg_from_azure_id(resource_id)
+
+                if target_rg and target_rg != source_rg:
+                    # Found cross-RG dependency
+                    key = (source_rg, target_rg)
+                    cross_rg_deps[key]["count"] += 1
+                    if resource["name"] not in cross_rg_deps[key]["resources"]:
+                        cross_rg_deps[key]["resources"].append(resource["name"])
+
+        # Convert to ResourceGroupDependency objects
+        result = []
+        for (source_rg, target_rg), data in cross_rg_deps.items():
+            result.append(
+                ResourceGroupDependency(
+                    source_rg=source_rg,
+                    target_rg=target_rg,
+                    dependency_count=data["count"],
+                    resources=data["resources"],
+                )
+            )
+
+        return result
+
+    def _extract_azure_resource_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract Azure Resource IDs from resource properties.
+
+        Args:
+            resource: Resource dictionary
+
+        Returns:
+            Set of Azure Resource IDs found in properties
+        """
+        resource_ids = set()
+
+        # Recursively search properties for Azure Resource ID patterns
+        def extract_from_dict(obj: Any) -> None:
+            if isinstance(obj, dict):
+                for value in obj.values():
+                    extract_from_dict(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    extract_from_dict(item)
+            elif isinstance(obj, str):
+                # Match Azure Resource ID pattern
+                # Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/{provider}/{type}/{name}
+                if obj.startswith("/subscriptions/") and "/resourceGroups/" in obj:
+                    resource_ids.add(obj)
+
+        properties = resource.get("properties", {})
+        extract_from_dict(properties)
+
+        return resource_ids
+
+    def _extract_rg_from_azure_id(self, resource_id: str) -> str:
+        """
+        Extract Resource Group name from Azure Resource ID.
+
+        Args:
+            resource_id: Azure Resource ID string
+
+        Returns:
+            Resource Group name or empty string if not found
+        """
+        # Pattern: /subscriptions/{sub}/resourceGroups/{rg}/...
+        match = re.search(r"/resourceGroups/([^/]+)", resource_id, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return ""
+
+    def get_rg_deployment_order(self, resources: List[Dict[str, Any]]) -> List[str]:
+        """
+        Determine deployment order for Resource Groups based on dependencies.
+
+        Uses topological sort to ensure RGs are deployed in correct order.
+
+        Args:
+            resources: List of resource dictionaries
+
+        Returns:
+            Ordered list of Resource Group names (dependencies first)
+
+        Raises:
+            ValueError: If circular dependency detected
+        """
+        cross_rg_deps = self.get_cross_rg_dependencies(resources)
+
+        # Build adjacency list: RG -> Set of RGs it depends on
+        dependencies = defaultdict(set)
+        all_rgs = set()
+
+        # Add all RGs from resources
+        for resource in resources:
+            rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg:
+                all_rgs.add(rg)
+                if rg not in dependencies:
+                    dependencies[rg] = set()
+
+        # Add cross-RG dependencies
+        for dep in cross_rg_deps:
+            dependencies[dep.source_rg].add(dep.target_rg)
+
+        # Topological sort (Kahn's algorithm)
+        # in_degree tracks how many RGs each RG depends on
+        in_degree = {rg: len(dependencies[rg]) for rg in all_rgs}
+
+        # Start with RGs that have no dependencies
+        queue = [rg for rg in all_rgs if in_degree[rg] == 0]
+        result = []
+
+        while queue:
+            # Sort for deterministic output
+            queue.sort()
+            current = queue.pop(0)
+            result.append(current)
+
+            # For each RG that depends on current, decrement its in_degree
+            for rg in all_rgs:
+                if current in dependencies[rg]:
+                    in_degree[rg] -= 1
+                    if in_degree[rg] == 0:
+                        queue.append(rg)
+
+        # Check for cycles
+        if len(result) != len(all_rgs):
+            raise ValueError(
+                "Circular dependency detected in Resource Group dependencies. "
+                "Cannot determine deployment order."
+            )
+
+        return result
+
+    def check_broken_references(
+        self, current_resources: List[Dict[str, Any]], proposed_rg_structure: List[str]
+    ) -> List[str]:
+        """
+        Check if proposed RG structure would break cross-RG references.
+
+        Args:
+            current_resources: Current resource configuration
+            proposed_rg_structure: List of RG names in proposed structure
+
+        Returns:
+            List of warning messages for broken references
+        """
+        warnings = []
+        cross_rg_deps = self.get_cross_rg_dependencies(current_resources)
+
+        for dep in cross_rg_deps:
+            # Check if target RG would be removed
+            if dep.target_rg not in proposed_rg_structure:
+                warnings.append(
+                    f"Warning: Removing Resource Group '{dep.target_rg}' would break "
+                    f"{dep.dependency_count} reference(s) from '{dep.source_rg}' "
+                    f"(resources: {', '.join(dep.resources)})"
+                )
+
+        return warnings
+
+    def check_broken_references_on_move(
+        self,
+        current_resources: List[Dict[str, Any]],
+        proposed_resources: List[Dict[str, Any]],
+    ) -> List[str]:
+        """
+        Check if moving resources would break cross-RG references.
+
+        Args:
+            current_resources: Current resource configuration
+            proposed_resources: Proposed resource configuration (with moves)
+
+        Returns:
+            List of warning messages for broken references
+        """
+        warnings = []
+
+        # Build current RG mapping: resource_name -> RG
+        current_rg_map = {}
+        for resource in current_resources:
+            rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg:
+                current_rg_map[resource["name"]] = rg
+
+        # Build proposed RG mapping
+        proposed_rg_map = {}
+        for resource in proposed_resources:
+            rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg:
+                proposed_rg_map[resource["name"]] = rg
+
+        # Analyze resources for cross-RG references
+        for resource in current_resources:
+            source_rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if not source_rg:
+                continue
+
+            resource_ids = self._extract_azure_resource_ids(resource)
+
+            for resource_id in resource_ids:
+                current_target_rg = self._extract_rg_from_azure_id(resource_id)
+
+                # Find resource name from ID (simple extraction)
+                resource_name_match = re.search(r"/([^/]+)$", resource_id)
+                if not resource_name_match:
+                    continue
+                target_resource_name = resource_name_match.group(1)
+
+                # Check if target resource moved
+                if target_resource_name in proposed_rg_map:
+                    proposed_target_rg = proposed_rg_map[target_resource_name]
+
+                    if current_target_rg != proposed_target_rg:
+                        warnings.append(
+                            f"Warning: Moving resource '{target_resource_name}' from "
+                            f"'{current_target_rg}' to '{proposed_target_rg}' would break "
+                            f"reference from '{resource['name']}' in '{source_rg}'"
+                        )
+
+        return warnings
+
+    def group_by_cross_rg_deps(
+        self, resources: List[Dict[str, Any]]
+    ) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Group Resource Groups by their cross-RG dependency relationships.
+
+        Args:
+            resources: List of resource dictionaries
+
+        Returns:
+            Dict mapping RG name to {'dependencies': [...], 'dependents': [...]}
+        """
+        result = defaultdict(lambda: {"dependencies": [], "dependents": []})
+
+        cross_rg_deps = self.get_cross_rg_dependencies(resources)
+
+        # Get all RGs
+        all_rgs = set()
+        for resource in resources:
+            rg = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg:
+                all_rgs.add(rg)
+
+        # Initialize all RGs
+        for rg in all_rgs:
+            if rg not in result:
+                result[rg] = {"dependencies": [], "dependents": []}
+
+        # Populate dependencies and dependents
+        for dep in cross_rg_deps:
+            if dep.target_rg not in result[dep.source_rg]["dependencies"]:
+                result[dep.source_rg]["dependencies"].append(dep.target_rg)
+            if dep.source_rg not in result[dep.target_rg]["dependents"]:
+                result[dep.target_rg]["dependents"].append(dep.source_rg)
+
+        return dict(result)
