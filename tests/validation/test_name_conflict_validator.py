@@ -446,3 +446,199 @@ class TestNameConflictValidatorIntegration:
         # Should report conflicts but not fix them
         assert result.has_conflicts
         assert not result.has_fixes
+
+
+class TestNameConflictValidatorEnhancements:
+    """Tests for GAP-014 enhancements - Issue #312."""
+
+    def test_all_globally_unique_types_included(self):
+        """Test that all 36 globally unique resource types are included."""
+        from src.validation.name_conflict_validator import GLOBALLY_UNIQUE_TYPES
+
+        # Should have all 36 resource types from research
+        assert len(GLOBALLY_UNIQUE_TYPES) == 36
+
+        # Critical types
+        assert "Microsoft.Storage/storageAccounts" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.KeyVault/vaults" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.DBforPostgreSQL/servers" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.DBforMySQL/servers" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.DBforMariaDB/servers" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.Cache/redis" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.DocumentDB/databaseAccounts" in GLOBALLY_UNIQUE_TYPES
+
+        # Integration/Messaging
+        assert "Microsoft.EventGrid/domains" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.SignalRService/signalR" in GLOBALLY_UNIQUE_TYPES
+
+        # Networking
+        assert "Microsoft.Network/frontDoors" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.Network/trafficManagerProfiles" in GLOBALLY_UNIQUE_TYPES
+
+        # Analytics
+        assert "Microsoft.DataFactory/factories" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.Synapse/workspaces" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.Databricks/workspaces" in GLOBALLY_UNIQUE_TYPES
+
+        # AI/ML
+        assert "Microsoft.Devices/IotHubs" in GLOBALLY_UNIQUE_TYPES
+        assert "Microsoft.IoTCentral/IoTApps" in GLOBALLY_UNIQUE_TYPES
+
+    def test_expanded_naming_rules(self):
+        """Test that naming rules cover critical resource types."""
+        from src.validation.name_conflict_validator import NAMING_RULES
+
+        # Should have rules for critical types
+        assert "Microsoft.Storage/storageAccounts" in NAMING_RULES
+        assert "Microsoft.DocumentDB/databaseAccounts" in NAMING_RULES
+        assert "Microsoft.DBforPostgreSQL/servers" in NAMING_RULES
+        assert "Microsoft.DBforMySQL/servers" in NAMING_RULES
+        assert "Microsoft.Sql/servers" in NAMING_RULES
+        assert "Microsoft.Search/searchServices" in NAMING_RULES
+        assert "Microsoft.DataFactory/factories" in NAMING_RULES
+
+        # Verify max_length values are sensible
+        assert NAMING_RULES["Microsoft.Storage/storageAccounts"]["max_length"] == 24
+        assert NAMING_RULES["Microsoft.KeyVault/vaults"]["max_length"] == 24
+        assert NAMING_RULES["Microsoft.Sql/servers"]["max_length"] == 63
+
+    def test_custom_naming_pattern(self):
+        """Test custom naming pattern support."""
+        validator = NameConflictValidator(
+            subscription_id="fake-sub-id",
+            custom_naming_pattern="{name}-{random}",
+        )
+
+        # Generate fixed name with custom pattern
+        new_name = validator._generate_fixed_name("testname", "Microsoft.Web/sites")
+
+        # Should contain original name and random suffix
+        assert new_name.startswith("testname-")
+        assert len(new_name) > len("testname-")
+
+    def test_random_suffix_mode(self):
+        """Test automatic random suffix generation."""
+        validator = NameConflictValidator(
+            subscription_id="fake-sub-id",
+            use_random_suffix=True,
+        )
+
+        # Generate fixed name with random suffix
+        new_name = validator._generate_fixed_name("testname", "Microsoft.Web/sites")
+
+        # Should contain original name and random suffix
+        assert new_name.startswith("testname-")
+        # Random suffix is 6 hex chars
+        suffix = new_name.split("-")[-1]
+        assert len(suffix) == 6
+
+    def test_naming_rules_postgresql(self):
+        """Test naming rules for PostgreSQL servers."""
+        validator = NameConflictValidator()
+
+        # Valid PostgreSQL name
+        result = validator._check_naming_rules(
+            "postgres-server-01", "Microsoft.DBforPostgreSQL/servers"
+        )
+        assert result is None
+
+        # Invalid - too long
+        long_name = "a" * 64
+        result = validator._check_naming_rules(
+            long_name, "Microsoft.DBforPostgreSQL/servers"
+        )
+        assert result is not None
+        assert "max length" in result.lower()
+
+    def test_naming_rules_cosmos_db(self):
+        """Test naming rules for Cosmos DB."""
+        validator = NameConflictValidator()
+
+        # Valid Cosmos DB name
+        result = validator._check_naming_rules(
+            "cosmos-db-account", "Microsoft.DocumentDB/databaseAccounts"
+        )
+        assert result is None
+
+        # Invalid - too long (max 44)
+        long_name = "a" * 45
+        result = validator._check_naming_rules(
+            long_name, "Microsoft.DocumentDB/databaseAccounts"
+        )
+        assert result is not None
+
+    def test_naming_rules_redis(self):
+        """Test naming rules for Redis Cache."""
+        validator = NameConflictValidator()
+
+        # Valid Redis name
+        result = validator._check_naming_rules(
+            "redis-cache-01", "Microsoft.Cache/redis"
+        )
+        assert result is None
+
+    def test_container_registry_hyphen_removal(self):
+        """Test that ACR names have hyphens removed."""
+        validator = NameConflictValidator(naming_suffix="-test")
+
+        new_name = validator._generate_fixed_name(
+            "myregistry", "Microsoft.ContainerRegistry/registries"
+        )
+
+        # Should not contain hyphens
+        assert "-" not in new_name
+
+    def test_storage_account_hyphen_removal(self):
+        """Test that storage account names have hyphens removed."""
+        validator = NameConflictValidator(naming_suffix="-test")
+
+        new_name = validator._generate_fixed_name(
+            "mystorage", "Microsoft.Storage/storageAccounts"
+        )
+
+        # Should be lowercase and no hyphens
+        assert "-" not in new_name
+        assert new_name == new_name.lower()
+
+    def test_custom_pattern_with_timestamp(self):
+        """Test custom pattern with timestamp placeholder."""
+        validator = NameConflictValidator(
+            subscription_id="fake-sub-id",
+            custom_naming_pattern="{name}-{timestamp}",
+        )
+
+        new_name = validator._generate_fixed_name("testname", "Microsoft.Web/sites")
+
+        # Should contain timestamp (YYYYMMDD format)
+        assert "testname-" in new_name
+        # Extract timestamp part
+        timestamp_part = new_name.split("-")[-1]
+        assert len(timestamp_part) == 8  # YYYYMMDD
+
+    def test_multiple_new_resource_types_detection(self):
+        """Test conflict detection for newly added resource types."""
+        validator = NameConflictValidator(subscription_id="fake-sub-id")
+        config = {
+            "resources": [
+                {
+                    "type": "Microsoft.Devices/IotHubs",
+                    "name": "iot-hub-test",
+                },
+                {
+                    "type": "Microsoft.DataFactory/factories",
+                    "name": "data-factory-test",
+                },
+                {
+                    "type": "Microsoft.Synapse/workspaces",
+                    "name": "synapse-ws-test",
+                },
+            ]
+        }
+
+        resources = validator._extract_terraform_resources(config)
+
+        # Should extract all resources
+        assert len(resources) == 3
+        assert resources[0]["type"] == "Microsoft.Devices/IotHubs"
+        assert resources[1]["type"] == "Microsoft.DataFactory/factories"
+        assert resources[2]["type"] == "Microsoft.Synapse/workspaces"

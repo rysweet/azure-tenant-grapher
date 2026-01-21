@@ -2,11 +2,13 @@
 
 This module validates Azure resource names against:
 1. Existing resources in the target subscription
-2. Globally unique name requirements (storage accounts, key vaults, etc.)
+2. Globally unique name requirements (36 resource types across all Azure)
 3. Azure naming rules and conventions
 4. Soft-deleted resources that would block deployment
 
-Auto-fix mode appends naming_suffix to conflicting names.
+Auto-fix mode appends naming_suffix to conflicting names or applies custom patterns.
+
+Addresses GAP-014: Global Resource Name Conflict Detection (Issue #312)
 """
 
 import asyncio
@@ -33,41 +35,190 @@ logger = logging.getLogger(__name__)
 
 
 # Azure globally unique resource types
+# These resource types have DNS-based public endpoints and require globally unique names
+# across ALL Azure subscriptions worldwide. Based on research from commit 3a66f1d.
 GLOBALLY_UNIQUE_TYPES = {
+    # CRITICAL Priority (10 types) - Common in deployments
     "Microsoft.Storage/storageAccounts",
     "Microsoft.KeyVault/vaults",
     "Microsoft.Web/sites",  # App Services
-    "Microsoft.ApiManagement/service",
+    "Microsoft.Sql/servers",
     "Microsoft.ContainerRegistry/registries",
-    "Microsoft.Cdn/profiles",
-    "Microsoft.EventHub/namespaces",
-    "Microsoft.ServiceBus/namespaces",
     "Microsoft.DBforPostgreSQL/servers",
     "Microsoft.DBforMySQL/servers",
-    "Microsoft.Sql/servers",
+    "Microsoft.DBforMariaDB/servers",
+    "Microsoft.Cache/redis",  # Redis Cache
+    "Microsoft.DocumentDB/databaseAccounts",  # Cosmos DB
+    # Integration/Messaging (4 types)
+    "Microsoft.ServiceBus/namespaces",
+    "Microsoft.EventHub/namespaces",
+    "Microsoft.EventGrid/domains",
+    "Microsoft.SignalRService/signalR",
+    # API/Networking (5 types)
+    "Microsoft.ApiManagement/service",
+    "Microsoft.Cdn/profiles",
+    "Microsoft.Network/frontDoors",
+    "Microsoft.Network/trafficManagerProfiles",
+    "Microsoft.AppConfiguration/configurationStores",
+    # Data/Analytics (8 types)
+    "Microsoft.DataFactory/factories",
+    "Microsoft.Synapse/workspaces",
+    "Microsoft.Databricks/workspaces",
+    "Microsoft.HDInsight/clusters",
+    "Microsoft.Search/searchServices",
+    "Microsoft.DataLakeStore/accounts",
+    "Microsoft.DataLakeAnalytics/accounts",
+    "Microsoft.Kusto/clusters",
+    # AI/ML/IoT (4 types)
+    "Microsoft.CognitiveServices/accounts",
+    "Microsoft.MachineLearningServices/workspaces",
+    "Microsoft.Devices/IotHubs",
+    "Microsoft.IoTCentral/IoTApps",
+    # Specialized (5 types)
+    "Microsoft.BotService/botServices",
+    "Microsoft.Communication/communicationServices",
+    "Microsoft.LoadTestService/loadTests",
+    "Microsoft.AppPlatform/Spring",  # Spring Cloud
+    "Microsoft.Web/staticSites",  # Static Web Apps
 }
 
 # Azure naming rules (simplified - covers most common cases)
+# Based on official Azure naming conventions and research from commit 3a66f1d
 NAMING_RULES = {
+    # Storage and Data
     "Microsoft.Storage/storageAccounts": {
         "pattern": r"^[a-z0-9]{3,24}$",
-        "description": "3-24 lowercase letters and numbers",
+        "description": "3-24 lowercase letters and numbers (no hyphens)",
         "max_length": 24,
     },
+    "Microsoft.DocumentDB/databaseAccounts": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{1,42}[a-z0-9]$",
+        "description": "3-44 lowercase alphanumeric and hyphens",
+        "max_length": 44,
+    },
+    # Security
     "Microsoft.KeyVault/vaults": {
         "pattern": r"^[a-zA-Z][a-zA-Z0-9-]{1,22}[a-zA-Z0-9]$",
         "description": "3-24 alphanumeric and hyphens, start with letter",
         "max_length": 24,
     },
+    # Web and App Services
     "Microsoft.Web/sites": {
         "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,58}[a-zA-Z0-9]$",
         "description": "2-60 alphanumeric and hyphens",
         "max_length": 60,
     },
+    "Microsoft.Web/staticSites": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}[a-zA-Z0-9]$",
+        "description": "1-40 alphanumeric and hyphens",
+        "max_length": 40,
+    },
+    # Containers
     "Microsoft.ContainerRegistry/registries": {
         "pattern": r"^[a-zA-Z0-9]{5,50}$",
-        "description": "5-50 alphanumeric characters",
+        "description": "5-50 alphanumeric characters (no hyphens)",
         "max_length": 50,
+    },
+    # Databases
+    "Microsoft.Sql/servers": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+        "description": "1-63 lowercase alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.DBforPostgreSQL/servers": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+        "description": "3-63 lowercase alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.DBforMySQL/servers": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+        "description": "3-63 lowercase alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.DBforMariaDB/servers": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+        "description": "3-63 lowercase alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    # Messaging
+    "Microsoft.ServiceBus/namespaces": {
+        "pattern": r"^[a-zA-Z][a-zA-Z0-9-]{4,48}[a-zA-Z0-9]$",
+        "description": "6-50 alphanumeric and hyphens, start with letter",
+        "max_length": 50,
+    },
+    "Microsoft.EventHub/namespaces": {
+        "pattern": r"^[a-zA-Z][a-zA-Z0-9-]{4,48}[a-zA-Z0-9]$",
+        "description": "6-50 alphanumeric and hyphens, start with letter",
+        "max_length": 50,
+    },
+    "Microsoft.EventGrid/domains": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{1,48}[a-zA-Z0-9]$",
+        "description": "3-50 alphanumeric and hyphens",
+        "max_length": 50,
+    },
+    # API and Networking
+    "Microsoft.ApiManagement/service": {
+        "pattern": r"^[a-zA-Z][a-zA-Z0-9-]{0,48}[a-zA-Z0-9]$",
+        "description": "1-50 alphanumeric and hyphens, start with letter",
+        "max_length": 50,
+    },
+    "Microsoft.Network/frontDoors": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{3,62}[a-zA-Z0-9]$",
+        "description": "5-64 alphanumeric and hyphens",
+        "max_length": 64,
+    },
+    "Microsoft.Network/trafficManagerProfiles": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$",
+        "description": "1-63 alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.AppConfiguration/configurationStores": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{3,48}[a-zA-Z0-9]$",
+        "description": "5-50 alphanumeric and hyphens",
+        "max_length": 50,
+    },
+    # Cache and Search
+    "Microsoft.Cache/redis": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$",
+        "description": "1-63 alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.Search/searchServices": {
+        "pattern": r"^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$",
+        "description": "2-60 lowercase alphanumeric and hyphens",
+        "max_length": 60,
+    },
+    # AI/ML
+    "Microsoft.CognitiveServices/accounts": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9]$",
+        "description": "2-64 alphanumeric and hyphens",
+        "max_length": 64,
+    },
+    "Microsoft.MachineLearningServices/workspaces": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,31}[a-zA-Z0-9]$",
+        "description": "3-33 alphanumeric and hyphens",
+        "max_length": 33,
+    },
+    "Microsoft.Devices/IotHubs": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{1,48}[a-zA-Z0-9]$",
+        "description": "3-50 alphanumeric and hyphens",
+        "max_length": 50,
+    },
+    # Analytics
+    "Microsoft.DataFactory/factories": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$",
+        "description": "3-63 alphanumeric and hyphens",
+        "max_length": 63,
+    },
+    "Microsoft.Synapse/workspaces": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,48}[a-zA-Z0-9]$",
+        "description": "1-50 alphanumeric and hyphens",
+        "max_length": 50,
+    },
+    "Microsoft.Databricks/workspaces": {
+        "pattern": r"^[a-zA-Z0-9][a-zA-Z0-9-_]{0,28}[a-zA-Z0-9]$",
+        "description": "3-30 alphanumeric, hyphens, and underscores",
+        "max_length": 30,
     },
 }
 
@@ -149,6 +300,8 @@ class NameConflictValidator:
         preserve_names: bool = False,
         auto_purge_soft_deleted: bool = False,
         credential: Optional[DefaultAzureCredential] = None,
+        custom_naming_pattern: Optional[str] = None,
+        use_random_suffix: bool = False,
     ):
         """Initialize name conflict validator.
 
@@ -158,6 +311,9 @@ class NameConflictValidator:
             preserve_names: If True, don't auto-fix conflicts (just report them)
             auto_purge_soft_deleted: If True, purge soft-deleted resources
             credential: Azure credential (defaults to DefaultAzureCredential)
+            custom_naming_pattern: Custom pattern for name generation (e.g., "{name}-{random}")
+                Supports placeholders: {name}, {random}, {timestamp}, {suffix}
+            use_random_suffix: If True, append random suffix instead of fixed suffix
         """
         self.subscription_id = subscription_id
         self.naming_suffix = naming_suffix or "-copy"
@@ -166,6 +322,8 @@ class NameConflictValidator:
         self.credential = credential or (
             DefaultAzureCredential() if subscription_id else None
         )
+        self.custom_naming_pattern = custom_naming_pattern
+        self.use_random_suffix = use_random_suffix
 
         # Lazy-initialized clients
         self._resource_client: Optional[ResourceManagementClient] = None
@@ -636,15 +794,18 @@ class NameConflictValidator:
         return updated_config
 
     def _generate_fixed_name(self, original_name: str, resource_type: str) -> str:
-        """Generate fixed name by appending suffix.
+        """Generate fixed name by appending suffix or applying custom pattern.
 
         Args:
             original_name: Original resource name
             resource_type: Azure resource type
 
         Returns:
-            Fixed name with suffix
+            Fixed name with suffix or custom pattern applied
         """
+        import secrets
+        from datetime import datetime
+
         # Get max length for resource type
         max_length: Optional[int] = None
         if resource_type in NAMING_RULES:
@@ -652,18 +813,45 @@ class NameConflictValidator:
             if isinstance(max_length_value, int):
                 max_length = max_length_value
 
-        # Append suffix
-        new_name = f"{original_name}{self.naming_suffix}"
+        # Apply custom naming pattern if provided
+        if self.custom_naming_pattern:
+            # Generate random suffix (6 chars alphanumeric)
+            random_suffix = secrets.token_hex(3)  # 6 hex chars
+            timestamp = datetime.now().strftime("%Y%m%d")
+
+            # Apply pattern substitutions
+            new_name = self.custom_naming_pattern.format(
+                name=original_name,
+                random=random_suffix,
+                timestamp=timestamp,
+                suffix=self.naming_suffix.lstrip("-"),
+            )
+        # Use random suffix if enabled
+        elif self.use_random_suffix:
+            # Generate 6-character random alphanumeric suffix
+            random_suffix = secrets.token_hex(3)
+            new_name = f"{original_name}-{random_suffix}"
+        # Default: fixed suffix
+        else:
+            new_name = f"{original_name}{self.naming_suffix}"
 
         # Truncate if needed
         if max_length and len(new_name) > max_length:
             # Remove enough chars from original name to fit suffix
-            trim_length = max_length - len(self.naming_suffix)
-            new_name = f"{original_name[:trim_length]}{self.naming_suffix}"
+            if self.custom_naming_pattern or self.use_random_suffix:
+                # For random/custom patterns, keep more space for the suffix
+                trim_length = max_length - 7  # Reserve 7 chars for suffix
+                suffix_part = new_name[trim_length:]
+                new_name = f"{original_name[:trim_length]}{suffix_part}"
+            else:
+                trim_length = max_length - len(self.naming_suffix)
+                new_name = f"{original_name[:trim_length]}{self.naming_suffix}"
 
         # Ensure naming rules are still met (lowercase for storage, etc.)
         if resource_type == "Microsoft.Storage/storageAccounts":
             new_name = new_name.lower().replace("-", "")
+        elif resource_type == "Microsoft.ContainerRegistry/registries":
+            new_name = new_name.replace("-", "")
 
         return new_name
 
