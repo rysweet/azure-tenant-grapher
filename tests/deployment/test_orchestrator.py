@@ -455,3 +455,160 @@ class TestDeployIaC:
         assert result["status"] == "deployed"
         assert result["format"] == "arm"
         mock_deploy_arm.assert_called_once()
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_subscription_tenant_validation_success(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test subscription-tenant validation when subscription belongs to target tenant."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock sequence:
+        # 1. Current tenant check (different tenant)
+        # 2. Subscription validation (belongs to target tenant)
+        # 3. Subscription switch (success)
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(returncode=0, stdout="test-tenant\n"),  # Subscription validation
+            MagicMock(returncode=0, stdout=""),  # Subscription switch
+        ]
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            subscription_id="test-sub-id",
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        assert mock_run.call_count == 3
+        # Verify subscription validation was called
+        validation_call = mock_run.call_args_list[1][0][0]
+        assert "subscription" in validation_call
+        assert "show" in validation_call
+        assert "test-sub-id" in validation_call
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_subscription_tenant_mismatch(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test subscription-tenant validation when subscription belongs to different tenant."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock sequence:
+        # 1. Current tenant check (different tenant)
+        # 2. Subscription validation (belongs to DIFFERENT tenant)
+        # 3. Skip subscription switch, go directly to login
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(
+                returncode=0, stdout="wrong-tenant-id\n"
+            ),  # Subscription validation
+            MagicMock(returncode=0, stdout=""),  # Login (fallback)
+        ]
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            subscription_id="test-sub-id",
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        assert mock_run.call_count == 3
+        # Verify az login was called (not az account set)
+        login_call = mock_run.call_args_list[2][0][0]
+        assert "login" in login_call
+        assert "test-tenant" in login_call
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_subscription_validation_failure(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test subscription-tenant validation when validation command fails."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock sequence:
+        # 1. Current tenant check (different tenant)
+        # 2. Subscription validation FAILS (subscription not found)
+        # 3. Attempt subscription switch anyway (falls back to login)
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(
+                returncode=1, stderr="Subscription not found"
+            ),  # Validation fails
+            MagicMock(returncode=1, stderr="Invalid subscription"),  # Switch fails
+            MagicMock(returncode=0, stdout=""),  # Login (fallback)
+        ]
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            subscription_id="test-sub-id",
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        # Should attempt validation, switch (fails), then login
+        assert mock_run.call_count == 4
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_already_authenticated_to_target_tenant(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test deploy_iac when already authenticated to target tenant."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock: already authenticated to target tenant
+        mock_run.return_value = MagicMock(returncode=0, stdout="test-tenant\n")
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            subscription_id="test-sub-id",
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        # Only one call: current tenant check (no validation, no switch, no login)
+        assert mock_run.call_count == 1

@@ -103,13 +103,24 @@ def deploy_iac(
     if current_tenant == target_tenant_id:
         logger.info(str(f"Already authenticated to target tenant {target_tenant_id}"))
     elif subscription_id:
-        # Try switching subscription (works for multi-tenant users)
+        # Validate subscription belongs to target tenant before switching
         logger.info(
-            f"Switching to subscription {subscription_id} in tenant {target_tenant_id}..."
+            f"Validating subscription {subscription_id} belongs to tenant {target_tenant_id}..."
         )
         try:
-            switch_result = subprocess.run(
-                ["az", "account", "set", "--subscription", subscription_id],
+            sub_check_result = subprocess.run(
+                [
+                    "az",
+                    "account",
+                    "subscription",
+                    "show",
+                    "--subscription-id",
+                    subscription_id,
+                    "--query",
+                    "tenantId",
+                    "-o",
+                    "tsv",
+                ],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -117,30 +128,147 @@ def deploy_iac(
             )
         except subprocess.TimeoutExpired as e:
             log_timeout_event(
-                "az_account_set", Timeouts.AZ_CLI_QUERY, ["az", "account", "set"]
+                "az_subscription_check",
+                Timeouts.AZ_CLI_QUERY,
+                ["az", "account", "subscription", "show"],
             )
             raise RuntimeError(
-                f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+                f"Subscription validation timed out after {Timeouts.AZ_CLI_QUERY} seconds"
             ) from e
 
-        if switch_result.returncode != 0:
-            logger.warning(str(f"Subscription switch failed: {switch_result.stderr}"))
-            logger.info("Attempting interactive login...")
+        sub_tenant = None
+        if sub_check_result.returncode == 0:
+            sub_tenant = sub_check_result.stdout.strip()
+            if sub_tenant != target_tenant_id:
+                logger.warning(
+                    f"Subscription {subscription_id} belongs to tenant {sub_tenant}, "
+                    f"not target tenant {target_tenant_id}. Skipping subscription switch."
+                )
+                # Skip subscription switch, go directly to login
+                logger.info("Attempting interactive login...")
+                try:
+                    auth_result = subprocess.run(
+                        [
+                            "az",
+                            "login",
+                            "--tenant",
+                            target_tenant_id,
+                            "--output",
+                            "none",
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=Timeouts.STANDARD,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
+                    raise RuntimeError(
+                        f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                    ) from e
+                if auth_result.returncode != 0:
+                    raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+            else:
+                # Subscription belongs to target tenant, proceed with switch
+                logger.info(
+                    f"Subscription validated. Switching to subscription {subscription_id}..."
+                )
+                try:
+                    switch_result = subprocess.run(
+                        ["az", "account", "set", "--subscription", subscription_id],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=Timeouts.AZ_CLI_QUERY,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    log_timeout_event(
+                        "az_account_set",
+                        Timeouts.AZ_CLI_QUERY,
+                        ["az", "account", "set"],
+                    )
+                    raise RuntimeError(
+                        f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+                    ) from e
+
+                if switch_result.returncode != 0:
+                    logger.warning(
+                        str(f"Subscription switch failed: {switch_result.stderr}")
+                    )
+                    logger.info("Attempting interactive login...")
+                    try:
+                        auth_result = subprocess.run(
+                            [
+                                "az",
+                                "login",
+                                "--tenant",
+                                target_tenant_id,
+                                "--output",
+                                "none",
+                            ],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=Timeouts.STANDARD,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        log_timeout_event(
+                            "az_login", Timeouts.STANDARD, ["az", "login"]
+                        )
+                        raise RuntimeError(
+                            f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                        ) from e
+                    if auth_result.returncode != 0:
+                        raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+        else:
+            # Cannot validate subscription, log warning and attempt switch anyway
+            logger.warning(
+                f"Cannot validate subscription {subscription_id}: {sub_check_result.stderr}. "
+                f"Attempting subscription switch anyway..."
+            )
             try:
-                auth_result = subprocess.run(
-                    ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+                switch_result = subprocess.run(
+                    ["az", "account", "set", "--subscription", subscription_id],
                     capture_output=True,
                     text=True,
                     check=False,
-                    timeout=Timeouts.STANDARD,
+                    timeout=Timeouts.AZ_CLI_QUERY,
                 )
             except subprocess.TimeoutExpired as e:
-                log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
+                log_timeout_event(
+                    "az_account_set", Timeouts.AZ_CLI_QUERY, ["az", "account", "set"]
+                )
                 raise RuntimeError(
-                    f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                    f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
                 ) from e
-            if auth_result.returncode != 0:
-                raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+
+            if switch_result.returncode != 0:
+                logger.warning(
+                    str(f"Subscription switch failed: {switch_result.stderr}")
+                )
+                logger.info("Attempting interactive login...")
+                try:
+                    auth_result = subprocess.run(
+                        [
+                            "az",
+                            "login",
+                            "--tenant",
+                            target_tenant_id,
+                            "--output",
+                            "none",
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=Timeouts.STANDARD,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
+                    raise RuntimeError(
+                        f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                    ) from e
+                if auth_result.returncode != 0:
+                    raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
     else:
         # No subscription ID provided, attempt login
         logger.info(str(f"Authenticating to tenant {target_tenant_id}..."))
