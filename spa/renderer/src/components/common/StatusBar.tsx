@@ -45,9 +45,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
       return true;
     });
 
-  // Handle PID chip click - navigate to Logs tab with PID filter
-  const handlePidClick = (pid: number) => {
-    navigate(`/logs?pid=${pid}`);
+  // Handle PID chip click - navigate to Logs tab with process ID filter
+  const handlePidClick = (processId: string) => {
+    navigate(`/logs?pid=${processId}`);
   };
 
   // Fetch active processes and Neo4j status periodically
@@ -145,11 +145,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                   label={op.type}
                   color="info"
                   variant="outlined"
-                  onClick={op.pid ? () => handlePidClick(op.pid!) : undefined}
+                  onClick={() => handlePidClick(op.id)}
                   sx={{
                     fontSize: '0.7rem',
                     height: 20,
-                    cursor: op.pid ? 'pointer' : 'default'
+                    cursor: 'pointer'
                   }}
                 />
               </Tooltip>
@@ -174,7 +174,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                     label={`PID ${process.pid}`}
                     color="warning"
                     variant="outlined"
-                    onClick={() => handlePidClick(process.pid!)}
+                    onClick={() => handlePidClick(process.id)}
                     sx={{
                       fontSize: '0.7rem',
                       height: 20,

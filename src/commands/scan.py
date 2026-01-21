@@ -9,6 +9,7 @@ Issue #482: CLI Modularization
 Issue #722: Core scan logic migrated from cli_commands.py
 """
 
+import asyncio
 import logging
 import os
 import sys
@@ -18,8 +19,8 @@ import click
 import structlog  # type: ignore[import-untyped]
 
 from src.azure_tenant_grapher import AzureTenantGrapher
-from src.cli_dashboard_manager import CLIDashboardManager
-from src.commands.base import async_command
+from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
+from src.commands.base import DashboardLogHandler, async_command
 from src.config_manager import (
     create_config_from_env,
     setup_logging,

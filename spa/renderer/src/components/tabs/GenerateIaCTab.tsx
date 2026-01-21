@@ -103,6 +103,12 @@ const GenerateIaCTab: React.FC = () => {
       return;
     }
 
+    // Check if electronAPI is available
+    if (!window.electronAPI?.cli) {
+      setError('This feature requires the desktop app. Please run with: npm start');
+      return;
+    }
+
     setError(null);
     setIsGenerating(true);
     setTerminalOutput('');
@@ -217,8 +223,14 @@ const GenerateIaCTab: React.FC = () => {
   const handleOpenFolder = async () => {
     if (!outputPath) return;
 
+    // Check if electronAPI is available
+    if (!window.electronAPI?.shell?.openPath) {
+      setError('This feature requires the desktop app. Please run with: npm start');
+      return;
+    }
+
     try {
-      await window.electronAPI.shell?.openPath(outputPath);
+      await window.electronAPI.shell.openPath(outputPath);
     } catch (err: any) {
       setError(`Failed to open folder: ${err.message}`);
     }
