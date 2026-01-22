@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('dialog:saveFile', options),
     openDirectory: (options?: any) =>
       ipcRenderer.invoke('dialog:openDirectory', options),
+    showOpenDialog: (options?: any) =>
+      ipcRenderer.invoke('dialog:showOpenDialog', options),
   },
 
   // Configuration
@@ -61,6 +63,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('system:showItemInFolder', filePath),
     platform: () =>
       ipcRenderer.invoke('system:platform'),
+  },
+
+  // Shell operations (for opening folders)
+  shell: {
+    openPath: (path: string) =>
+      ipcRenderer.invoke('shell:openPath', path),
   },
 
   // Process management
@@ -120,6 +128,7 @@ export interface ElectronAPI {
     openFile: (options?: any) => Promise<string | null>;
     saveFile: (options?: any) => Promise<string | null>;
     openDirectory: (options?: any) => Promise<string | null>;
+    showOpenDialog: (options?: any) => Promise<any>;
   };
   config: {
     get: (key: string) => Promise<any>;
@@ -135,6 +144,9 @@ export interface ElectronAPI {
     openExternal: (url: string) => Promise<any>;
     showItemInFolder: (filePath: string) => Promise<any>;
     platform: () => Promise<any>;
+  };
+  shell: {
+    openPath: (path: string) => Promise<any>;
   };
   process: {
     list: () => Promise<any[]>;

@@ -1,5 +1,6 @@
 import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 import { ProcessManager } from './process-manager';
 import Store from 'electron-store';
@@ -80,6 +81,11 @@ export function setupIPCHandlers(processManager: ProcessManager) {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  ipcMain.handle('dialog:showOpenDialog', async (event, options: any) => {
+    const result = await dialog.showOpenDialog(options);
+    return result;
+  });
+
   // Configuration management
   ipcMain.handle('config:get', async (event, key: string) => {
     return store.get(key);
@@ -139,8 +145,32 @@ export function setupIPCHandlers(processManager: ProcessManager) {
   });
 
   ipcMain.handle('system:showItemInFolder', async (event, filePath: string) => {
-    shell.showItemInFolder(filePath);
-    return { success: true };
+    try {
+      // Get project root (4 levels up from dist/main: dist -> spa -> project)
+      const projectRoot = path.resolve(__dirname, '../../..');
+
+      // Convert relative path to absolute path
+      const absolutePath = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(projectRoot, filePath);
+
+      // Verify path exists
+      if (!fsSync.existsSync(absolutePath)) {
+        return {
+          success: false,
+          error: `Path does not exist: ${absolutePath}`
+        };
+      }
+
+      // Open folder in file explorer and select the item
+      shell.showItemInFolder(absolutePath);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
   });
 
   ipcMain.handle('system:platform', async () => {
@@ -149,6 +179,45 @@ export function setupIPCHandlers(processManager: ProcessManager) {
       arch: process.arch,
       version: process.version,
     };
+  });
+
+  // Shell operations (for opening folders directly)
+  ipcMain.handle('shell:openPath', async (event, folderPath: string) => {
+    try {
+      // Get project root (4 levels up from dist/main: dist -> spa -> project)
+      const projectRoot = path.resolve(__dirname, '../../..');
+
+      // Convert relative path to absolute path
+      const absolutePath = path.isAbsolute(folderPath)
+        ? folderPath
+        : path.join(projectRoot, folderPath);
+
+      // Verify path exists
+      if (!fsSync.existsSync(absolutePath)) {
+        return {
+          success: false,
+          error: `Folder does not exist: ${absolutePath}`
+        };
+      }
+
+      // Open folder in file explorer
+      const result = await shell.openPath(absolutePath);
+
+      // shell.openPath returns empty string on success, error message on failure
+      if (result) {
+        return {
+          success: false,
+          error: `Failed to open: ${result}`
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
   });
 
   // Process information
