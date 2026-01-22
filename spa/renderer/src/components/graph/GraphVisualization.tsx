@@ -487,6 +487,21 @@ export const GraphVisualization: React.FC = () => {
 
         const nodeColor = isSynthetic ? NODE_COLORS.Synthetic : (NODE_COLORS[node.type] || NODE_COLORS.Default);
 
+        // Configure font for always-visible labels on Region nodes
+        const isRegionNode = node.type === 'Region';
+        const fontConfig = isRegionNode ? {
+          size: 14,
+          color: '#FFB347',
+          face: 'Arial',
+          background: 'rgba(0, 0, 0, 0.7)',
+          strokeWidth: 2,
+          strokeColor: '#000000',
+          vadjust: -25  // Position label above the node
+        } : {
+          size: 12,
+          color: '#2c3e50'
+        };
+
         return {
           ...node,
           id: node.id,
@@ -502,10 +517,7 @@ export const GraphVisualization: React.FC = () => {
           },
           shape: 'dot',
           size: 20,
-          font: {
-            size: 12,
-            color: '#2c3e50'
-          },
+          font: fontConfig,
           borderWidth: isSynthetic ? 3 : 2,
           borderWidthSelected: isSynthetic ? 5 : 4,
           shapeProperties: {
@@ -552,7 +564,15 @@ export const GraphVisualization: React.FC = () => {
     const options: any = {
       nodes: {
         font: {
-          size: 12
+          size: 12,
+          multi: false,
+          vadjust: 0,
+          align: 'center'
+        },
+        // Enable label drawing for all nodes
+        // Region nodes will have their labels always visible due to custom font config
+        chosen: {
+          label: true
         }
       },
       edges: {
