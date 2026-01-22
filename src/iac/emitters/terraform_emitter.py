@@ -387,6 +387,7 @@ class TerraformEmitter(IaCEmitter):
         comparison_result: Optional[Any] = None,
         split_by_community: bool = False,  # Fix #593: Default to True for parallel deployment
         location: Optional[str] = None,  # Fix #601: Target region override
+        preserve_rg_structure: bool = False,  # GAP-017 (Issue #313): Preserve source RG structure
     ) -> List[Path]:
         """Generate Terraform configuration from Azure tenant graph.
 
@@ -414,6 +415,9 @@ class TerraformEmitter(IaCEmitter):
                               Default False for single-file output.
             location: Optional target Azure region override (e.g., "eastus"). If provided,
                     overrides resource locations for cross-region deployment (Fix #601).
+            preserve_rg_structure: If True, preserves source resource group structure by creating
+                                 multiple target RGs matching source (GAP-017, Issue #313).
+                                 Default False maintains backward compatibility (single RG).
 
         Returns:
             List[Path]: List of generated Terraform file paths (main.tf or community files)

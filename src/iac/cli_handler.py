@@ -1105,7 +1105,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                     "Preserving source resource group structure in target deployment"
                 )
 
-            # Pass RG, location, tenant_id, and subscription_id to engine.generate_iac (GAP-331)
+            # Pass RG, location, tenant_id, subscription_id, and preserve_rg_structure to engine.generate_iac (GAP-331, GAP-017)
             paths = engine.generate_iac(
                 graph,
                 emitter,
@@ -1118,6 +1118,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 generate_conflict_report=generate_address_space_conflict_report,
                 tenant_id=tenant_id,
                 subscription_id=subscription_id,
+                preserve_rg_structure=preserve_rg_structure,
             )
             click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
             for path in paths:

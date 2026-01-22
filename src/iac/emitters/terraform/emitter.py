@@ -92,11 +92,18 @@ class TerraformEmitter:
             "handler_errors": [],
         }
 
-    def emit(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def emit(
+        self,
+        resources: List[Dict[str, Any]],
+        preserve_rg_structure: bool = False,
+        location: str = "eastus",
+    ) -> Dict[str, Any]:
         """Convert list of Azure resources to Terraform configuration.
 
         Args:
             resources: List of Azure resource dictionaries from graph
+            preserve_rg_structure: If True, create multiple RGs matching source structure (GAP-017)
+            location: Azure region for resource group creation
 
         Returns:
             Complete Terraform configuration dict
@@ -135,6 +142,14 @@ class TerraformEmitter:
             "variable": {},
             "output": {},
         }
+
+        # GAP-017: Create resource groups based on preserve_rg_structure flag
+        if preserve_rg_structure:
+            # Preserve source RG structure - create multiple RGs
+            self._emit_resource_groups_from_source(resources, location)
+        else:
+            # Default behavior - create single default RG
+            self._emit_default_resource_group(location)
 
         # Phase 1: Emit main resources
         self._emit_resources(resources)
@@ -468,3 +483,86 @@ class TerraformEmitter:
             output_config["sensitive"] = True
 
         self.context.terraform_config.setdefault("output", {})[name] = output_config
+
+    def _emit_default_resource_group(self, location: str) -> None:
+        """Emit single default resource group (backward compatible behavior).
+
+        Args:
+            location: Azure region for resource group creation
+        """
+        # Default resource group name (can be overridden via variable)
+        rg_name = f"{self.context.resource_group_prefix}default-rg"
+        terraform_name = "default_rg"
+
+        rg_config = {
+            "name": rg_name,
+            "location": location,
+            "tags": {
+                "managed_by": "terraform",
+            },
+        }
+
+        self._add_resource("azurerm_resource_group", terraform_name, rg_config)
+        logger.debug(f"Emitted default resource group: {terraform_name} -> {rg_name}")
+
+    def _emit_resource_groups_from_source(
+        self, resources: List[Dict[str, Any]], location: str
+    ) -> None:
+        """Create resource group resources for preserve_rg_structure mode (GAP-017).
+
+        Extracts unique source resource groups from resources and emits
+        azurerm_resource_group resources for each (except Azure-managed RGs).
+
+        Args:
+            resources: List of all resources with _source_rg metadata
+            location: Azure region for resource group creation
+        """
+
+        # Collect unique source resource groups
+        source_rgs = set()
+        for resource in resources:
+            source_rg = resource.get("_source_rg")
+            if source_rg:
+                source_rgs.add(source_rg)
+
+        # Filter out Azure-managed resource groups
+        azure_managed_patterns = [
+            "NetworkWatcherRG",  # Network Watcher auto-created RGs
+            "MC_",  # AKS node resource groups
+            "cloud-shell-storage-",  # Cloud Shell storage RGs
+            "DefaultResourceGroup-",  # Azure default RGs
+            "AzureBackupRG_",  # Azure Backup RGs
+        ]
+
+        filtered_rgs = []
+        for rg_name in source_rgs:
+            is_managed = any(
+                rg_name.startswith(pattern) for pattern in azure_managed_patterns
+            )
+            if not is_managed:
+                filtered_rgs.append(rg_name)
+
+        logger.info(
+            f"GAP-017: Creating {len(filtered_rgs)} resource groups from source structure"
+        )
+
+        # Emit resource group resources
+        for rg_name in sorted(filtered_rgs):  # Sort for deterministic output
+            # Sanitize RG name for Terraform (replace hyphens with underscores)
+            terraform_name = rg_name.replace("-", "_").replace(" ", "_")
+
+            # Apply resource group prefix if configured
+            display_name = f"{self.context.resource_group_prefix}{rg_name}"
+
+            rg_config = {
+                "name": display_name,
+                "location": location,
+                "tags": {
+                    "managed_by": "terraform",
+                    "source_rg": rg_name,
+                },
+            }
+
+            # Add to terraform config
+            self._add_resource("azurerm_resource_group", terraform_name, rg_config)
+            logger.debug(f"Emitted resource group: {terraform_name} -> {display_name}")
