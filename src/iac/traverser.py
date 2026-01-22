@@ -81,19 +81,6 @@ class GraphTraverser:
                 if record.get("original_properties"):
                     resource_dict["original_properties"] = record["original_properties"]
 
-                # GAP-017 (Issue #313): Add source resource group metadata
-                # Extract RG name from Azure resource ID for preserve-rg-structure feature
-                resource_id = resource_dict.get("id", "")
-                if resource_id and "/resourceGroups/" in resource_id:
-                    parts = resource_id.split("/")
-                    try:
-                        rg_index = parts.index("resourceGroups")
-                        resource_dict["_source_rg"] = parts[rg_index + 1]
-                    except (ValueError, IndexError):
-                        resource_dict["_source_rg"] = None
-                else:
-                    resource_dict["_source_rg"] = None
-
                 resources.append(resource_dict)
 
                 # Process relationships
