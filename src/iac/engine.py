@@ -124,6 +124,7 @@ class TransformationEngine:
         generate_conflict_report: bool = False,
         tenant_id: Optional[str] = None,
         subscription_id: Optional[str] = None,
+        preserve_rg_structure: bool = False,
     ) -> List[str]:
         """Generate IaC templates from tenant graph.
 
@@ -139,6 +140,7 @@ class TransformationEngine:
             generate_conflict_report: Generate detailed markdown report of VNet conflicts (Issue #310/GAP-012)
             tenant_id: Optional SOURCE Azure tenant ID for Neo4j operations
             subscription_id: Optional TARGET subscription ID for resource deployment
+            preserve_rg_structure: Preserve source RG structure in target (Issue #313/GAP-017)
 
         Returns:
             List of output file paths
@@ -272,7 +274,7 @@ class TransformationEngine:
                 validator.generate_conflict_report(validation_result, report_path)
                 logger.info(f"📄 VNet conflict report written to: {report_path}")
 
-        # Pass tenant_id and subscription_id to emitter if it supports them (use introspection)
+        # Pass tenant_id, subscription_id, and preserve_rg_structure to emitter if it supports them (use introspection)
         import inspect
 
         emit_signature = inspect.signature(emitter.emit)
@@ -281,6 +283,8 @@ class TransformationEngine:
             emit_kwargs["tenant_id"] = tenant_id
         if "subscription_id" in emit_signature.parameters:
             emit_kwargs["subscription_id"] = subscription_id
+        if "preserve_rg_structure" in emit_signature.parameters:
+            emit_kwargs["preserve_rg_structure"] = preserve_rg_structure
 
         return emitter.emit(filtered_graph, out_dir, **emit_kwargs)
 
