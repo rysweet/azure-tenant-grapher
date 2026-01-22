@@ -19,6 +19,7 @@ from src.deployment.arm_deployer import deploy_arm
 from src.deployment.bicep_deployer import deploy_bicep
 from src.deployment.format_detector import IaCFormat, detect_iac_format
 from src.deployment.terraform_deployer import deploy_terraform
+from src.exceptions import AzureAuthenticationError, AzureSubscriptionError
 from src.timeout_config import Timeouts, log_timeout_event
 
 if TYPE_CHECKING:
@@ -64,7 +65,9 @@ def deploy_iac(
 
     Raises:
         ValueError: If IaC format cannot be detected or is invalid
-        RuntimeError: If authentication or deployment fails
+        AzureAuthenticationError: If Azure authentication fails
+        AzureSubscriptionError: If subscription operations fail
+        RuntimeError: If deployment fails
     """
     # Auto-detect format if not specified
     if not iac_format:
@@ -90,8 +93,11 @@ def deploy_iac(
         log_timeout_event(
             "az_account_show", Timeouts.AZ_CLI_QUERY, ["az", "account", "show"]
         )
-        raise RuntimeError(
-            f"Azure account check timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+        raise AzureAuthenticationError(
+            f"Azure account check timed out after {Timeouts.AZ_CLI_QUERY} seconds",
+            tenant_id=target_tenant_id,
+            context={"timeout_seconds": Timeouts.AZ_CLI_QUERY},
+            cause=e,
         ) from e
 
     current_tenant = (
@@ -132,8 +138,14 @@ def deploy_iac(
                 Timeouts.AZ_CLI_QUERY,
                 ["az", "account", "subscription", "show"],
             )
-            raise RuntimeError(
-                f"Subscription validation timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+            raise AzureSubscriptionError(
+                f"Subscription validation timed out after {Timeouts.AZ_CLI_QUERY} seconds",
+                subscription_id=subscription_id,
+                context={
+                    "timeout_seconds": Timeouts.AZ_CLI_QUERY,
+                    "tenant_id": target_tenant_id,
+                },
+                cause=e,
             ) from e
 
         sub_tenant = None
@@ -163,11 +175,17 @@ def deploy_iac(
                     )
                 except subprocess.TimeoutExpired as e:
                     log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
-                    raise RuntimeError(
-                        f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                    raise AzureAuthenticationError(
+                        f"Azure login timed out after {Timeouts.STANDARD} seconds",
+                        tenant_id=target_tenant_id,
+                        context={"timeout_seconds": Timeouts.STANDARD},
+                        cause=e,
                     ) from e
                 if auth_result.returncode != 0:
-                    raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+                    raise AzureAuthenticationError(
+                        f"Azure login failed: {auth_result.stderr}",
+                        tenant_id=target_tenant_id,
+                    )
             else:
                 # Subscription belongs to target tenant, proceed with switch
                 logger.info(
@@ -187,8 +205,14 @@ def deploy_iac(
                         Timeouts.AZ_CLI_QUERY,
                         ["az", "account", "set"],
                     )
-                    raise RuntimeError(
-                        f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+                    raise AzureSubscriptionError(
+                        f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds",
+                        subscription_id=subscription_id,
+                        context={
+                            "timeout_seconds": Timeouts.AZ_CLI_QUERY,
+                            "tenant_id": target_tenant_id,
+                        },
+                        cause=e,
                     ) from e
 
                 if switch_result.returncode != 0:
@@ -215,11 +239,17 @@ def deploy_iac(
                         log_timeout_event(
                             "az_login", Timeouts.STANDARD, ["az", "login"]
                         )
-                        raise RuntimeError(
-                            f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                        raise AzureAuthenticationError(
+                            f"Azure login timed out after {Timeouts.STANDARD} seconds",
+                            tenant_id=target_tenant_id,
+                            context={"timeout_seconds": Timeouts.STANDARD},
+                            cause=e,
                         ) from e
                     if auth_result.returncode != 0:
-                        raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+                        raise AzureAuthenticationError(
+                            f"Azure login failed: {auth_result.stderr}",
+                            tenant_id=target_tenant_id,
+                        )
         else:
             # Cannot validate subscription, log warning and attempt switch anyway
             logger.warning(
@@ -238,8 +268,14 @@ def deploy_iac(
                 log_timeout_event(
                     "az_account_set", Timeouts.AZ_CLI_QUERY, ["az", "account", "set"]
                 )
-                raise RuntimeError(
-                    f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+                raise AzureSubscriptionError(
+                    f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds",
+                    subscription_id=subscription_id,
+                    context={
+                        "timeout_seconds": Timeouts.AZ_CLI_QUERY,
+                        "tenant_id": target_tenant_id,
+                    },
+                    cause=e,
                 ) from e
 
             if switch_result.returncode != 0:
@@ -264,11 +300,17 @@ def deploy_iac(
                     )
                 except subprocess.TimeoutExpired as e:
                     log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
-                    raise RuntimeError(
-                        f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                    raise AzureAuthenticationError(
+                        f"Azure login timed out after {Timeouts.STANDARD} seconds",
+                        tenant_id=target_tenant_id,
+                        context={"timeout_seconds": Timeouts.STANDARD},
+                        cause=e,
                     ) from e
                 if auth_result.returncode != 0:
-                    raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+                    raise AzureAuthenticationError(
+                        f"Azure login failed: {auth_result.stderr}",
+                        tenant_id=target_tenant_id,
+                    )
     else:
         # No subscription ID provided, attempt login
         logger.info(str(f"Authenticating to tenant {target_tenant_id}..."))
@@ -282,8 +324,11 @@ def deploy_iac(
             )
         except subprocess.TimeoutExpired as e:
             log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
-            raise RuntimeError(
-                f"Azure login timed out after {Timeouts.STANDARD} seconds"
+            raise AzureAuthenticationError(
+                f"Azure login timed out after {Timeouts.STANDARD} seconds",
+                tenant_id=target_tenant_id,
+                context={"timeout_seconds": Timeouts.STANDARD},
+                cause=e,
             ) from e
         if auth_result.returncode != 0:
             logger.warning(str(f"Azure login may have failed: {auth_result.stderr}"))
