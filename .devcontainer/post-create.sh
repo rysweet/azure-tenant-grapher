@@ -22,12 +22,6 @@ fi
 echo "[INFO] Installing pre-commit hooks..."
 pre-commit install || echo "[WARN] pre-commit install failed, continuing..."
 
-# Restore .NET dependencies (if dotnet folder exists)
-if [ -d "dotnet" ]; then
-  echo "[INFO] Restoring .NET dependencies..."
-  (cd dotnet && dotnet restore) || echo "[WARN] dotnet restore failed, continuing..."
-fi
-
 echo "[INFO] Upgrading Bicep CLI via Azure CLI..."
 az bicep upgrade || echo "[WARN] az bicep upgrade failed, continuing..."
 
@@ -71,11 +65,12 @@ fi
 
 echo "[INFO] Printing useful environment info..."
 python --version || echo "[WARN] python not found"
-if command -v dotnet &> /dev/null; then dotnet --version; else echo "[WARN] dotnet not installed"; fi
-if command -v node &> /dev/null; then node --version; else echo "[WARN] node not installed"; fi
 if command -v az &> /dev/null; then az version | jq -r .azure-cli; else echo "[WARN] Azure CLI not installed"; fi
 if command -v gh &> /dev/null; then gh --version | head -n1; else echo "[WARN] GitHub CLI not installed"; fi
-echo "[INFO] Verifying Docker-in-Docker availability..."
+if command -v terraform &> /dev/null; then terraform --version | head -n1; else echo "[WARN] Terraform not installed"; fi
+if command -v pwsh &> /dev/null; then pwsh --version; else echo "[WARN] PowerShell not installed"; fi
+if command -v uv &> /dev/null; then uv --version; else echo "[WARN] uv not installed"; fi
+
 echo "[INFO] Symlinking Azure CLI-managed Bicep binary to /usr/local/bin/bicep (if needed)..."
 BICEP_PATH="$(az bicep version --query path -o tsv 2>/dev/null || true)"
 if [ -n "$BICEP_PATH" ] && [ ! -f /usr/local/bin/bicep ]; then
@@ -88,6 +83,7 @@ if ! groups | grep -q docker; then
   sudo usermod -aG docker $USER
   echo "[INFO] Added $USER to docker group. You may need to restart the container or shell for this to take effect."
 fi
+
 echo "[INFO] Verifying Docker-in-Docker availability..."
 if ! docker info >/dev/null 2>&1; then
   echo "[ERROR] Docker is not running or not available in the container."
@@ -101,13 +97,8 @@ if ! az bicep version >/dev/null 2>&1; then
   echo "[ERROR] Bicep CLI is not installed or not available via Azure CLI."
   exit 1
 else
+  echo "[INFO] Bicep CLI is ready."
   az bicep version
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "[ERROR] Docker is not running or not available in the container."
-  exit 1
-else
-  echo "[INFO] Docker-in-Docker is available."
 fi
 
 echo "========== [post-create.sh] END: $(date) =========="

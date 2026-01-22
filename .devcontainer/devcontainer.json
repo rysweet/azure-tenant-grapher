@@ -5,11 +5,8 @@
     "memory": "32gb",
     "storage": "128gb"
   },
-  "image": "mcr.microsoft.com/devcontainers/dotnet:9.0-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.13"
-    },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest"
     },
@@ -28,7 +25,6 @@
       },
       "extensions": [
         "ms-python.python",
-        "ms-dotnettools.csharp",
         "ms-azuretools.vscode-docker",
         "ms-azuretools.vscode-bicep",
         "hashicorp.terraform",
