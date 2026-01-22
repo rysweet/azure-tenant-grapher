@@ -47,6 +47,9 @@ def deploy_iac(
     iac_format: Optional[IaCFormat] = None,
     dry_run: bool = False,
     dashboard: Optional["DeploymentDashboard"] = None,
+    sp_client_id: Optional[str] = None,
+    sp_client_secret: Optional[str] = None,
+    sp_tenant_id: Optional[str] = None,
 ) -> dict:
     """Deploy IaC to target tenant.
 
@@ -59,6 +62,9 @@ def deploy_iac(
         iac_format: IaC format (auto-detected if None)
         dry_run: If True, plan/validate only without deploying
         dashboard: Optional deployment dashboard for real-time updates
+        sp_client_id: Optional service principal client ID for headless auth
+        sp_client_secret: Optional service principal client secret
+        sp_tenant_id: Optional tenant ID for SP auth (defaults to target_tenant_id)
 
     Returns:
         Deployment result dictionary with status and output
@@ -106,8 +112,44 @@ def deploy_iac(
         else None
     )
 
+    # Skip authentication if already authenticated to target tenant
     if current_tenant == target_tenant_id:
         logger.info(str(f"Already authenticated to target tenant {target_tenant_id}"))
+    elif sp_client_id and sp_client_secret:
+        # Service principal authentication (headless)
+        sp_tenant = sp_tenant_id or target_tenant_id
+        logger.info(f"Authenticating with service principal to tenant {sp_tenant}...")
+        try:
+            auth_result = subprocess.run(
+                [
+                    "az",
+                    "login",
+                    "--service-principal",
+                    "-u",
+                    sp_client_id,
+                    "-p",
+                    sp_client_secret,
+                    "--tenant",
+                    sp_tenant,
+                    "--output",
+                    "none",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=Timeouts.STANDARD,
+            )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event(
+                "az_login_sp", Timeouts.STANDARD, ["az", "login", "--service-principal"]
+            )
+            raise RuntimeError(
+                f"Service principal login timed out after {Timeouts.STANDARD} seconds"
+            ) from e
+        if auth_result.returncode != 0:
+            raise RuntimeError(
+                f"Service principal authentication failed: {auth_result.stderr}"
+            )
     elif subscription_id:
         # Validate subscription belongs to target tenant before switching
         logger.info(
