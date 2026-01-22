@@ -6,10 +6,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import structlog  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv(override=True)
+
+# Configure logging
+logger = structlog.get_logger(__name__)
 
 """
 Configuration Management for Azure Tenant Grapher
@@ -357,8 +361,11 @@ class AzureTenantGrapherConfig:
 
         # Debug output after Neo4j config is initialized
         if debug:
-            print(
-                f"[DEBUG][Neo4jConfig] uri={config.neo4j.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
+            logger.debug(
+                "Neo4j configuration initialized",
+                uri=config.neo4j.uri,
+                neo4j_port=os.getenv("NEO4J_PORT"),
+                neo4j_uri_env=os.getenv("NEO4J_URI"),
             )
 
         return config
