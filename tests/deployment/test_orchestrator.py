@@ -612,3 +612,142 @@ class TestDeployIaC:
         assert result["status"] == "deployed"
         # Only one call: current tenant check (no validation, no switch, no login)
         assert mock_run.call_count == 1
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_with_service_principal_success(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test deploy_iac with service principal authentication success."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock: current tenant check (different tenant) + SP login success
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(returncode=0, stdout=""),  # SP login success
+        ]
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            sp_client_id="test-sp-client-id",
+            sp_client_secret="test-sp-secret",  # pragma: allowlist secret
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        assert mock_run.call_count == 2
+
+        # Verify SP login was called with correct parameters
+        sp_login_call = mock_run.call_args_list[1][0][0]
+        assert "login" in sp_login_call
+        assert "--service-principal" in sp_login_call
+        assert "-u" in sp_login_call
+        assert "test-sp-client-id" in sp_login_call
+        assert "-p" in sp_login_call
+        assert "test-sp-secret" in sp_login_call
+        assert "--tenant" in sp_login_call
+        assert "test-tenant" in sp_login_call
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_with_service_principal_custom_tenant(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test deploy_iac with service principal using custom SP tenant."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock: current tenant check + SP login success
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(returncode=0, stdout=""),  # SP login success
+        ]
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            sp_client_id="test-sp-client-id",
+            sp_client_secret="test-sp-secret",  # pragma: allowlist secret
+            sp_tenant_id="sp-specific-tenant",
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+
+        # Verify SP tenant was used (not target_tenant_id)
+        sp_login_call = mock_run.call_args_list[1][0][0]
+        assert "sp-specific-tenant" in sp_login_call
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    def test_deploy_iac_with_service_principal_failure(self, mock_run, tmp_path):
+        """Test deploy_iac with service principal authentication failure."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock: current tenant check + SP login failure
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="source-tenant-id\n"),  # Current tenant
+            MagicMock(returncode=1, stderr="Authentication failed"),  # SP login fails
+        ]
+
+        with pytest.raises(
+            RuntimeError, match="Service principal authentication failed"
+        ):
+            deploy_iac(
+                iac_dir=tmp_path,
+                target_tenant_id="test-tenant",
+                resource_group="test-rg",
+                location="eastus",
+                sp_client_id="test-sp-client-id",
+                sp_client_secret="test-sp-secret",  # pragma: allowlist secret
+                dry_run=False,
+            )
+
+    @patch("src.deployment.orchestrator.subprocess.run")
+    @patch("src.deployment.orchestrator.deploy_terraform")
+    def test_deploy_iac_sp_already_authenticated(
+        self, mock_deploy_tf, mock_run, tmp_path
+    ):
+        """Test deploy_iac with SP credentials when already authenticated to target tenant."""
+        (tmp_path / "main.tf").write_text("# Terraform")
+
+        # Mock: already authenticated to target tenant
+        mock_run.return_value = MagicMock(returncode=0, stdout="test-tenant\n")
+
+        # Mock Terraform deployment
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
+
+        result = deploy_iac(
+            iac_dir=tmp_path,
+            target_tenant_id="test-tenant",
+            resource_group="test-rg",
+            location="eastus",
+            sp_client_id="test-sp-client-id",
+            sp_client_secret="test-sp-secret",  # pragma: allowlist secret
+            dry_run=False,
+        )
+
+        assert result["status"] == "deployed"
+        # Only one call: current tenant check (no SP login needed)
+        assert mock_run.call_count == 1
