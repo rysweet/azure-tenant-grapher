@@ -11,6 +11,7 @@ const ALLOWED_COMMANDS = new Set([
   'scan',
   'generate-spec',
   'generate-iac',
+  'deploy',
   'undeploy',
   'create-tenant',
   'threat-model',
@@ -27,18 +28,26 @@ const ALLOWED_COMMANDS = new Set([
   'build',
   'start',
   'stop',
-  'app-registration'
+  'app-registration',
+  'validate-deployment',
+  'gensimdoc'
 ]);
 
 // Whitelist of allowed CLI arguments
 const ALLOWED_ARGS = new Set([
   '--tenant-id',
+  '--source-tenant-id',
+  '--target-tenant-id',
   '--subscription-id',
   '--filter-by-subscriptions',
   '--filter-by-rgs',
   '--tenant-name',
   '--resource-group',
+  '--location',
+  '--iac-dir',
   '--filters',
+  '--source-filter',
+  '--target-filter',
   '--format',
   '--output',
   '--dry-run',
@@ -55,6 +64,8 @@ const ALLOWED_ARGS = new Set([
   '--container-only',
   '--skip-container',
   '--question',
+  '--size',
+  '--seed',
   '-h',
   '-v'
 ]);
