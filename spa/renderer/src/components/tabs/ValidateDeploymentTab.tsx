@@ -113,22 +113,60 @@ const ValidateDeploymentTab: React.FC = () => {
 
       window.electronAPI.on('process:output', outputHandler);
 
+      // Define error handler first (needed by exitHandler cleanup)
+      const errorHandler = (data: any) => {
+        if (data.processId === result.data.id || data.id === result.data.id) {
+          setIsValidating(false);
+          setError(data.error || 'Process execution failed');
+
+          // Clean up event listeners
+          window.electronAPI.off?.('process:output', outputHandler);
+          window.electronAPI.off?.('process:exit', exitHandler);
+          window.electronAPI.off?.('process:error', errorHandler);
+        }
+      };
+
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setIsValidating(false);
           if (data.code === 0) {
             setSuccess(true);
           } else {
-            setError(`Validation failed with exit code ${data.code}`);
+            // Extract error message from terminal output if available
+            let errorMessage = `Validation failed with exit code ${data.code}`;
+
+            // Look for error patterns in terminal output
+            if (outputContent) {
+              const errorMatch = outputContent.match(/❌ Error: (.+)/);
+              if (errorMatch) {
+                errorMessage = errorMatch[1];
+              } else if (outputContent.match(/\[ProcessManager\] Invalid command: (.+)/)) {
+                const commandMatch = outputContent.match(/\[ProcessManager\] Invalid command: (.+)/);
+                if (commandMatch) {
+                  errorMessage = commandMatch[1];
+                }
+              } else if (outputContent.includes('Error:')) {
+                // Try to extract any error line
+                const lines = outputContent.split('\n');
+                const errorLine = lines.find(line => line.includes('Error:'));
+                if (errorLine) {
+                  errorMessage = errorLine.replace(/^.*Error:\s*/, '');
+                }
+              }
+            }
+
+            setError(errorMessage);
           }
 
           // Clean up event listeners
           window.electronAPI.off?.('process:output', outputHandler);
           window.electronAPI.off?.('process:exit', exitHandler);
+          window.electronAPI.off?.('process:error', errorHandler);
         }
       };
 
       window.electronAPI.on('process:exit', exitHandler);
+      window.electronAPI.on('process:error', errorHandler);
 
     } catch (err: any) {
       setError(err.message);

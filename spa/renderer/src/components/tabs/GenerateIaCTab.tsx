@@ -192,6 +192,19 @@ const GenerateIaCTab: React.FC = () => {
 
       window.electronAPI.on('process:output', outputHandler);
 
+      // Define error handler first (needed by exitHandler cleanup)
+      const errorHandler = (data: any) => {
+        if (data.processId === result.data.id || data.id === result.data.id) {
+          setIsGenerating(false);
+          setError(data.error || 'Process execution failed');
+
+          // Clean up event listeners
+          window.electronAPI.off?.('process:output', outputHandler);
+          window.electronAPI.off?.('process:exit', exitHandler);
+          window.electronAPI.off?.('process:error', errorHandler);
+        }
+      };
+
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setIsGenerating(false);
@@ -201,16 +214,36 @@ const GenerateIaCTab: React.FC = () => {
               setOutputPath(`outputs/iac/${tenantId}/${outputFormat}`);
             }
           } else {
-            setError(`Generation failed with exit code ${data.code}`);
+            // Extract error message from terminal output if available
+            let errorMessage = `Generation failed with exit code ${data.code}`;
+
+            // Look for error patterns in terminal output
+            if (outputContent) {
+              const errorMatch = outputContent.match(/❌ Error: (.+)/);
+              if (errorMatch) {
+                errorMessage = errorMatch[1];
+              } else if (outputContent.includes('Error:')) {
+                // Try to extract any error line
+                const lines = outputContent.split('\n');
+                const errorLine = lines.find(line => line.includes('Error:'));
+                if (errorLine) {
+                  errorMessage = errorLine.replace(/^.*Error:\s*/, '');
+                }
+              }
+            }
+
+            setError(errorMessage);
           }
 
           // Clean up event listeners
           window.electronAPI.off?.('process:output', outputHandler);
           window.electronAPI.off?.('process:exit', exitHandler);
+          window.electronAPI.off?.('process:error', errorHandler);
         }
       };
 
       window.electronAPI.on('process:exit', exitHandler);
+      window.electronAPI.on('process:error', errorHandler);
 
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
 
@@ -224,13 +257,14 @@ const GenerateIaCTab: React.FC = () => {
     if (!outputPath) return;
 
     // Check if electronAPI is available
-    if (!window.electronAPI?.shell?.openPath) {
+    if (!window.electronAPI?.system?.showItemInFolder) {
       setError('This feature requires the desktop app. Please run with: npm start');
       return;
     }
 
     try {
-      await window.electronAPI.shell.openPath(outputPath);
+      // Use showItemInFolder to open the folder in file explorer
+      await window.electronAPI.system.showItemInFolder(outputPath);
     } catch (err: any) {
       setError(`Failed to open folder: ${err.message}`);
     }

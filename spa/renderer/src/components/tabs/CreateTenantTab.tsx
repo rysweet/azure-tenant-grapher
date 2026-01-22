@@ -266,9 +266,12 @@ const CreateTenantTab: React.FC = () => {
 
                 const result = await window.electronAPI.cli.execute('gensimdoc', args);
 
-                window.electronAPI.on('process:output', (data: any) => {
+                let outputContent = '';
+
+                const outputHandler = (data: any) => {
                   if (data.id === result.data.id) {
                     const output = data.data.join('\n');
+                    outputContent += output + '\n';
                     setLogs((prev) => [...prev, output]);
 
                     // Check if output contains the generated file path
@@ -282,18 +285,64 @@ const CreateTenantTab: React.FC = () => {
                       });
                     }
                   }
-                });
+                };
 
-                window.electronAPI.on('process:exit', (data: any) => {
+                window.electronAPI.on('process:output', outputHandler);
+
+                // Define error handler first (needed by exitHandler cleanup)
+                const errorHandler = (data: any) => {
+                  if (data.processId === result.data.id || data.id === result.data.id) {
+                    setIsGenerating(false);
+                    setError(data.error || 'Process execution failed');
+
+                    // Clean up event listeners
+                    window.electronAPI.off?.('process:output', outputHandler);
+                    window.electronAPI.off?.('process:exit', exitHandler);
+                    window.electronAPI.off?.('process:error', errorHandler);
+                  }
+                };
+
+                const exitHandler = (data: any) => {
                   if (data.id === result.data.id) {
                     setIsGenerating(false);
                     if (data.code === 0) {
                       setLogs((prev) => [...prev, 'Tenant specification generated successfully!']);
                     } else {
-                      setError(`Generation failed with exit code ${data.code}`);
+                      // Extract error message from terminal output if available
+                      let errorMessage = `Generation failed with exit code ${data.code}`;
+
+                      // Look for error patterns in terminal output
+                      if (outputContent) {
+                        const errorMatch = outputContent.match(/❌ Error: (.+)/);
+                        if (errorMatch) {
+                          errorMessage = errorMatch[1];
+                        } else if (outputContent.match(/\[ProcessManager\] Invalid command: (.+)/)) {
+                          const commandMatch = outputContent.match(/\[ProcessManager\] Invalid command: (.+)/);
+                          if (commandMatch) {
+                            errorMessage = commandMatch[1];
+                          }
+                        } else if (outputContent.includes('Error:')) {
+                          // Try to extract any error line
+                          const lines = outputContent.split('\n');
+                          const errorLine = lines.find(line => line.includes('Error:'));
+                          if (errorLine) {
+                            errorMessage = errorLine.replace(/^.*Error:\s*/, '');
+                          }
+                        }
+                      }
+
+                      setError(errorMessage);
                     }
+
+                    // Clean up event listeners
+                    window.electronAPI.off?.('process:output', outputHandler);
+                    window.electronAPI.off?.('process:exit', exitHandler);
+                    window.electronAPI.off?.('process:error', errorHandler);
                   }
-                });
+                };
+
+                window.electronAPI.on('process:exit', exitHandler);
+                window.electronAPI.on('process:error', errorHandler);
               } catch (err: any) {
                 setError(err.message);
                 setIsGenerating(false);
