@@ -181,6 +181,7 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
     "RUF", # ruff-specific rules
+    "T20", # flake8-print (detect print statements)
 ]
 ignore = [
     "E501",  # line too long, handled by black
@@ -195,6 +196,10 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 "tests/**/*" = ["B018", "B017", "B015"]  # Allow assert statements in tests
+"scripts/**/*" = ["T20"]  # Allow print statements in scripts
+"examples/**/*" = ["T20"]  # Allow print statements in examples
+"demos/**/*" = ["T20"]  # Allow print statements in demos
+".claude/**/*" = ["T20"]  # Allow print statements in .claude tools
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

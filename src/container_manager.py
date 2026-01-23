@@ -91,9 +91,11 @@ class Neo4jContainerManager:
                 k: "***REDACTED***" if should_redact(k) else v
                 for k, v in os.environ.items()
             }
-            print(str(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}"))
-            print(
-                f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
+            logger.debug(
+                "Neo4j environment at init",
+                environ=safe_env,
+                neo4j_port=os.environ.get("NEO4J_PORT"),
+                neo4j_uri=os.environ.get("NEO4J_URI"),
             )
         self.compose_file = compose_file
         self.docker_client = None
@@ -144,8 +146,11 @@ class Neo4jContainerManager:
                 )
             self.neo4j_uri = f"bolt://localhost:{port}"
         if self.debug:
-            print(
-                f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
+            logger.debug(
+                "Neo4j configuration initialized",
+                uri=self.neo4j_uri,
+                neo4j_port=os.environ.get("NEO4J_PORT"),
+                neo4j_uri_env=uri_env,
             )
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = (
@@ -352,17 +357,12 @@ class Neo4jContainerManager:
 
             # Start the container
             if self.debug:
-                print(
-                    "[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH=***REDACTED***"
-                )
-                print(
-                    "[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD=***REDACTED***"
-                )
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
-                )
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
+                logger.debug(
+                    "Docker compose environment configuration",
+                    neo4j_auth="***REDACTED***",
+                    neo4j_password="***REDACTED***",
+                    neo4j_container_name=self.container_name,
+                    neo4j_data_volume=self.volume_name,
                 )
             # Compose service name is always "neo4j", but container name is unique
             result = subprocess.run(  # nosec B603
@@ -408,8 +408,10 @@ class Neo4jContainerManager:
         while time.time() - start_time < timeout:
             try:
                 if self.debug:
-                    print(
-                        f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
+                    logger.debug(
+                        "Attempting Neo4j connection",
+                        uri=self.neo4j_uri,
+                        user=self.neo4j_user,
                     )
                 driver = GraphDatabase.driver(
                     self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
@@ -800,8 +802,10 @@ class Neo4jContainerManager:
             for c in containers:
                 try:
                     if self.debug:
-                        print(
-                            f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
+                        logger.debug(
+                            "Removing container during cleanup",
+                            container_name=c.name,
+                            status=c.status,
                         )
                     c.remove(force=True)
                     logger.info(event=f"Removed container {c.name}")
@@ -818,10 +822,8 @@ class Neo4jContainerManager:
             for v in volumes:
                 try:
                     if self.debug:
-                        print(
-                            str(
-                                f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}"
-                            )
+                        logger.debug(
+                            "Removing volume during cleanup", volume_name=v.name
                         )
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
