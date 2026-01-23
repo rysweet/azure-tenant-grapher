@@ -8,3 +8,7 @@ paths-ignore:
   - "**/.env.example"
   - "**/tests/**"
   - "**/*.example"
+  - ".claude/**/tests/**"
+  - ".claude/**/fixtures/**"
+  - ".claude/skills/**/reference.md"
+  - ".claude/skills/**/examples.md"
