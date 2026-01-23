@@ -56,6 +56,7 @@ async def build_command_handler(
     debug: bool = False,
     filter_by_subscriptions: Optional[str] = None,
     filter_by_rgs: Optional[str] = None,
+    no_include_references: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
@@ -186,6 +187,7 @@ async def build_command_handler(
                 filter_config = FilterConfig(
                     subscription_ids=subscription_ids,
                     resource_group_names=resource_group_names,
+                    include_referenced_resources=not no_include_references,
                 )
             except ValueError as e:
                 logger.error(str(f"❌ Invalid filter configuration: {e}"))
@@ -194,7 +196,9 @@ async def build_command_handler(
                     "   Resource group names should only contain alphanumeric characters, hyphens, underscores, periods, and parentheses."
                 )
                 # Create an empty filter config to continue without filtering
-                filter_config = FilterConfig()
+                filter_config = FilterConfig(
+                    include_referenced_resources=not no_include_references
+                )
 
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
@@ -730,6 +734,11 @@ async def _run_dashboard_mode(
     type=str,
     help="Comma-separated list of resource group names to include (filters discovery)",
 )
+@click.option(
+    "--no-include-references",
+    is_flag=True,
+    help="Disable automatic inclusion of referenced resources (identities, RBAC principals)",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -750,6 +759,7 @@ async def build(
     no_aad_import: bool = False,
     filter_by_subscriptions: Optional[str] = None,
     filter_by_rgs: Optional[str] = None,
+    no_include_references: bool = False,
 ) -> Optional[str]:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -784,6 +794,7 @@ async def build(
         debug,
         filter_by_subscriptions,
         filter_by_rgs,
+        no_include_references,
     )
     if debug:
         print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
@@ -928,6 +939,7 @@ async def scan(
         debug,
         filter_by_subscriptions,
         filter_by_rgs,
+        no_include_references,
     )
     if debug:
         print(

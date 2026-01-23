@@ -207,3 +207,47 @@ class TestFilterConfig:
         config = FilterConfig(resource_group_names=rg_names)
         assert len(config.resource_group_names) == 5
         assert all(rg in config.resource_group_names for rg in rg_names)
+
+
+class TestFilterConfigReferencedResources:
+    """Test FilterConfig include_referenced_resources field (Issue #228)."""
+
+    def test_default_include_referenced_resources_is_true(self):
+        """Test that include_referenced_resources defaults to True."""
+        config = FilterConfig()
+        assert config.include_referenced_resources is True
+
+    def test_create_with_include_referenced_resources_true(self):
+        """Test creating FilterConfig with include_referenced_resources=True."""
+        config = FilterConfig(
+            subscription_ids=[str(uuid4())], include_referenced_resources=True
+        )
+        assert config.include_referenced_resources is True
+
+    def test_create_with_include_referenced_resources_false(self):
+        """Test creating FilterConfig with include_referenced_resources=False."""
+        config = FilterConfig(
+            subscription_ids=[str(uuid4())], include_referenced_resources=False
+        )
+        assert config.include_referenced_resources is False
+
+    def test_include_referenced_resources_persists_through_validation(self):
+        """Test that include_referenced_resources survives model validation."""
+        sub_id = str(uuid4())
+        config = FilterConfig(
+            subscription_ids=[sub_id],
+            resource_group_names=["rg-prod"],
+            include_referenced_resources=False,
+        )
+
+        assert config.subscription_ids == [sub_id]
+        assert config.resource_group_names == ["rg-prod"]
+        assert config.include_referenced_resources is False
+
+    def test_from_comma_separated_preserves_default(self):
+        """Test that from_comma_separated method preserves default include_referenced_resources=True."""
+        config = FilterConfig.from_comma_separated(
+            subscription_ids=str(uuid4()), resource_group_names="rg-prod,rg-dev"
+        )
+
+        assert config.include_referenced_resources is True

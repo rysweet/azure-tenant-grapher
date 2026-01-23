@@ -13,10 +13,12 @@ class FilterConfig(BaseModel):
     Attributes:
         subscription_ids: List of subscription UUIDs to filter by (defaults to empty list)
         resource_group_names: List of resource group names to filter by (defaults to empty list)
+        include_referenced_resources: Whether to include referenced resources (identities, RBAC) (defaults to True)
     """
 
     subscription_ids: Optional[List[str]] = Field(default_factory=list)
     resource_group_names: Optional[List[str]] = Field(default_factory=list)
+    include_referenced_resources: bool = True
 
     @model_validator(mode="before")
     @classmethod
