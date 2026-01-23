@@ -18,7 +18,7 @@ export AZURE_LIGHTHOUSE_MANAGING_TENANT_ID="your-mssp-tenant-id"
 export AZURE_LIGHTHOUSE_BICEP_DIR="./lighthouse_bicep"
 export NEO4J_URI="bolt://localhost:7687"
 export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="your-password"
+export NEO4J_PASSWORD="your-password"  # pragma: allowlist secret
 
 # 4. Authenticate with Azure
 az login --tenant $AZURE_LIGHTHOUSE_MANAGING_TENANT_ID

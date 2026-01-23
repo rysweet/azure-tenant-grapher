@@ -444,7 +444,7 @@ class TestSentinelSetupOrchestrator:
         content = config_file.read_text()
         assert "TENANT_ID=12345678-1234-1234-1234-123456789012" in content
         assert "SUBSCRIPTION_ID=87654321-4321-4321-4321-210987654321" in content
-        assert "WORKSPACE_NAME=test-workspace" in content
+        assert "WORKSPACE_NAME=test-workspace" in content  # pragma: allowlist secret
 
     @patch("subprocess.run")
     def test_execute_module_success(self, mock_run, tmp_path):

@@ -180,7 +180,7 @@ pytest tests/commands/test_sentinel_integration.py -v
 export AZURE_TENANT_ID="your-tenant-id"
 export AZURE_SUBSCRIPTION_ID="your-subscription-id"
 export AZURE_CLIENT_ID="your-client-id"
-export AZURE_CLIENT_SECRET="your-client-secret"
+export AZURE_CLIENT_SECRET="your-client-secret"  # pragma: allowlist secret
 
 # Run E2E tests
 pytest tests/commands/test_sentinel_e2e.py -v -m e2e

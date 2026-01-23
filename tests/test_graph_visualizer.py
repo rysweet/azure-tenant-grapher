@@ -19,7 +19,7 @@ class TestGraphVisualizer:
 
         assert visualizer.neo4j_uri == "bolt://localhost:7687"
         assert visualizer.neo4j_user == "neo4j"
-        assert visualizer.neo4j_password == "password"  # nosec
+        assert visualizer.neo4j_password == "password"  # nosec  # pragma: allowlist secret
         assert visualizer.driver is None
 
     @pytest.fixture

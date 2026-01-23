@@ -61,7 +61,7 @@ class TestNeo4jCredentials:
         """URI without hostname should raise validation error."""
         with pytest.raises(CredentialValidationError):
             Neo4jCredentials(
-                uri="bolt://", username="neo4j", password="test123"
+                uri="bolt://", username="neo4j", password="test123"  // pragma: allowlist secret
             )  # pragma: allowlist secret
 
     def test_empty_username(self):
@@ -149,7 +149,7 @@ class TestGetNeo4jCredentials:
             {
                 "NEO4J_PORT": "7688",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },  # pragma: allowlist secret
             clear=True,
         ):

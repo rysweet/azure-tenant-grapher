@@ -298,7 +298,8 @@ class TestDataSecurity:
             # Decrypt and verify
             decrypted = service.decrypt_sensitive_data(loaded_data)
             assert (
-                decrypted["database_password"] == "db_pass_123"
+                decrypted["database_password"]
+                == "db_pass_123"  # pragma: allowlist secret
             )  # pragma: allowlist secret
 
     def test_database_query_parameterization(self):

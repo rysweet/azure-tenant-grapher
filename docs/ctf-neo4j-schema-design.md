@@ -563,7 +563,7 @@ CREATE (c1:CTFResource {
     role: 'vulnerable-target',
     public_ip: '40.78.123.45',
     access_method: 'ssh',
-    credentials: '{"username": "lowpriv", "password": "weak123"}',
+    credentials: '{"username": "lowpriv", "password": "weak123"}',  # pragma: allowlist secret
     notes: 'Misconfigured sudo allowing /usr/bin/vim',
     created_at: datetime(),
     updated_at: datetime()

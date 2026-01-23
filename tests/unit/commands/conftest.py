@@ -36,7 +36,7 @@ def mock_neo4j_config():
     return {
         "uri": "bolt://localhost:7687",
         "user": "neo4j",
-        "password": "test_password",
+        "password": "test_password",  # pragma: allowlist secret
     }
 
 

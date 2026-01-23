@@ -30,13 +30,13 @@ class TestNeo4jConfig:
             {
                 "NEO4J_URI": "bolt://test:7687",
                 "NEO4J_USER": "testuser",
-                "NEO4J_PASSWORD": "testpass",  # nosec
+                "NEO4J_PASSWORD": "testpass",  # nosec # pragma: allowlist secret
             },
         ):
             config = Neo4jConfig()
             assert config.uri == "bolt://test:7687"
             assert config.user == "testuser"
-            assert config.password == "testpass"  # nosec
+            assert config.password == "testpass"  # nosec # pragma: allowlist secret
 
     def test_validation_missing_uri(self) -> None:
         """Test validation fails when URI is missing."""
@@ -45,7 +45,7 @@ class TestNeo4jConfig:
             {
                 "NEO4J_URI": "",
                 "NEO4J_USER": "testuser",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },  # nosec
         ):
             with pytest.raises(ValueError, match="Neo4j URI is required"):
@@ -58,7 +58,7 @@ class TestNeo4jConfig:
             {
                 "NEO4J_URI": "bolt://test:7687",
                 "NEO4J_USER": "",
-                "NEO4J_PASSWORD": "testpass",  # nosec
+                "NEO4J_PASSWORD": "testpass",  # nosec # pragma: allowlist secret
             },
         ):
             with pytest.raises(ValueError, match="Neo4j user is required"):
@@ -84,7 +84,7 @@ class TestNeo4jConfig:
             {
                 "NEO4J_URI": "bolt://test:7687",
                 "NEO4J_USER": "testuser",
-                "NEO4J_PASSWORD": "testpass",  # nosec
+                "NEO4J_PASSWORD": "testpass",  # nosec # pragma: allowlist secret
             },
         ):
             config = Neo4jConfig()

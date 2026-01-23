@@ -9,7 +9,6 @@ Tests cover:
 from unittest.mock import MagicMock, Mock
 
 import pytest
-from neo4j import Driver
 
 from src.services.graph_abstraction_sampler import StratifiedSampler
 from src.services.graph_abstraction_service import GraphAbstractionService

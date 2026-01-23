@@ -161,12 +161,14 @@ class TestLSPConfigurator:
         """Test getting all environment variables from .env."""
         from lsp_setup.lsp_configurator import LSPConfigurator
 
-        mock_env_file.write_text("API_KEY=secret\nENABLE_LSP_TOOL=1\nDEBUG=false\n")
+        mock_env_file.write_text(
+            "API_KEY=secret\nENABLE_LSP_TOOL=1\nDEBUG=false\n"  # pragma: allowlist secret
+        )
 
         configurator = LSPConfigurator(mock_project_root)
         env_vars = configurator.get_all_env_variables()
 
-        assert env_vars["API_KEY"] == "secret"
+        assert env_vars["API_KEY"] == "secret"  # pragma: allowlist secret
         assert env_vars["ENABLE_LSP_TOOL"] == "1"
         assert env_vars["DEBUG"] == "false"
 
@@ -187,7 +189,9 @@ class TestLSPConfigurator:
         """Test removing an environment variable."""
         from lsp_setup.lsp_configurator import LSPConfigurator
 
-        mock_env_file.write_text("API_KEY=secret\nOLD_VAR=old_value\n")
+        mock_env_file.write_text(
+            "API_KEY=secret\nOLD_VAR=old_value\n"  # pragma: allowlist secret
+        )
 
         configurator = LSPConfigurator(mock_project_root)
         configurator.remove_env_variable("OLD_VAR")

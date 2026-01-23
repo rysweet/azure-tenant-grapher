@@ -290,7 +290,7 @@ class TestServicePrincipalModel:
         assert len(sp.credentials) == 2
         assert sp.credentials[0].credential_type == "Certificate"
         assert (
-            sp.credentials[0].thumbprint == "ABC123DEF456"
+            sp.credentials[0].thumbprint == "ABC123DEF456"  # pragma: allowlist secret
         )  # pragma: allowlist secret  # pragma: allowlist secret
         assert sp.credentials[1].credential_type == "ClientSecret"
 

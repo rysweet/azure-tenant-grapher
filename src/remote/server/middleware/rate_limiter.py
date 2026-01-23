@@ -37,9 +37,7 @@ class RateLimiter(BaseHTTPMiddleware):
         self.window_seconds = 3600  # 1 hour
         # Track: api_key -> list of (timestamp, endpoint) tuples
         self._requests: Dict[str, list[Tuple[float, str]]] = defaultdict(list)
-        logger.info(
-            f"Rate limiter initialized: {requests_per_hour} requests per hour"
-        )
+        logger.info(f"Rate limiter initialized: {requests_per_hour} requests per hour")
 
     async def dispatch(self, request: Request, call_next):
         """Process request with rate limiting."""
@@ -75,9 +73,7 @@ class RateLimiter(BaseHTTPMiddleware):
         """Remove entries older than the time window."""
         cutoff = current_time - self.window_seconds
         self._requests[api_key] = [
-            (ts, path)
-            for ts, path in self._requests[api_key]
-            if ts > cutoff
+            (ts, path) for ts, path in self._requests[api_key] if ts > cutoff
         ]
 
     def _is_rate_limited(self, api_key: str) -> bool:

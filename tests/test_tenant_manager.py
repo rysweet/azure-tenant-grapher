@@ -313,7 +313,7 @@ class TestNeo4jTenantManager:
         # Arrange
         tenant_id = "test-tenant"
         config = {
-            "api_key": "secret",
+            "api_key": "secret",  # pragma: allowlist secret
             "region": "us-west-2",
             "nested": {"value": 123},
         }  # pragma: allowlist secret

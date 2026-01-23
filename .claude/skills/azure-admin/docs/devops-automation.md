@@ -675,7 +675,7 @@ steps:
     uses: azure/get-keyvault-secrets@v1
     with:
       keyvault: "myapp-keyvault"
-      secrets: "DatabasePassword, ApiKey"
+      secrets: "DatabasePassword, ApiKey"  # pragma: allowlist secret
     id: keyvault
 
   - name: Use Secrets

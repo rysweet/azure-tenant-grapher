@@ -187,7 +187,7 @@ from src.architecture_based_replicator import ArchitecturePatternReplicator
 replicator = ArchitecturePatternReplicator(
     neo4j_uri="bolt://localhost:7687",
     neo4j_user="neo4j",
-    neo4j_password="neo4j123"
+    neo4j_password="neo4j123"  # pragma: allowlist secret
 )
 
 # Analyze source tenant

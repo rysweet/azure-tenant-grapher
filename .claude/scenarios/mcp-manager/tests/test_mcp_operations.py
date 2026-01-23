@@ -115,7 +115,7 @@ def test_mcpserver_to_dict():
     assert result["command"] == "node"
     assert result["args"] == ["server.js", "--port", "3000"]
     assert result["enabled"] is False
-    assert result["env"] == {"API_KEY": "test"}
+    assert result["env"] == {"API_KEY": "test"}  # pragma: allowlist secret
 
 
 def test_mcpserver_to_dict_no_env():
