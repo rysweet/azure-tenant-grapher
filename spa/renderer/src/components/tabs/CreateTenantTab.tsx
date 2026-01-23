@@ -30,13 +30,14 @@ const CreateTenantTab: React.FC = () => {
   const [companySize, setCompanySize] = useState<number>(100);
   const [seedFile, setSeedFile] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
+  const [selectedTenant, setSelectedTenant] = useState<'1' | '2' | '3'>('1');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   const handleFileUpload = async () => {
     try {
       const filePath = await window.electronAPI?.dialog?.openFile?.({
         filters: [
-          { name: 'Spec Files', extensions: ['json', 'yaml', 'yml'] },
+          { name: 'Spec Files', extensions: ['json', 'yaml', 'yml', 'md'] },
           { name: 'All Files', extensions: ['*'] }
         ]
       });
@@ -47,11 +48,17 @@ const CreateTenantTab: React.FC = () => {
           const typedResult = result as { success: boolean; data?: string; error?: string };
           if (typedResult.success && typedResult.data) {
             setSpecContent(typedResult.data);
+            // Extract and store filename for display
+            const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
+            setUploadedFileName(fileName);
           } else {
             setError(typedResult.error || 'Failed to read file');
           }
         } else if (typeof result === 'string') {
           setSpecContent(result);
+          // Extract and store filename for display
+          const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
+          setUploadedFileName(fileName);
         } else {
           setError('Invalid file read response');
         }
@@ -125,12 +132,13 @@ const CreateTenantTab: React.FC = () => {
               <InputLabel>Target Tenant</InputLabel>
               <Select
                 value={selectedTenant}
-                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
+                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2' | '3')}
                 disabled={isCreating}
                 label="Target Tenant"
               >
                 <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
                 <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
+                <MenuItem value="3">Tenant 3 (SimServAutomation)</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -168,10 +176,17 @@ const CreateTenantTab: React.FC = () => {
 
       <Box sx={{ flex: 1, display: 'flex', gap: 2, minHeight: 0 }}>
         <Paper sx={{ flex: 1, p: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Specification Content
-          </Typography>
-          <Box sx={{ height: 'calc(100% - 30px)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="subtitle2">
+              Specification Content
+            </Typography>
+            {uploadedFileName && (
+              <Typography variant="caption" color="primary" sx={{ fontStyle: 'italic' }}>
+                Uploaded: {uploadedFileName}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ height: 'calc(100% - 40px)' }}>
             <MonacoEditor
               value={specContent || '// Paste or upload your tenant specification here'}
               language="json"
@@ -277,10 +292,14 @@ const CreateTenantTab: React.FC = () => {
                     // Check if output contains the generated file path
                     const pathMatch = output.match(/Generated simulation document: (.+\.md)/);
                     if (pathMatch) {
+                      const generatedFilePath = pathMatch[1];
                       // Read the generated file and set it as spec content
-                      window.electronAPI.file?.read(pathMatch[1]).then((readResult: any) => {
+                      window.electronAPI.file?.read(generatedFilePath).then((readResult: any) => {
                         if (readResult.success) {
                           setSpecContent(readResult.data);
+                          // Extract and display the generated filename
+                          const fileName = generatedFilePath.split('/').pop() || generatedFilePath.split('\\').pop() || generatedFilePath;
+                          setUploadedFileName(fileName + ' (Generated)');
                         }
                       });
                     }
