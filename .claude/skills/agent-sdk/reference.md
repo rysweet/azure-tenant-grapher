@@ -351,7 +351,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."  # pragma: allowlist secret
 ```python
 agent = Agent(
     model="claude-sonnet-4-5-20250929",
-    api_key="sk-ant-..."
+    api_key="sk-ant-..."  # #ggignore - example API key
 )
 ```
 
