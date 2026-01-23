@@ -237,6 +237,50 @@ class AzureTenantGrapher:
                 f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"
             )
 
+            # 2.5. Collect referenced resources (if filtering is active)
+            if (
+                filter_config
+                and filter_config.has_filters()
+                and filter_config.include_referenced_resources
+            ):
+                logger.info("=" * 70)
+                logger.info("Collecting referenced resources for filtered import...")
+                logger.info("=" * 70)
+
+                from src.services.managed_identity_resolver import (
+                    ManagedIdentityResolver,
+                )
+                from src.services.referenced_resource_collector import (
+                    ReferencedResourceCollector,
+                )
+
+                collector = ReferencedResourceCollector(
+                    discovery_service=self.discovery_service,
+                    identity_resolver=ManagedIdentityResolver(
+                        tenant_seed=self.config.tenant_id
+                    ),
+                    aad_graph_service=self.aad_graph_service,
+                )
+
+                try:
+                    referenced_resources = await collector.collect_referenced_resources(
+                        filtered_resources=all_resources, filter_config=filter_config
+                    )
+
+                    if referenced_resources:
+                        logger.info(
+                            f"✅ Adding {len(referenced_resources)} referenced resources to filtered import"
+                        )
+                        all_resources.extend(referenced_resources)
+                        logger.info(
+                            f"Total resources after referenced resource inclusion: {len(all_resources)}"
+                        )
+                    else:
+                        logger.info("No additional referenced resources found")
+                except Exception as e:
+                    logger.exception(f"Error collecting referenced resources: {e}")
+                    logger.warning("Continuing without referenced resource inclusion")
+
             # 3. Enrich with Entra ID identity data
             if self.aad_graph_service:
                 logger.info("=" * 70)
