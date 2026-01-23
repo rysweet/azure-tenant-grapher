@@ -115,8 +115,7 @@ class DataProcessor:
         self.data = []
 
     def add_data(self, item):
-        if not isinstance(item, (int, float, str, list, dict)):
-            raise TypeError(f"Item must be int, float, str, list, or dict, got {type(item).__name__}")
+        # TODO: Add validation
         self.data.append(item)
 
     def process_all(self):

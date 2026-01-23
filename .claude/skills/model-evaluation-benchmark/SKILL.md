@@ -1,3 +1,11 @@
+---
+name: model-evaluation-benchmark
+version: 1.0.0
+description: |
+  Automated reproduction of comprehensive model evaluation benchmarks following the Benchmark Suite V3.
+  Auto-activates for model benchmarking, comparison evaluation, or performance testing between AI models.
+---
+
 # Model Evaluation Benchmark Skill
 
 **Purpose**: Automated reproduction of comprehensive model evaluation benchmarks following the Benchmark Suite V3 reference implementation.
@@ -51,7 +59,7 @@ python run_benchmarks.py --model {opus|sonnet} --tasks 1,2,3,4
 
 ### Phase 3: Analyze Results
 
-1. Read all result files: `.claude/runtime/benchmarks/suite_v3/*/result.json`
+1. Read all result files: `~/.amplihack/.claude/runtime/benchmarks/suite_v3/*/result.json`
 2. Launch parallel Task tool calls with `subagent_type="reviewer"` to:
    - Analyze trace logs for tool/agent/skill usage
    - Score code quality (1-5 scale)

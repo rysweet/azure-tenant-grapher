@@ -1,5 +1,5 @@
 ---
-name: "Setting Up Projects"
+name: setting-up-projects
 description: "Automates project setup with best practices including pre-commit hooks, linting, formatting, and boilerplate. Activates when creating new projects, missing configuration files, or setting up development environment. Ensures quality tooling from the start."
 ---
 
@@ -369,7 +369,7 @@ project/
 
 - **Project Structure**: `Specs/ProjectStructure.md`
 - **Best Practices**: Language-specific guides
-- **Templates**: `.claude/templates/`
+- **Templates**: `~/.amplihack/.claude/templates/`
 
 ## Recommendations
 
@@ -544,7 +544,7 @@ Good project setup:
 - **Skill**: "Reviewing Code" for quality validation
 - **Agent**: Builder agent for code generation
 - **Documentation**: `Specs/PreCommitHooks.md`
-- **Templates**: `.claude/templates/`
+- **Templates**: `~/.amplihack/.claude/templates/`
 
 ---
 

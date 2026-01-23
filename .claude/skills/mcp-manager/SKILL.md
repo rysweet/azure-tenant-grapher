@@ -40,63 +40,63 @@ Activates on MCP keywords within 3-message window or explicit invocation: `/mcp-
 Display all configured MCP servers with status.
 
 - "List all my MCPs" / "Show me my MCP servers"
-- CLI: `python3 -m mcp_manager.cli list`
+- CLI: `python3 -m mcp-manager.cli list`
 
 ### 2. Enable MCP
 
 Activate a disabled MCP server.
 
 - "Enable the filesystem MCP" / "Turn on puppeteer"
-- CLI: `python3 -m mcp_manager.cli enable <server-name>`
+- CLI: `python3 -m mcp-manager.cli enable <server-name>`
 
 ### 3. Disable MCP
 
 Deactivate an MCP server without removing it. Requires confirmation.
 
 - "Disable the puppeteer MCP" / "Turn off github"
-- CLI: `python3 -m mcp_manager.cli disable <server-name>`
+- CLI: `python3 -m mcp-manager.cli disable <server-name>`
 
 ### 4. Add MCP
 
 Add new MCP server interactively (collects name, command, args, env vars).
 
 - "Add a new MCP server" / "Configure a database MCP"
-- CLI: `python3 -m mcp_manager.cli add <name> <command> [args...] --env KEY=VALUE`
+- CLI: `python3 -m mcp-manager.cli add <name> <command> [args...] --env KEY=VALUE`
 
 ### 5. Remove MCP
 
 Delete MCP server configuration completely. Requires confirmation with warning.
 
 - "Remove the puppeteer MCP" / "Delete the old-server"
-- CLI: `python3 -m mcp_manager.cli remove <server-name>`
+- CLI: `python3 -m mcp-manager.cli remove <server-name>`
 
 ### 6. Show MCP
 
 Display detailed information for specific MCP server.
 
 - "Show me the filesystem MCP" / "Details for github server"
-- CLI: `python3 -m mcp_manager.cli show <server-name>`
+- CLI: `python3 -m mcp-manager.cli show <server-name>`
 
 ### 7. Validate MCPs
 
 Check all MCP configurations for errors.
 
 - "Validate my MCP configuration" / "Check for MCP errors"
-- CLI: `python3 -m mcp_manager.cli validate`
+- CLI: `python3 -m mcp-manager.cli validate`
 
 ### 8. Export MCPs
 
 Export configurations to JSON file for backup.
 
 - "Export my MCP configuration" / "Back up my MCPs"
-- CLI: `python3 -m mcp_manager.cli export [output-file]`
+- CLI: `python3 -m mcp-manager.cli export [output-file]`
 
 ### 9. Import MCPs
 
 Import configurations from JSON file.
 
 - "Import MCPs from backup.json" / "Restore my MCPs"
-- CLI: `python3 -m mcp_manager.cli import <input-file> [--merge]`
+- CLI: `python3 -m mcp-manager.cli import <input-file> [--merge]`
 
 ## Usage Examples
 
@@ -104,7 +104,7 @@ Import configurations from JSON file.
 
 **User:** "List all my MCPs"
 
-[Executes: `cd .claude/scenarios && python3 -m mcp_manager.cli list`]
+[Executes: `cd .claude/scenarios && python3 -m mcp-manager.cli list`]
 
 **Response:**
 "You have 3 MCP servers configured:
@@ -114,7 +114,7 @@ Import configurations from JSON file.
 
 **Follow-up:** "Turn on puppeteer"
 
-[Executes: `python3 -m mcp_manager.cli enable puppeteer`]
+[Executes: `python3 -m mcp-manager.cli enable puppeteer`]
 
 "✓ Successfully enabled 'puppeteer' MCP server."
 
@@ -129,7 +129,7 @@ Import configurations from JSON file.
 3. Args: "--port 5432 --host localhost"
 4. Env: "DATABASE_URL=postgresql://localhost:5432/mydb"
 
-[Executes: `python3 -m mcp_manager.cli add postgres-local "node /opt/mcp-servers/postgres/index.js" --port 5432 --host localhost --env "DATABASE_URL=postgresql://localhost:5432/mydb"`]
+[Executes: `python3 -m mcp-manager.cli add postgres-local "node /opt/mcp-servers/postgres/index.js" --port 5432 --host localhost --env "DATABASE_URL=postgresql://localhost:5432/mydb"`]
 
 "✓ Successfully added 'postgres-local' MCP server.
 Server is currently disabled. Enable with: 'enable postgres-local'"
@@ -143,16 +143,16 @@ Server is currently disabled. Enable with: 'enable postgres-local'"
 
 [User confirms: "yes"]
 
-[Executes: `python3 -m mcp_manager.cli remove puppeteer`]
+[Executes: `python3 -m mcp-manager.cli remove puppeteer`]
 
 "✓ Successfully removed 'puppeteer' MCP server."
 
 ## Tool Invocation
 
-All commands execute from `.claude/scenarios/` directory:
+All commands execute from `~/.amplihack/.claude/scenarios/` directory:
 
 ```bash
-cd .claude/scenarios && python3 -m mcp_manager.cli <command> [args]
+cd .claude/scenarios && python3 -m mcp-manager.cli <command> [args]
 ```
 
 **Key Commands:**
@@ -184,7 +184,7 @@ cd .claude/scenarios && python3 -m mcp_manager.cli <command> [args]
 5. **Malformed settings.json**: Validate JSON, offer backup restore
 6. **Invalid Command**: Show common command patterns
 
-For detailed error scenarios and troubleshooting, see `.claude/scenarios/mcp_manager/README.md`
+For detailed error scenarios and troubleshooting, see `~/.amplihack/.claude/scenarios/mcp-manager/README.md`
 
 ## Best Practices
 
@@ -196,10 +196,10 @@ For detailed error scenarios and troubleshooting, see `.claude/scenarios/mcp_man
 
 ## See Also
 
-- Full documentation: `.claude/scenarios/mcp_manager/README.md`
-- Tool creation guide: `.claude/scenarios/mcp_manager/HOW_TO_CREATE_YOUR_OWN.md`
+- Full documentation: `~/.amplihack/.claude/scenarios/mcp-manager/README.md`
+- Tool creation guide: `~/.amplihack/.claude/scenarios/mcp-manager/HOW_TO_CREATE_YOUR_OWN.md`
 - MCP Protocol: https://modelcontextprotocol.io/
-- Claude Code Settings: `.claude/settings.json`
+- Claude Code Settings: `~/.amplihack/.claude/settings.json`
 
 ---
 
