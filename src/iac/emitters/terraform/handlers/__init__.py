@@ -147,9 +147,10 @@ def _register_all_handlers() -> None:
         ssh_public_key,
         virtual_machine,
         vm_extensions,
+        vm_image,
     )
 
-    _ = (disks, ssh_public_key, virtual_machine, vm_extensions)
+    _ = (disks, ssh_public_key, virtual_machine, vm_extensions, vm_image)
 
     # Container handlers
     from .container import (
