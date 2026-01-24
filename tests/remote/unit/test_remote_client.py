@@ -388,19 +388,21 @@ async def test_generate_iac_raises_on_error_event(remote_client):
 
 @pytest.mark.asyncio
 async def test_stream_progress_converts_http_to_ws_url(remote_client):
-    """Test that _stream_progress converts HTTP URL to WebSocket URL."""
-    # This is tested indirectly through scan/generate_iac, but we can test URL conversion logic
-    http_base = "https://atg.example.com"
-    client = RemoteClient(base_url=http_base, api_key="test_key")
+    """Test that _stream_progress constructs correct WebSocket URL."""
+    job_id = "job-123"
 
-    # The conversion happens in _stream_progress, we'll verify it converts correctly
-    expected_ws = "wss://atg.example.com/ws/progress/job-123"
+    mock_ws = AsyncMock()
+    mock_ws.__aenter__ = AsyncMock(return_value=mock_ws)
+    mock_ws.__aexit__ = AsyncMock(return_value=None)
+    mock_ws.recv = AsyncMock(side_effect=[json.dumps({"type": "complete"})])
 
-    # We can't easily test this without actually connecting, but the logic is straightforward
-    assert client.base_url.replace("https://", "wss://") == "wss://atg.example.com"
-    assert (
-        client.base_url.replace("http://", "ws://") == client.base_url
-    )  # No change if HTTPS
+    with patch("src.remote.client.remote_client.connect", return_value=mock_ws) as mock_connect:  # type: ignore[attr-defined]  # patch() returns regular context manager
+        async for _ in remote_client._stream_progress(job_id):
+            pass
+
+        # Verify connect was called with correct WebSocket URL
+        called_url = mock_connect.call_args[0][0]
+        assert called_url == f"wss://atg.example.com/ws/progress/{job_id}"
 
 
 @pytest.mark.asyncio
