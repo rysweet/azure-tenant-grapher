@@ -12,10 +12,18 @@ Public API:
 
 import asyncio
 import json
-from typing import Any, AsyncIterator, Callable, Dict, Optional
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 import httpx
 from websockets import connect
+
+# Type alias for progress callback
+ProgressCallback = Callable[[float, str], None]
+# Type alias for execution results
+ExecutionResult = dict[str, Any]
+# Type alias for WebSocket events
+WebSocketEvent = dict[str, Any]
 
 
 class RemoteClient:
@@ -61,9 +69,9 @@ class RemoteClient:
     async def scan(
         self,
         tenant_id: str,
-        progress_callback: Optional[Callable[[float, str], None]] = None,
+        progress_callback: ProgressCallback | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ExecutionResult:
         """
         Execute scan operation on remote service.
 
@@ -102,7 +110,7 @@ class RemoteClient:
 
         return result
 
-    async def _stream_progress(self, job_id: str) -> AsyncIterator[Dict[str, Any]]:
+    async def _stream_progress(self, job_id: str) -> AsyncIterator[WebSocketEvent]:
         """
         Stream progress updates via WebSocket.
 
@@ -143,9 +151,9 @@ class RemoteClient:
         self,
         tenant_id: str,
         output_format: str,
-        progress_callback: Optional[Callable[[float, str], None]] = None,
+        progress_callback: ProgressCallback | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ExecutionResult:
         """
         Generate IaC via remote service.
 

@@ -14,7 +14,9 @@ Patterns:
 
 import asyncio
 import logging
-from typing import Any, Callable, List, Optional, TypeVar
+from typing import Awaitable, Callable, TypeVar
+
+from .protocols import Neo4jSession, Neo4jTransaction
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +24,12 @@ T = TypeVar("T")
 
 
 async def chunked_transaction(
-    session: Any,
-    items: List[T],
+    session: Neo4jSession,
+    items: list[T],
     chunk_size: int,
-    process_fn: Callable[..., Any],
-    progress_callback: Optional[Callable[[int, int], None]] = None,
-) -> List[Any]:
+    process_fn: Callable[[Neo4jTransaction, list[T]], Awaitable[T]],
+    progress_callback: Callable[[int, int], None] | None = None,
+) -> list[T]:
     """
     Process items in chunked transactions.
 
@@ -81,11 +83,11 @@ async def chunked_transaction(
 
 
 async def with_retry(
-    session: Any,
-    operation: Callable[..., Any],
+    session: Neo4jSession,
+    operation: Callable[[Neo4jTransaction], Awaitable[T]],
     max_retries: int = 3,
     retry_delay: float = 1.0,
-) -> Any:
+) -> T:
     """
     Execute operation with retry logic.
 
@@ -135,7 +137,10 @@ async def with_retry(
                 logger.error(str(f"Operation failed after {max_retries} attempts"))
 
     # Re-raise last error if all retries failed
-    raise last_error  # type: ignore[misc]
+    if last_error is not None:
+        raise last_error
+    # This should never happen, but satisfies type checker
+    raise RuntimeError("Operation failed with no error recorded")
 
 
 __all__ = ["chunked_transaction", "with_retry"]

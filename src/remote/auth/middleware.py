@@ -9,16 +9,32 @@ Philosophy:
 This module provides authentication middleware compatible with the tests.
 """
 
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import ParamSpec, TypedDict, TypeVar
 
 from fastapi import Request
 
 from ..common.exceptions import AuthenticationError
 from .api_keys import APIKeyStore
 
+
+class AuthContext(TypedDict):
+    """
+    Authentication context attached to authenticated requests.
+
+    This is added to request.state.auth by the require_api_key middleware.
+    """
+
+    environment: str
+    client_id: str
+
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
 # Global API key store (will be set during service initialization)
-_api_key_store: Optional[APIKeyStore] = None
+_api_key_store: APIKeyStore | None = None
 
 
 def get_api_key_store() -> APIKeyStore:
@@ -47,19 +63,22 @@ def set_api_key_store(store: APIKeyStore) -> None:
     _api_key_store = store
 
 
-def require_api_key(func: Callable[..., Any]) -> Callable[..., Any]:
+def require_api_key(
+    func: Callable[P, Awaitable[T]],
+) -> Callable[P, Awaitable[T]]:
     """
     Decorator for requiring API key authentication.
 
     This decorator checks the Authorization header for a valid Bearer token,
     validates it against the API key store, and sets the auth context on the
-    request object.
+    request.state object.
 
     Usage:
         @require_api_key
-        async def protected_endpoint(request):
-            # request.auth_context contains environment and client_id
-            return {"status": "authenticated"}
+        async def protected_endpoint(request: Request):
+            # Access auth context via request.state.auth
+            auth = request.state.auth
+            return {"environment": auth["environment"]}
 
     Args:
         func: Async function to wrap
@@ -72,7 +91,11 @@ def require_api_key(func: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(func)
-    async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        # Extract request from first argument
+        request = args[0] if args else kwargs.get("request")
+        if not isinstance(request, Request):
+            raise AuthenticationError("First argument must be a FastAPI Request")
         # Extract Authorization header
         auth_header = request.headers.get("Authorization", "")
 
@@ -98,19 +121,21 @@ def require_api_key(func: Callable[..., Any]) -> Callable[..., Any]:
             else:
                 raise AuthenticationError("Invalid API key")
 
-        # Set auth context on request
-        request.auth_context = {  # type: ignore[misc]
+        # Set auth context on request.state (type-safe way to extend Request)
+        auth_context: AuthContext = {
             "environment": validation["environment"],
             "client_id": validation["client_id"],
         }
+        request.state.auth = auth_context
 
         # Call original function
-        return await func(request, *args, **kwargs)
+        return await func(*args, **kwargs)
 
     return wrapper
 
 
 __all__ = [
+    "AuthContext",
     "get_api_key_store",
     "require_api_key",
     "set_api_key_store",
