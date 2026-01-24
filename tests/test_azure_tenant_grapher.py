@@ -31,7 +31,7 @@ class TestAzureTenantGrapher:
         neo4j_config = Mock()
         neo4j_config.uri = "bolt://localhost:7687"
         neo4j_config.user = "neo4j"
-        neo4j_config.password = "test-password"  # nosec
+        neo4j_config.password = "test-password"  # nosec  # pragma: allowlist secret
         config.neo4j = neo4j_config
 
         # Set up nested azure_openai config

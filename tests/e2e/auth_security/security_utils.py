@@ -330,8 +330,9 @@ class SecurityScanner:
 
         # Private key pattern
         if (
-            "BEGIN RSA PRIVATE KEY" in text or "BEGIN PRIVATE KEY" in text
-        ):  # pragma: allowlist secret
+            "BEGIN RSA PRIVATE KEY" in text  # pragma: allowlist secret
+            or "BEGIN PRIVATE KEY" in text  # pragma: allowlist secret
+        ):
             detected.append("Private key detected")
 
         return detected

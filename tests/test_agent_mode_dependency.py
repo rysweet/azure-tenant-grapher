@@ -48,7 +48,7 @@ async def test_agent_mode_startup():
         "autogen_ext.tools.mcp.McpWorkbench"
     ) as mock_workbench, patch("asyncio.to_thread") as mock_input:
         # Configure mocks
-        mock_config.return_value.api_key = "test-key"
+        mock_config.return_value.api_key = "test-key"  # pragma: allowlist secret
         mock_config.return_value.endpoint = "https://test.openai.azure.com/"
         mock_config.return_value.api_version = "2024-02-01"
         mock_config.return_value.model_chat = "gpt-4"

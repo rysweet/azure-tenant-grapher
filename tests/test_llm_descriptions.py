@@ -30,7 +30,7 @@ class TestLLMConfig:
         ):
             config = LLMConfig.from_env()
             assert config.endpoint == "https://test.openai.azure.com/"
-            assert config.api_key == "test-key"
+            assert config.api_key == "test-key"  # pragma: allowlist secret
             assert config.api_version == "2025-04-16"  # The actual default from code
             assert config.model_chat == "gpt-4"
             assert config.model_reasoning == "gpt-4"
@@ -49,7 +49,7 @@ class TestLLMConfig:
         ):
             config = LLMConfig.from_env()
             assert config.endpoint == "https://custom.openai.azure.com/"
-            assert config.api_key == "custom-key"
+            assert config.api_key == "custom-key"  # pragma: allowlist secret
             assert config.api_version == "2024-12-01"
             assert config.model_chat == "gpt-4o"
             assert config.model_reasoning == "o1-preview"

@@ -99,17 +99,17 @@ class AzCliWrapper:
                 success=result.returncode == 0,
             )
 
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             raise FileNotFoundError(
                 "Azure CLI (az) not found. Install from: "
                 "https://learn.microsoft.com/en-us/cli/azure/install-azure-cli"
-            ) from e
+            )
 
-        except subprocess.TimeoutExpired as e:
+        except subprocess.TimeoutExpired:
             raise subprocess.TimeoutExpired(
                 cmd=command,
                 timeout=timeout,
-            ) from e
+            )
 
     def devops_command(
         self,
@@ -127,7 +127,7 @@ class AzCliWrapper:
         Returns:
             CommandResult with execution details
         """
-        command = ["az", "devops", *subcommand]
+        command = ["az", "devops"] + subcommand
 
         # Add default org/project if set
         if self.org:
@@ -228,7 +228,7 @@ def validate_work_item_id(work_item_id: str) -> int:
             raise ValueError("Work item ID must be positive")
         return id_int
     except ValueError as e:
-        raise ValueError(f"Invalid work item ID '{work_item_id}': {e}") from e
+        raise ValueError(f"Invalid work item ID '{work_item_id}': {e}")
 
 
 def format_table(headers: list[str], rows: list[list[str]]) -> str:
@@ -260,7 +260,7 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
         for row in rows
     ]
 
-    return "\n".join([header_line, separator, *formatted_rows])
+    return "\n".join([header_line, separator] + formatted_rows)
 
 
 __all__ = [

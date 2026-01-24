@@ -10,7 +10,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add project root to path for amplihack imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -30,9 +30,7 @@ class CodebaseAnalyzer:
         ]
         self.max_file_size = 1024 * 1024  # 1MB
 
-    def analyze(
-        self, target_path: str, options: Optional[dict] = None
-    ) -> dict[str, Any]:
+    def analyze(self, target_path: str, options: dict = None) -> dict[str, Any]:
         """
         Perform analysis of target codebase.
 

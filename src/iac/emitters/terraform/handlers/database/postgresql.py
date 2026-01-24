@@ -91,7 +91,8 @@ class PostgreSQLFlexibleServerHandler(ResourceHandler):
             if active_directory_auth:
                 config["authentication"] = {
                     "active_directory_auth_enabled": active_directory_auth == "Enabled",
-                    "password_auth_enabled": password_auth == "Enabled"
+                    "password_auth_enabled": password_auth
+                    == "Enabled"  # pragma: allowlist secret
                     if password_auth
                     else True,
                 }

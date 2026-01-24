@@ -474,7 +474,7 @@ uv run atg setup-sentinel \
 // ❌ BAD - Credentials in config file
 {
   "azure": {
-    "client_secret": "my-secret-value"
+    "client_secret": "my-secret-value"  # pragma: allowlist secret
   }
 }
 ```

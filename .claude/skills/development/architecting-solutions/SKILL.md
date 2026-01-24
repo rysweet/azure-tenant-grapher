@@ -1,5 +1,5 @@
 ---
-name: "Architecting Solutions"
+name: architecting-solutions
 description: "Analyzes problems and designs system architecture before implementation. Activates when user asks design questions, discusses architecture, or needs to break down complex features. Creates clear specifications following the brick philosophy of simple, modular, regeneratable components."
 ---
 
@@ -154,7 +154,7 @@ Ask these questions in order:
 
 ### Invokes
 
-- **Architect Agent**: Core architectural reasoning from `.claude/agents/architect.md`
+- **Architect Agent**: Core architectural reasoning from `~/.amplihack/.claude/agents/architect.md`
 - **Module Templates**: Reference `Templates/ModuleSpec.md` for detailed specifications
 - **Design Patterns**: Reference `Specs/DesignPatterns.md` for common solutions
 

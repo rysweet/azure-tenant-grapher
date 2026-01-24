@@ -241,7 +241,7 @@ agent = Agent(
     model="claude-sonnet-4-5-20250929",
 
     # Authentication (optional if env var set)
-    api_key="sk-ant-...",
+    api_key="sk-ant-...",  # pragma: allowlist secret
 
     # System prompt
     system="You are a helpful assistant.",
@@ -343,7 +343,7 @@ console.log(result.response);
 **Environment Variable (Recommended):**
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_API_KEY="sk-ant-..."  # pragma: allowlist secret
 ```
 
 **Explicit in Code:**
@@ -351,7 +351,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 ```python
 agent = Agent(
     model="claude-sonnet-4-5-20250929",
-    api_key="sk-ant-..."
+    api_key="sk-ant-..."  # #ggignore - example API key
 )
 ```
 
@@ -943,7 +943,7 @@ Skills are modular knowledge packages that enhance Claude's capabilities in spec
 
 **Key Characteristics:**
 
-- Filesystem-based (`.claude/skills/` directory)
+- Filesystem-based (`~/.amplihack/.claude/skills/` directory)
 - YAML frontmatter with metadata
 - Markdown content with domain knowledge
 - Automatic activation based on keywords or manual invocation
@@ -1002,7 +1002,7 @@ Domain-specific knowledge, patterns, and examples...
 
 **Discovery Process:**
 
-1. SDK scans `.claude/skills/` recursively
+1. SDK scans `~/.amplihack/.claude/skills/` recursively
 2. Finds all `SKILL.md` files (case-insensitive)
 3. Parses YAML frontmatter
 4. Validates required fields

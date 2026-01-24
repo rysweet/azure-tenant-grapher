@@ -476,7 +476,7 @@ def test_neo4j_config_environment_specific_pool_sizes():
         os.environ,
         {
             "NEO4J_URI": "bolt://neo4j-dev:7687",
-            "NEO4J_PASSWORD": "SecurePassword123!@#",
+            "NEO4J_PASSWORD": "SecurePassword123!@#",  # pragma: allowlist secret
             "NEO4J_DEV_POOL_SIZE": "50",
         },
         clear=True,
@@ -556,7 +556,7 @@ def test_config_from_dict():
 
     assert config.remote_mode is True
     assert config.service_url == "https://atg-dev.example.com"
-    assert config.api_key == "atg_dev_" + "a" * 64
+    assert config.api_key == "atg_dev_" + "a" * 64  # pragma: allowlist secret
 
 
 def test_config_redacts_secrets_in_string_representation():

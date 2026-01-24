@@ -12,7 +12,7 @@ import json
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +22,24 @@ class AuditLogger:
 
     # Patterns for secrets to redact
     SECRET_PATTERNS = [
-        (re.compile(r"(?i)(password|secret|key|token)[\s]*[:=][\s]*['\"]?([^'\"}\s,]+)", re.IGNORECASE), r"\1=<REDACTED>"),
-        (re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE), "Bearer <REDACTED>"),
-        (re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE), "<GUID-REDACTED>"),
+        (
+            re.compile(
+                r"(?i)(password|secret|key|token)[\s]*[:=][\s]*['\"]?([^'\"}\s,]+)",
+                re.IGNORECASE,
+            ),
+            r"\1=<REDACTED>",
+        ),
+        (
+            re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE),
+            "Bearer <REDACTED>",
+        ),
+        (
+            re.compile(
+                r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+                re.IGNORECASE,
+            ),
+            "<GUID-REDACTED>",
+        ),
     ]
 
     def __init__(self, service_name: str = "atg-remote"):

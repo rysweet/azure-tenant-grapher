@@ -19,7 +19,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -104,10 +104,7 @@ def extract_session_context(session_dir: Path) -> dict:
 
 
 def search_sessions(
-    logs_dir: Path,
-    query: Optional[str] = None,
-    session_id: Optional[str] = None,
-    limit: Optional[int] = None,
+    logs_dir: Path, query: str = None, session_id: str = None, limit: int = None
 ) -> list[dict]:
     """Search PM decisions across all sessions.
 

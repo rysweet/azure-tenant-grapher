@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "last_modified": "2026-01-17T00:00:00Z",
   "description": "Initial graph construction version tracking implementation",
-  "construction_hash": "7f608873a1c53bb088de3cc9daa8d3dd5e83add40be96f3a4a700ab2d06c966f",
+  "construction_hash": "7f608873a1c53bb088de3cc9daa8d3dd5e83add40be96f3a4a700ab2d06c966f",  # pragma: allowlist secret
   "tracked_paths": [
     "src/relationship_rules/",
     "src/services/azure_discovery_service.py",

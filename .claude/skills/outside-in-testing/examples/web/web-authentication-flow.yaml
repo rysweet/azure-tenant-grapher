@@ -20,9 +20,9 @@ scenario:
   # Test credentials
   variables:
     valid_email: "test@example.com"
-    valid_password: "TestPass123!"
+    valid_password: "TestPass123!"  # pragma: allowlist secret
     invalid_email: "wrong@example.com"
-    invalid_password: "wrongpass"
+    invalid_password: "wrongpass"  # pragma: allowlist secret
     user_display_name: "Test User"
 
   steps:

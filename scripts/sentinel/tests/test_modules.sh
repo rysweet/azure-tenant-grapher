@@ -126,7 +126,7 @@ test_01_prerequisites_detects_authentication_failure() {
     # Set invalid credentials
     export AZURE_TENANT_ID="invalid-tenant-id"
     export AZURE_CLIENT_ID="invalid-client-id"
-    export AZURE_CLIENT_SECRET="invalid-secret"
+    export AZURE_CLIENT_SECRET="invalid-secret"  # pragma: allowlist secret
 
     # Run module
     set +e

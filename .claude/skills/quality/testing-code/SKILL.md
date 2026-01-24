@@ -1,5 +1,5 @@
 ---
-name: "Testing Code"
+name: testing-code
 description: "Generates and improves tests following TDD principles. Activates when new features are implemented, test coverage is low, or user requests tests. Ensures comprehensive test coverage with unit, integration, and edge case tests."
 allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 ---
@@ -194,7 +194,7 @@ def test_user_registration_flow():
     # Act: Register user
     response = api.register({
         "email": "test@example.com",
-        "password": "SecurePass123!",
+        "password": "SecurePass123!",  # pragma: allowlist secret
     })
 
     # Assert: User created and email sent
@@ -447,7 +447,7 @@ def test_divide_with_negative_numbers():
 
 ### Invokes
 
-- **Tester Agent**: Core testing logic from `.claude/agents/tester.md`
+- **Tester Agent**: Core testing logic from `~/.amplihack/.claude/agents/tester.md`
 - **Code Analysis**: To identify untested code
 - **Coverage Tools**: pytest-cov, coverage.py, jest --coverage
 

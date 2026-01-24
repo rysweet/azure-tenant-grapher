@@ -174,7 +174,7 @@ def create_sample_logs():
     for i in range(3):
         log_file = temp_dir / f"sample_{i}.jsonl"
         with open(log_file, "w") as f:
-            for _j, msg in enumerate(sample_messages[i * 3 : (i + 1) * 3]):
+            for j, msg in enumerate(sample_messages[i * 3 : (i + 1) * 3]):
                 entry = {
                     "request": {
                         "body": {"messages": [{"role": "user", "content": msg}]}
@@ -208,7 +208,7 @@ def main():
     choice = input("Select example (1-4) or 'all' to run all: ").strip().lower()
 
     if choice == "all":
-        for _name, func in examples:
+        for name, func in examples:
             func()
     elif choice.isdigit() and 1 <= int(choice) <= len(examples):
         examples[int(choice) - 1][1]()

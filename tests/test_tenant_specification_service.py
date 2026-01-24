@@ -13,7 +13,7 @@ def mock_session_manager():
     class DummySession:
         uri = "bolt://localhost:7687"
         user = "neo4j"
-        password = "test"
+        password = "test"  # pragma: allowlist secret
 
         def __enter__(self):
             return self

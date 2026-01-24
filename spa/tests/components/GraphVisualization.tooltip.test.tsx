@@ -679,7 +679,7 @@ describe('GraphVisualization - Tooltip Tests', () => {
 
     test('tooltip overflow prevention works with long strings', async () => {
       const longStringData = createMockGraphData();
-      longStringData.nodes[0].label = 'VeryLongResourceNameThatCouldPotentiallyCauseOverflowIssuesInTheTooltipDisplay';
+      longStringData.nodes[0].label = 'VeryLongResourceNameThatCouldPotentiallyCauseOverflowIssuesInTheTooltipDisplay';  // pragma: allowlist secret
       longStringData.nodes[0].properties.resourceGroup = 'VeryLongResourceGroupNameThatExceedsNormalLengthConstraints';
 
       mockedAxios.get.mockResolvedValueOnce({ data: longStringData });

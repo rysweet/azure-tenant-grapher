@@ -53,7 +53,9 @@ class KeyVaultProvider:
         else:
             logger.info("No Key Vault URL configured - using env vars only")
 
-    def get_secret(self, secret_name: str, env_var_name: Optional[str] = None) -> Optional[str]:
+    def get_secret(
+        self, secret_name: str, env_var_name: Optional[str] = None
+    ) -> Optional[str]:
         """Get secret from Key Vault with env var fallback.
 
         Args:

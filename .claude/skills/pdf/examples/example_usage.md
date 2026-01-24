@@ -400,8 +400,8 @@ for page in reader.pages:
     writer.add_page(page)
 
 # Add password protection
-user_password = "view123"  # Password to open the PDF
-owner_password = "admin456"  # Password for full permissions
+user_password = "view123"  # Password to open the PDF  # pragma: allowlist secret
+owner_password = "admin456"  # Password for full permissions  # pragma: allowlist secret
 
 writer.encrypt(
     user_password=user_password,
