@@ -82,12 +82,15 @@ class PoolMonitor:
         Scale DOWN: utilization < 20%
 
     Example:
+        import logging
+        logger = logging.getLogger(__name__)
+
         manager = ConnectionManager()
         monitor = PoolMonitor(manager)
 
         metrics = await monitor.collect_metrics("dev")
         if monitor.should_scale_up(metrics):
-            print("Consider increasing pool size")
+            logger.warning("Consider increasing pool size")
     """
 
     def __init__(self, manager: ConnectionManager):

@@ -13,7 +13,8 @@ Public API:
 import asyncio
 import inspect
 import os
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..timeout_config import TimeoutError
 from .client.config import ATGClientConfig
@@ -26,6 +27,15 @@ from .common.exceptions import (
     ParameterValidationError,
     RemoteExecutionError,
 )
+
+# Type alias for command metadata
+CommandMetadata = dict[str, Any]
+# Type alias for execution results
+ExecutionResult = dict[str, Any]
+# Type alias for statistics
+Statistics = dict[str, Any]
+# Type alias for progress callback
+ProgressCallback = Callable[[float, str], None]
 
 
 class ExecutionDispatcher:
@@ -40,7 +50,7 @@ class ExecutionDispatcher:
     """
 
     # Supported commands and their required parameters
-    COMMAND_REGISTRY = {
+    COMMAND_REGISTRY: dict[str, CommandMetadata] = {
         "scan": {
             "description": "Scan Azure tenant and build graph",
             "required_params": ["tenant_id"],
@@ -80,8 +90,8 @@ class ExecutionDispatcher:
 
     def __init__(
         self,
-        config: Optional[ATGClientConfig] = None,
-        remote_mode_override: Optional[bool] = None,
+        config: ATGClientConfig | None = None,
+        remote_mode_override: bool | None = None,
     ):
         """
         Initialize execution dispatcher.
@@ -103,13 +113,13 @@ class ExecutionDispatcher:
 
         # Defer remote client initialization until first use
         # (allows tests to check mode detection without needing full config)
-        self._remote_client: Optional[RemoteClient] = None
+        self._remote_client: RemoteClient | None = None
 
         # Initialize local executor (imports deferred to avoid circular deps)
-        self._local_executor = None
+        self._local_executor: dict[str, Callable[..., Any]] | None = None
 
         # Statistics tracking
-        self._stats = {
+        self._stats: Statistics = {
             "total_executions": 0,
             "local_executions": 0,
             "remote_executions": 0,
@@ -146,7 +156,7 @@ class ExecutionDispatcher:
         """
         return command in self.COMMAND_REGISTRY
 
-    def get_command_metadata(self, command: str) -> Optional[Dict[str, Any]]:
+    def get_command_metadata(self, command: str) -> CommandMetadata | None:
         """
         Get metadata for a command.
 
@@ -161,9 +171,9 @@ class ExecutionDispatcher:
     async def execute(
         self,
         command: str,
-        progress_callback: Optional[Callable[[float, str], None]] = None,
+        progress_callback: ProgressCallback | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ExecutionResult:
         """
         Execute command in appropriate mode (local or remote).
 
@@ -191,7 +201,10 @@ class ExecutionDispatcher:
 
         # Validate required parameters
         metadata = self.get_command_metadata(command)
-        required_params = metadata.get("required_params", [])  # type: ignore[union-attr]
+        if metadata is None:
+            # This should never happen due to is_command_supported check above
+            raise CommandNotFoundError(f"Metadata not found for command: {command}")
+        required_params = metadata.get("required_params", [])
         for param in required_params:
             if param not in kwargs:
                 raise ParameterValidationError(
@@ -216,9 +229,9 @@ class ExecutionDispatcher:
     async def _execute_local(
         self,
         command: str,
-        progress_callback: Optional[Callable[[float, str], None]],
+        progress_callback: ProgressCallback | None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ExecutionResult:
         """
         Execute command locally using existing ATG services.
 
@@ -279,9 +292,9 @@ class ExecutionDispatcher:
     async def _execute_remote(
         self,
         command: str,
-        progress_callback: Optional[Callable[[float, str], None]],
+        progress_callback: ProgressCallback | None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ExecutionResult:
         """
         Execute command via remote service.
 
@@ -348,7 +361,7 @@ class ExecutionDispatcher:
             # All other errors are remote execution errors
             raise RemoteExecutionError(f"Remote execution failed: {e}") from e
 
-    def switch_mode(self, config: Optional[ATGClientConfig] = None) -> None:
+    def switch_mode(self, config: ATGClientConfig | None = None) -> None:
         """
         Switch between local and remote modes at runtime.
 
@@ -363,13 +376,18 @@ class ExecutionDispatcher:
             # Switch to remote mode
             self.config = config
             if self.is_remote_mode():
+                # Validate config has required fields for remote mode
+                if not self.config.service_url or not self.config.api_key:
+                    raise ConfigurationError(
+                        "Remote mode requires service_url and api_key in config"
+                    )
                 self._remote_client = RemoteClient(
-                    base_url=self.config.service_url,  # type: ignore[arg-type]
-                    api_key=self.config.api_key,  # type: ignore[arg-type]
+                    base_url=self.config.service_url,
+                    api_key=self.config.api_key,
                     timeout=self.config.request_timeout,
                 )
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> Statistics:
         """
         Get execution statistics.
 
@@ -379,9 +397,9 @@ class ExecutionDispatcher:
         stats = self._stats.copy()
 
         # Calculate failure rate
-        total = stats["total_executions"]
-        failed = stats["failed_executions"]
-        stats["failure_rate"] = (failed / total) if total > 0 else 0.0  # type: ignore[arg-type]
+        total: int = stats["total_executions"]
+        failed: int = stats["failed_executions"]
+        stats["failure_rate"] = (failed / total) if total > 0 else 0.0
 
         return stats
 

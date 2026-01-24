@@ -58,7 +58,7 @@ class HealthChecker:
         # Check specific environment
         status = await checker.check_environment("dev")
         if status.healthy:
-            print(str(f"Healthy! Latency: {status.latency_ms}ms"))
+            logger.info(f"Healthy! Latency: {status.latency_ms}ms")
 
         # Wait for environment to be ready
         ready = await checker.wait_for_ready("dev", timeout=30.0)
@@ -96,8 +96,8 @@ class HealthChecker:
 
             if is_healthy:
                 # Run simple query to verify functionality
-                async with await self._manager.get_session(environment) as session:
-                    result = await session.run("RETURN 1 as test")  # type: ignore[arg-type]
+                async with self._manager.session(environment) as session:
+                    result = await session.run("RETURN 1 as test")
                     await result.single()
 
                 latency = (time.time() - start) * 1000  # Convert to ms

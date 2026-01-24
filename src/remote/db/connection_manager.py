@@ -22,17 +22,42 @@ Connection Lifecycle:
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Any
 
 try:
     from neo4j import AsyncGraphDatabase
 except ImportError:
     # Allow import even if neo4j not installed (for testing)
-    AsyncGraphDatabase = None
+    AsyncGraphDatabase = None  # type: ignore[misc,assignment]
 
 from ..common.exceptions import ConnectionError
+from .protocols import Neo4jDriver
 
 logger = logging.getLogger(__name__)
+
+
+class _SessionWrapper:
+    """
+    Wrapper for Neo4j session that handles lazy driver initialization.
+
+    This enables sync session() method that returns async context manager.
+    """
+
+    def __init__(self, manager: "ConnectionManager", environment: str):
+        self.manager = manager
+        self.environment = environment
+        self._session: Any = None
+
+    async def __aenter__(self) -> Any:
+        """Enter async context - create session."""
+        driver = await self.manager._get_or_create_driver(self.environment)
+        self._session = driver.session()
+        return await self._session.__aenter__()
+
+    async def __aexit__(self, *args: Any) -> None:
+        """Exit async context - close session."""
+        if self._session:
+            await self._session.__aexit__(*args)
 
 
 @dataclass
@@ -83,14 +108,14 @@ class ConnectionManager:
         manager = ConnectionManager()
         await manager.configure("dev", config)
 
-        async with await manager.get_session("dev") as session:
-            result = await session.run("MATCH (n) RETURN count(n)")  # type: ignore[arg-type]
+        async with manager.session("dev") as session:
+            result = await session.run("MATCH (n) RETURN count(n)")
 
     Thread Safety:
         Uses asyncio.Lock for thread-safe singleton and driver management.
     """
 
-    _instance: Optional["ConnectionManager"] = None
+    _instance: "ConnectionManager | None" = None
     _lock = asyncio.Lock()
 
     def __new__(cls):
@@ -105,8 +130,8 @@ class ConnectionManager:
         if self._initialized:
             return
 
-        self._drivers: Dict[str, any] = {}  # type: ignore[misc]
-        self._configs: Dict[str, Neo4jConnectionConfig] = {}
+        self._drivers: dict[str, Neo4jDriver] = {}
+        self._configs: dict[str, Neo4jConnectionConfig] = {}
         self._initialized = True
         logger.info("ConnectionManager initialized")
 
@@ -132,7 +157,7 @@ class ConnectionManager:
             self._configs[environment] = config
             logger.info(str(f"Configured environment: {environment} -> {config.uri}"))
 
-    async def _get_or_create_driver(self, environment: str):
+    async def _get_or_create_driver(self, environment: str) -> Neo4jDriver:
         """
         Get or create driver for environment (lazy initialization).
 
@@ -158,7 +183,7 @@ class ConnectionManager:
             config = self._configs[environment]
 
             try:
-                driver = AsyncGraphDatabase.driver(
+                driver: Any = AsyncGraphDatabase.driver(
                     config.uri,
                     auth=(config.user, config.password),
                     max_connection_pool_size=config.max_pool_size,
@@ -168,6 +193,7 @@ class ConnectionManager:
 
                 # Verify connectivity before returning
                 await driver.verify_connectivity()
+                # Type assertion: we know neo4j driver implements our protocol
                 self._drivers[environment] = driver
                 logger.info(str(f"Created driver for {environment}"))
 
@@ -179,12 +205,15 @@ class ConnectionManager:
 
         return self._drivers[environment]
 
-    async def get_session(self, environment: str):
+    def session(self, environment: str = "default") -> Any:
         """
         Get Neo4j session for environment.
 
+        This is a sync method that returns an async context manager.
+        Use: async with manager.session() as session:
+
         Args:
-            environment: Environment name
+            environment: Environment name (default: "default")
 
         Returns:
             AsyncSession context manager
@@ -193,8 +222,9 @@ class ConnectionManager:
             ValueError: If environment not configured
             ConnectionError: If connection fails
         """
-        driver = await self._get_or_create_driver(environment)
-        return driver.session()
+        # This needs to be sync to work as context manager
+        # The actual driver will be created on first use
+        return _SessionWrapper(self, environment)
 
     async def close(self, environment: str):
         """
