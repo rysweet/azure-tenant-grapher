@@ -76,6 +76,13 @@ const UndeployTab: React.FC = () => {
   const fetchDeployments = async () => {
     setLoading(true);
     setError(null);
+
+    // Timeout safety mechanism - reset loading after 30 seconds
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      setError('Request timed out after 30 seconds. Please try again.');
+    }, 30000);
+
     try {
       const result = await window.electronAPI.cli.execute('list-deployments', ['--json']);
 
@@ -83,9 +90,13 @@ const UndeployTab: React.FC = () => {
         if (data.id === result.data.id) {
           try {
             const deploymentData = JSON.parse(data.data.join('\n'));
-            setDeployments(deploymentData);
+            setDeployments(Array.isArray(deploymentData) ? deploymentData : []);
+            clearTimeout(timeoutId);
           } catch (e) {
-            // Console error removed
+            const errorMsg = e instanceof Error ? e.message : 'Failed to parse deployment data';
+            setError(`Error parsing deployment data: ${errorMsg}`);
+            setLoading(false);
+            clearTimeout(timeoutId);
           }
         }
       };
@@ -93,15 +104,25 @@ const UndeployTab: React.FC = () => {
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setLoading(false);
+          clearTimeout(timeoutId);
+
+          // Clean up event listeners to prevent accumulation
           window.electronAPI?.off?.('process:output', outputHandler);
           window.electronAPI?.off?.('process:exit', exitHandler);
+
+          // Handle non-zero exit codes
+          if (data.code !== 0) {
+            setError(`Failed to fetch deployments (exit code ${data.code})`);
+          }
         }
       };
 
       window.electronAPI.on('process:output', outputHandler);
       window.electronAPI.on('process:exit', exitHandler);
+
     } catch (err: any) {
-      setError(err.message);
+      clearTimeout(timeoutId);
+      setError(err.message || 'Failed to fetch deployments');
       setLoading(false);
     }
   };
@@ -309,11 +330,11 @@ const UndeployTab: React.FC = () => {
           </DialogContentText>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Target Tenant</InputLabel>
+            <InputLabel>Gameboard Tenant</InputLabel>
             <Select
               value={selectedTenant}
               onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
-              label="Target Tenant"
+              label="Gameboard Tenant"
             >
               <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
               <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
