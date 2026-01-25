@@ -86,18 +86,13 @@ const UndeployTab: React.FC = () => {
     try {
       const result = await window.electronAPI.cli.execute('list-deployments', ['--json']);
 
+      // Accumulate all output chunks
+      const outputChunks: string[] = [];
+
       const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
-          try {
-            const deploymentData = JSON.parse(data.data.join('\n'));
-            setDeployments(Array.isArray(deploymentData) ? deploymentData : []);
-            clearTimeout(timeoutId);
-          } catch (e) {
-            const errorMsg = e instanceof Error ? e.message : 'Failed to parse deployment data';
-            setError(`Error parsing deployment data: ${errorMsg}`);
-            setLoading(false);
-            clearTimeout(timeoutId);
-          }
+          // Collect all output chunks - don't parse yet!
+          outputChunks.push(...data.data);
         }
       };
 
@@ -113,6 +108,61 @@ const UndeployTab: React.FC = () => {
           // Handle non-zero exit codes
           if (data.code !== 0) {
             setError(`Failed to fetch deployments (exit code ${data.code})`);
+            return;
+          }
+
+          // Now parse the complete JSON output
+          try {
+            const completeOutput = outputChunks.join('').trim();
+            if (!completeOutput) {
+              // Empty output means no deployments
+              setDeployments([]);
+              return;
+            }
+
+            // Extract JSON from mixed output (status messages + JSON)
+            // Find the first '[' which marks the start of the JSON array
+            const jsonStartIndex = completeOutput.indexOf('[');
+
+            if (jsonStartIndex === -1) {
+              // No JSON array found - might be empty or error output
+              // Check if output contains "no deployments" or similar messages
+              if (completeOutput.toLowerCase().includes('no deployment') ||
+                  completeOutput.toLowerCase().includes('empty')) {
+                setDeployments([]);
+                return;
+              }
+              // Otherwise it's an error
+              setError('No deployment data found in response');
+              return;
+            }
+
+            // Find the matching closing ']' by counting brackets
+            let bracketCount = 0;
+            let jsonEndIndex = -1;
+
+            for (let i = jsonStartIndex; i < completeOutput.length; i++) {
+              if (completeOutput[i] === '[') bracketCount++;
+              if (completeOutput[i] === ']') bracketCount--;
+
+              if (bracketCount === 0) {
+                jsonEndIndex = i + 1;
+                break;
+              }
+            }
+
+            if (jsonEndIndex === -1) {
+              setError('Incomplete JSON data received');
+              return;
+            }
+
+            // Extract and parse the JSON portion
+            const jsonString = completeOutput.substring(jsonStartIndex, jsonEndIndex);
+            const deploymentData = JSON.parse(jsonString);
+            setDeployments(Array.isArray(deploymentData) ? deploymentData : []);
+          } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : 'Failed to parse deployment data';
+            setError(`Error parsing deployment data: ${errorMsg}`);
           }
         }
       };

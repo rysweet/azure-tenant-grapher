@@ -13,6 +13,7 @@ const ALLOWED_COMMANDS = new Set([
   'generate-iac',
   'deploy',
   'undeploy',
+  'list-deployments',
   'create-tenant',
   'threat-model',
   'config',
@@ -54,6 +55,7 @@ const ALLOWED_ARGS = new Set([
   '--verbose',
   '--debug',
   '--help',
+  '--json',
   '--max-llm-threads',
   '--max-build-threads',
   '--resource-limit',
@@ -66,10 +68,6 @@ const ALLOWED_ARGS = new Set([
   '--question',
   '--size',
   '--seed',
-  '--skip-conflict-check',
-  '--skip-name-validation',
-  '--skip-validation',
-  '--no-auto-import-existing',
   '-h',
   '-v'
 ]);

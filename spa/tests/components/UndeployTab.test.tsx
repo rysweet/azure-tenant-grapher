@@ -90,6 +90,10 @@ describe('UndeployTab Loading State', () => {
             data: ['invalid json {'],
           });
         }, 100);
+      } else if (event === 'process:exit') {
+        setTimeout(() => {
+          handler({ id: 'process-2', code: 0 });
+        }, 150);
       }
     });
 
@@ -135,6 +139,148 @@ describe('UndeployTab Loading State', () => {
 
     // Should show timeout error
     expect(screen.getByText(/Request timed out after 30 seconds/i)).toBeInTheDocument();
+  });
+
+  it('should handle JSON split across multiple output chunks', async () => {
+    mockElectronAPI.cli.execute.mockResolvedValue({
+      data: { id: 'process-chunk' },
+    });
+
+    const mockDeployments = [
+      {
+        id: 'deployment-1',
+        status: 'active',
+        tenant: 'tenant-1',
+        directory: '/test',
+        deployed_at: '2024-01-01T00:00:00Z',
+        resources: { 'vm': 1 },
+      },
+    ];
+
+    // Simulate JSON split across multiple chunks (like the actual bug)
+    const jsonString = JSON.stringify(mockDeployments);
+    const chunk1 = jsonString.substring(0, 30);
+    const chunk2 = jsonString.substring(30, 60);
+    const chunk3 = jsonString.substring(60);
+
+    mockElectronAPI.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'process:output') {
+        // Send JSON in 3 separate chunks
+        setTimeout(() => handler({ id: 'process-chunk', data: [chunk1] }), 50);
+        setTimeout(() => handler({ id: 'process-chunk', data: [chunk2] }), 100);
+        setTimeout(() => handler({ id: 'process-chunk', data: [chunk3] }), 150);
+      } else if (event === 'process:exit') {
+        setTimeout(() => handler({ id: 'process-chunk', code: 0 }), 200);
+      }
+    });
+
+    render(<UndeployTab />);
+
+    // Advance timers to trigger all handlers
+    jest.advanceTimersByTime(250);
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Should successfully parse and display the deployment
+    expect(screen.getByText('deployment-1')).toBeInTheDocument();
+    expect(screen.queryByText(/Error parsing/i)).not.toBeInTheDocument();
+  });
+
+  it('should extract JSON from mixed output with status messages', async () => {
+    mockElectronAPI.cli.execute.mockResolvedValue({
+      data: { id: 'process-mixed' },
+    });
+
+    const mockDeployments = [
+      {
+        id: 'deployment-2',
+        status: 'active',
+        tenant: 'tenant-2',
+        directory: '/test2',
+        deployed_at: '2024-01-01T00:00:00Z',
+        resources: { 'vm': 1 },
+      },
+    ];
+
+    mockElectronAPI.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'process:output') {
+        setTimeout(() => {
+          handler({
+            id: 'process-mixed',
+            data: [
+              'Registered deployment tracker...\n',
+              'Loading deployments...\n',
+              JSON.stringify(mockDeployments),
+              '\nDone.',
+            ],
+          });
+        }, 100);
+      } else if (event === 'process:exit') {
+        setTimeout(() => handler({ id: 'process-mixed', code: 0 }), 150);
+      }
+    });
+
+    render(<UndeployTab />);
+
+    // Advance timers to trigger all handlers
+    jest.advanceTimersByTime(200);
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Should successfully parse and display the deployment (extracting JSON from mixed output)
+    expect(screen.getByText('deployment-2')).toBeInTheDocument();
+    expect(screen.queryByText(/Error parsing/i)).not.toBeInTheDocument();
+  });
+
+  it('should handle multi-line JSON with status messages before and after', async () => {
+    mockElectronAPI.cli.execute.mockResolvedValue({
+      data: { id: 'process-multiline' },
+    });
+
+    // Multi-line JSON (pretty-printed)
+    const prettyJson = `[
+  {
+    "id": "deployment-3",
+    "status": "active",
+    "tenant": "tenant-3",
+    "directory": "/test3",
+    "deployed_at": "2024-01-01T00:00:00Z",
+    "resources": {"vm": 1}
+  }
+]`;
+
+    mockElectronAPI.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'process:output') {
+        setTimeout(() => {
+          handler({
+            id: 'process-multiline',
+            data: ['Starting...\n', prettyJson, '\nCompleted successfully.'],
+          });
+        }, 100);
+      } else if (event === 'process:exit') {
+        setTimeout(() => handler({ id: 'process-multiline', code: 0 }), 150);
+      }
+    });
+
+    render(<UndeployTab />);
+
+    // Advance timers to trigger all handlers
+    jest.advanceTimersByTime(200);
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Should successfully parse multi-line JSON
+    expect(screen.getByText('deployment-3')).toBeInTheDocument();
+    expect(screen.queryByText(/Error parsing/i)).not.toBeInTheDocument();
   });
 
   it('should stop loading spinner and show message when no deployments exist', async () => {
