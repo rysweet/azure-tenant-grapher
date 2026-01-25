@@ -19,7 +19,6 @@ const LogsTab = lazy(() => import('./components/tabs/LogsTab'));
 const ScanTab = lazy(() => import('./components/tabs/ScanTab'));
 const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
-const GenerateIaCTab = lazy(() => import('./components/tabs/GenerateIaCTab'));
 const DeployTab = lazy(() => import('./components/tabs/DeployTab'));
 const ValidateDeploymentTab = lazy(() => import('./components/tabs/ValidateDeploymentTab'));
 const UndeployTab = lazy(() => import('./components/tabs/UndeployTab'));
@@ -194,11 +193,6 @@ const App: React.FC = () => {
                 <Route path="/generate-spec" element={
                   <TabErrorBoundary tabName="Generate Spec">
                     <GenerateSpecTab />
-                  </TabErrorBoundary>
-                } />
-                <Route path="/generate-iac" element={
-                  <TabErrorBoundary tabName="Generate IaC">
-                    <GenerateIaCTab />
                   </TabErrorBoundary>
                 } />
                 <Route path="/deploy" element={

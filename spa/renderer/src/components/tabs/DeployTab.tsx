@@ -14,7 +14,8 @@ import {
   FormControlLabel,
   Checkbox,
 } from '@mui/material';
-import { CloudUpload as DeployIcon, FolderOpen as FolderIcon } from '@mui/icons-material';
+import { CloudUpload as DeployIcon } from '@mui/icons-material';
+import TenantSelector from '../shared/TenantSelector';
 
 interface ProcessOutputData {
   id: string;
@@ -27,31 +28,21 @@ interface ProcessExitData {
 }
 
 const DeployTab: React.FC = () => {
-  const [iacDir, setIacDir] = useState('output/iac');
-  const [targetTenantId, setTargetTenantId] = useState('');
+  const [sourceTenantId, setSourceTenantId] = useState('3cd87a41-1f61-4aef-a212-cefdecd9a2d1');
+  const [targetTenantId, setTargetTenantId] = useState('506f82b2-e2e7-40a2-b0be-ea6f8cb908f8');
   const [resourceGroup, setResourceGroup] = useState('');
   const [location, setLocation] = useState('eastus');
   const [subscriptionId, setSubscriptionId] = useState('');
-  const [iacFormat, setIacFormat] = useState<'auto' | 'terraform' | 'bicep' | 'arm'>('auto');
+  const [iacFormat, setIacFormat] = useState<'auto' | 'terraform' | 'bicep' | 'arm'>('terraform');
   const [dryRun, setDryRun] = useState(true);
   const [isDeploying, setIsDeploying] = useState(false);
   const [terminalOutput, setTerminalOutput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('2');
-
-  // Load tenant ID based on selected tenant
-  React.useEffect(() => {
-    if (selectedTenant === '1') {
-      setTargetTenantId('3cd87a41-1f61-4aef-a212-cefdecd9a2d1'); // DefenderATEVET17
-    } else if (selectedTenant === '2') {
-      setTargetTenantId('506f82b2-e2e7-40a2-b0be-ea6f8cb908f8'); // Simuland
-    }
-  }, [selectedTenant]);
 
   const handleDeploy = async () => {
-    if (!iacDir || !targetTenantId || !resourceGroup) {
-      setError('IaC Directory, Target Tenant ID, and Resource Group are required');
+    if (!sourceTenantId || !targetTenantId || !resourceGroup) {
+      setError('Source Tenant, Target Tenant, and Resource Group are required');
       return;
     }
 
@@ -60,55 +51,126 @@ const DeployTab: React.FC = () => {
     setIsDeploying(true);
     setTerminalOutput('');
 
-    const args = [
-      '--iac-dir', iacDir,
-      '--target-tenant-id', targetTenantId,
-      '--resource-group', resourceGroup,
-      '--location', location,
-    ];
-
-    if (subscriptionId) {
-      args.push('--subscription-id', subscriptionId);
-    }
-
-    if (iacFormat !== 'auto') {
-      args.push('--format', iacFormat);
-    }
-
-    if (dryRun) {
-      args.push('--dry-run');
-    }
-
     try {
-      const result = await window.electronAPI.cli.execute('deploy', args);
+      // PHASE 1: Generate IaC automatically
+      setTerminalOutput('🏗️ Phase 1: Generating Infrastructure as Code...\n');
 
-      let outputContent = '';
+      const iacArgs = [
+        '--source-tenant-id', sourceTenantId,
+        '--target-tenant-id', targetTenantId,
+        '--output', 'outputs/iac',
+        '--format', iacFormat === 'auto' ? 'terraform' : iacFormat,
+        '--skip-conflict-check',      // Skip pre-deployment conflict detection
+        '--skip-name-validation',     // Skip global name validation
+        '--skip-validation',          // Skip Terraform validation after generation
+        '--no-auto-import-existing',  // Skip importing existing resources (no source tenant auth needed)
+      ];
 
-      const outputHandler = (data: ProcessOutputData) => {
-        if (data.id === result.data.id) {
+      const iacResult = await window.electronAPI.cli.execute('generate-iac', iacArgs);
+
+      // Listen for IaC generation output
+      let iacOutputContent = '';
+
+      const iacOutputHandler = (data: ProcessOutputData) => {
+        if (data.id === iacResult.data.id) {
           const newContent = data.data.join('\n');
-          outputContent += newContent + '\n';
-          setTerminalOutput(outputContent);
+          iacOutputContent += newContent + '\n';
+          setTerminalOutput(prev => prev + newContent + '\n');
         }
       };
 
-      window.electronAPI.on('process:output', outputHandler);
+      window.electronAPI.on('process:output', iacOutputHandler);
+
+      // Wait for IaC generation to complete
+      await new Promise<void>((resolve, reject) => {
+        const iacErrorHandler = (data: any) => {
+          if (data.processId === iacResult.data.id || data.id === iacResult.data.id) {
+            window.electronAPI.off?.('process:output', iacOutputHandler);
+            window.electronAPI.off?.('process:exit', iacExitHandler);
+            window.electronAPI.off?.('process:error', iacErrorHandler);
+            reject(new Error(data.error || 'IaC generation failed'));
+          }
+        };
+
+        const iacExitHandler = (data: ProcessExitData) => {
+          if (data.id === iacResult.data.id) {
+            window.electronAPI.off?.('process:output', iacOutputHandler);
+            window.electronAPI.off?.('process:exit', iacExitHandler);
+            window.electronAPI.off?.('process:error', iacErrorHandler);
+
+            if (data.code === 0) {
+              resolve();
+            } else {
+              let errorMessage = 'IaC generation failed';
+              if (iacOutputContent.includes('Error:')) {
+                const lines = iacOutputContent.split('\n');
+                const errorLine = lines.find(line => line.includes('Error:'));
+                if (errorLine) {
+                  errorMessage = errorLine.replace(/^.*Error:\s*/, '');
+                }
+              }
+              reject(new Error(errorMessage));
+            }
+          }
+        };
+
+        window.electronAPI.on('process:exit', iacExitHandler);
+        window.electronAPI.on('process:error', iacErrorHandler);
+      });
+
+      setTerminalOutput(prev => prev + '✅ IaC generated successfully\n\n');
+
+      // PHASE 2: Deploy the generated IaC
+      setTerminalOutput(prev => prev + '🚀 Phase 2: Deploying to Azure...\n');
+
+      const deployArgs = [
+        '--iac-dir', 'outputs/iac',
+        '--target-tenant-id', targetTenantId,
+        '--resource-group', resourceGroup,
+        '--location', location,
+      ];
+
+      if (subscriptionId) {
+        deployArgs.push('--subscription-id', subscriptionId);
+      }
+
+      if (iacFormat !== 'auto') {
+        deployArgs.push('--format', iacFormat);
+      }
+
+      if (dryRun) {
+        deployArgs.push('--dry-run');
+      }
+
+      const deployResult = await window.electronAPI.cli.execute('deploy', deployArgs);
+
+      let deployOutputContent = '';
+
+      const deployOutputHandler = (data: ProcessOutputData) => {
+        if (data.id === deployResult.data.id) {
+          const newContent = data.data.join('\n');
+          deployOutputContent += newContent + '\n';
+          setTerminalOutput(prev => prev + newContent + '\n');
+        }
+      };
+
+      window.electronAPI.on('process:output', deployOutputHandler);
 
       // Define error handler first (needed by exitHandler cleanup)
-      const errorHandler = (data: any) => {
-        if (data.processId === result.data.id || data.id === result.data.id) {
+      const deployErrorHandler = (data: any) => {
+        if (data.processId === deployResult.data.id || data.id === deployResult.data.id) {
           setIsDeploying(false);
-          setError(data.error || 'Process execution failed');
+          setError(data.error || 'Deployment failed');
 
           // Clean up event listeners
-          window.electronAPI.off?.('process:output', outputHandler);
-          window.electronAPI.off?.('process:exit', exitHandler);
-          window.electronAPI.off?.('process:error', errorHandler);
+          window.electronAPI.off?.('process:output', deployOutputHandler);
+          window.electronAPI.off?.('process:exit', deployExitHandler);
+          window.electronAPI.off?.('process:error', deployErrorHandler);
         }
       };
 
-      const exitHandler = (data: ProcessExitData) => {
-        if (data.id === result.data.id) {
+      const deployExitHandler = (data: ProcessExitData) => {
+        if (data.id === deployResult.data.id) {
           setIsDeploying(false);
           if (data.code === 0) {
             setSuccess(true);
@@ -117,18 +179,18 @@ const DeployTab: React.FC = () => {
             let errorMessage = `Deployment failed with exit code ${data.code}`;
 
             // Look for error patterns in terminal output
-            if (outputContent) {
-              const errorMatch = outputContent.match(/❌ Error: (.+)/);
+            if (deployOutputContent) {
+              const errorMatch = deployOutputContent.match(/❌ Error: (.+)/);
               if (errorMatch) {
                 errorMessage = errorMatch[1];
-              } else if (outputContent.match(/\[ProcessManager\] Invalid command: (.+)/)) {
-                const commandMatch = outputContent.match(/\[ProcessManager\] Invalid command: (.+)/);
+              } else if (deployOutputContent.match(/\[ProcessManager\] Invalid command: (.+)/)) {
+                const commandMatch = deployOutputContent.match(/\[ProcessManager\] Invalid command: (.+)/);
                 if (commandMatch) {
                   errorMessage = commandMatch[1];
                 }
-              } else if (outputContent.includes('Error:')) {
+              } else if (deployOutputContent.includes('Error:')) {
                 // Try to extract any error line
-                const lines = outputContent.split('\n');
+                const lines = deployOutputContent.split('\n');
                 const errorLine = lines.find(line => line.includes('Error:'));
                 if (errorLine) {
                   errorMessage = errorLine.replace(/^.*Error:\s*/, '');
@@ -140,33 +202,18 @@ const DeployTab: React.FC = () => {
           }
 
           // Clean up event listeners
-          window.electronAPI.off?.('process:output', outputHandler);
-          window.electronAPI.off?.('process:exit', exitHandler);
-          window.electronAPI.off?.('process:error', errorHandler);
+          window.electronAPI.off?.('process:output', deployOutputHandler);
+          window.electronAPI.off?.('process:exit', deployExitHandler);
+          window.electronAPI.off?.('process:error', deployErrorHandler);
         }
       };
 
-      window.electronAPI.on('process:exit', exitHandler);
-      window.electronAPI.on('process:error', errorHandler);
+      window.electronAPI.on('process:exit', deployExitHandler);
+      window.electronAPI.on('process:error', deployErrorHandler);
 
     } catch (err: any) {
       setError(err.message);
       setIsDeploying(false);
-    }
-  };
-
-  const handleSelectFolder = async () => {
-    try {
-      const result = await window.electronAPI.dialog?.showOpenDialog({
-        properties: ['openDirectory'],
-        title: 'Select IaC Directory',
-      });
-
-      if (result && !result.canceled && result.filePaths.length > 0) {
-        setIacDir(result.filePaths[0]);
-      }
-    } catch (err: any) {
-      setError(`Failed to select folder: ${err.message}`);
     }
   };
 
@@ -191,64 +238,35 @@ const DeployTab: React.FC = () => {
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            This tab deploys generated IaC to a target Azure tenant. Ensure you have:
+            This tab automatically generates IaC from the source tenant and deploys it to the target tenant. Ensure you have:
           </Typography>
           <ul style={{ marginTop: 8, marginBottom: 0 }}>
+            <li>Scanned the source tenant (data in Neo4j)</li>
             <li>Service principal credentials in your .env file (AZURE_TENANT_2_*)</li>
             <li>Required permissions (Contributor role) on the target subscription</li>
-            <li>Generated IaC files in the specified directory</li>
           </ul>
         </Alert>
 
         <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <TextField
-                label="IaC Directory"
-                value={iacDir}
-                onChange={(e) => setIacDir(e.target.value)}
-                disabled={isDeploying}
-                fullWidth
-                required
-                placeholder="output/iac"
-                helperText="Path to directory containing IaC files (main.tf.json, *.bicep, etc.)"
-              />
-              <Button
-                startIcon={<FolderIcon />}
-                onClick={handleSelectFolder}
-                disabled={isDeploying}
-                variant="outlined"
-              >
-                Browse
-              </Button>
-            </Box>
-          </Grid>
-
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Target Tenant</InputLabel>
-              <Select
-                value={selectedTenant}
-                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
-                disabled={isDeploying}
-                label="Target Tenant"
-              >
-                <MenuItem value="1">Tenant 1 (DefenderATEVET17)</MenuItem>
-                <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Target Tenant ID"
-              value={targetTenantId}
-              onChange={(e) => setTargetTenantId(e.target.value)}
+            <TenantSelector
+              label="Source Tenant"
+              value={sourceTenantId}
+              onChange={setSourceTenantId}
               disabled={isDeploying}
-              fullWidth
               required
-              placeholder="00000000-0000-0000-0000-000000000000"
-              helperText="Azure AD tenant ID for the target environment"
+              helperText="Scanned tenant to generate IaC from"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TenantSelector
+              label="Target Tenant"
+              value={targetTenantId}
+              onChange={setTargetTenantId}
+              disabled={isDeploying}
+              required
+              helperText="Azure tenant to deploy resources to"
             />
           </Grid>
 
