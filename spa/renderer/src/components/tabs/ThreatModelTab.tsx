@@ -67,7 +67,7 @@ const ThreatModelTab: React.FC = () => {
     setProgress(0);
 
     try {
-      const result = await window.electronAPI.cli.execute('threat-model', ['--tenant-id', tenantId]);
+      const result = await window.electronAPI.cli.execute('threat-model', []);
 
       let outputBuffer = '';
       window.electronAPI.on('process:output', (data: any) => {
@@ -214,7 +214,7 @@ const ThreatModelTab: React.FC = () => {
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
               disabled={isAnalyzing}
-              helperText="Azure AD Tenant ID to analyze"
+              helperText="Current tenant in Neo4j database (for display only)"
               required
             />
           </Grid>
