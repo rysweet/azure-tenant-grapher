@@ -309,11 +309,11 @@ const UndeployTab: React.FC = () => {
           </DialogContentText>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Target Tenant</InputLabel>
+            <InputLabel>Gameboard Tenant</InputLabel>
             <Select
               value={selectedTenant}
               onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
-              label="Target Tenant"
+              label="Gameboard Tenant"
             >
               <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
               <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>

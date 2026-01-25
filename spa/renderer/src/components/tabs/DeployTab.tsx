@@ -51,7 +51,7 @@ const DeployTab: React.FC = () => {
 
   const handleDeploy = async () => {
     if (!iacDir || !targetTenantId || !resourceGroup) {
-      setError('IaC Directory, Target Tenant ID, and Resource Group are required');
+      setError('IaC Directory, Gameboard Tenant ID, and Resource Group are required');
       return;
     }
 
@@ -226,12 +226,12 @@ const DeployTab: React.FC = () => {
 
           <Grid item xs={12} md={6}>
             <FormControl fullWidth required>
-              <InputLabel>Target Tenant</InputLabel>
+              <InputLabel>Gameboard Tenant</InputLabel>
               <Select
                 value={selectedTenant}
                 onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
                 disabled={isDeploying}
-                label="Target Tenant"
+                label="Gameboard Tenant"
               >
                 <MenuItem value="1">Tenant 1 (DefenderATEVET17)</MenuItem>
                 <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
@@ -241,14 +241,14 @@ const DeployTab: React.FC = () => {
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Target Tenant ID"
+              label="Gameboard Tenant ID"
               value={targetTenantId}
               onChange={(e) => setTargetTenantId(e.target.value)}
               disabled={isDeploying}
               fullWidth
               required
               placeholder="00000000-0000-0000-0000-000000000000"
-              helperText="Azure AD tenant ID for the target environment"
+              helperText="Azure AD tenant ID for the gameboard environment"
             />
           </Grid>
 
