@@ -49,6 +49,9 @@ class EmitterContext:
     # VNet ID mapping for subnet references (Bug #31)
     vnet_id_to_terraform_name: Dict[str, str] = field(default_factory=dict)
 
+    # Bastion Host VNet tracking (Issue #327 - 1 Bastion per VNet limit)
+    vnets_with_bastions: Set[str] = field(default_factory=set)
+
     # Association tracking (emitted after main resources)
     nsg_associations: List[tuple] = field(default_factory=list)
     nic_nsg_associations: List[tuple] = field(default_factory=list)

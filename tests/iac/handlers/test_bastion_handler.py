@@ -51,7 +51,7 @@ class TestBastionHostConversion:
         context = EmitterContext()
 
         # Add public IP to context as available resource
-        context.track_generated_resource("azurerm_public_ip", "bastion_pip")
+        context.add_resource("azurerm_public_ip", "bastion_pip")
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/test-bastion",
@@ -104,7 +104,7 @@ class TestBastionHostConversion:
         """Test Bastion Host with SKU configuration."""
         handler = BastionHostHandler()
         context = EmitterContext()
-        context.track_generated_resource("azurerm_public_ip", "bastion_pip")
+        context.add_resource("azurerm_public_ip", "bastion_pip")
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/premium-bastion",
@@ -209,7 +209,7 @@ class TestBastionHostConversion:
         """Test Bastion Host with missing subnet reference (should emit with unknown subnet)."""
         handler = BastionHostHandler()
         context = EmitterContext()
-        context.track_generated_resource("azurerm_public_ip", "bastion_pip")
+        context.add_resource("azurerm_public_ip", "bastion_pip")
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/no-subnet-bastion",
@@ -277,11 +277,11 @@ class TestBastionHostConversion:
         assert result is not None
 
         # Verify missing reference was tracked
-        missing_refs = context.get_missing_references()
+        missing_refs = context.missing_references
         assert len(missing_refs) > 0
         # Find the missing public_ip reference
         public_ip_refs = [
-            ref for ref in missing_refs if ref.get("reference_type") == "public_ip"
+            ref for ref in missing_refs if ref.get("resource_type") == "public_ip"
         ]
         assert len(public_ip_refs) > 0
 
@@ -293,7 +293,7 @@ class TestBastionHostNameSanitization:
         """Test that Bastion Host names with hyphens are sanitized."""
         handler = BastionHostHandler()
         context = EmitterContext()
-        context.track_generated_resource("azurerm_public_ip", "bastion_pip")
+        context.add_resource("azurerm_public_ip", "bastion_pip")
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/test-bastion-host",
@@ -328,3 +328,268 @@ class TestBastionHostNameSanitization:
         assert safe_name == "test_bastion_host"
         # Original name preserved in config
         assert config["name"] == "test-bastion-host"
+
+
+class TestBastionVNetLimitEnforcement:
+    """Test VNet limit enforcement (Issue #327 - 1 Bastion per VNet)."""
+
+    def test_first_bastion_per_vnet_is_emitted(self):
+        """Test that first Bastion in a VNet is successfully emitted."""
+        handler = BastionHostHandler()
+        context = EmitterContext()
+        context.add_resource("azurerm_public_ip", "bastion1_pip")
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/bastion1",
+            "name": "bastion1",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/bastion1-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        result = handler.emit(resource, context)
+        assert result is not None
+        terraform_type, safe_name, config = result
+
+        assert terraform_type == "azurerm_bastion_host"
+        assert safe_name == "bastion1"
+        # Verify VNet is tracked
+        assert len(context.vnets_with_bastions) == 1
+        assert "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1" in context.vnets_with_bastions
+
+    def test_second_bastion_on_same_vnet_is_skipped(self):
+        """Test that second Bastion on same VNet is skipped with warning."""
+        handler = BastionHostHandler()
+        context = EmitterContext()
+        context.add_resource("azurerm_public_ip", "bastion1_pip")
+        context.add_resource("azurerm_public_ip", "bastion2_pip")
+
+        # First Bastion
+        resource1 = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/bastion1",
+            "name": "bastion1",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/bastion1-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        # Second Bastion on same VNet
+        resource2 = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/bastion2",
+            "name": "bastion2",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"  # Same VNet
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/bastion2-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        # First Bastion should succeed
+        result1 = handler.emit(resource1, context)
+        assert result1 is not None
+
+        # Second Bastion should be skipped
+        result2 = handler.emit(resource2, context)
+        assert result2 is None
+
+        # Context should still track only one VNet
+        assert len(context.vnets_with_bastions) == 1
+
+    def test_multiple_bastions_on_different_vnets_all_emitted(self):
+        """Test that Bastions on different VNets are all emitted."""
+        handler = BastionHostHandler()
+        context = EmitterContext()
+        context.add_resource("azurerm_public_ip", "bastion1_pip")
+        context.add_resource("azurerm_public_ip", "bastion2_pip")
+        context.add_resource("azurerm_public_ip", "bastion3_pip")
+
+        # Bastion on VNet1
+        resource1 = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/bastion1",
+            "name": "bastion1",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/bastion1-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        # Bastion on VNet2
+        resource2 = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg2/providers/Microsoft.Network/bastionHosts/bastion2",
+            "name": "bastion2",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "westus",
+            "resource_group": "test-rg2",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg2/providers/Microsoft.Network/virtualNetworks/vnet2/subnets/AzureBastionSubnet"
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg2/providers/Microsoft.Network/publicIPAddresses/bastion2-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        # Bastion on VNet3
+        resource3 = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg3/providers/Microsoft.Network/bastionHosts/bastion3",
+            "name": "bastion3",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "centralus",
+            "resource_group": "test-rg3",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg3/providers/Microsoft.Network/virtualNetworks/vnet3/subnets/AzureBastionSubnet"
+                                },
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg3/providers/Microsoft.Network/publicIPAddresses/bastion3-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        # All three Bastions should be emitted
+        result1 = handler.emit(resource1, context)
+        result2 = handler.emit(resource2, context)
+        result3 = handler.emit(resource3, context)
+
+        assert result1 is not None
+        assert result2 is not None
+        assert result3 is not None
+
+        # Context should track three VNets
+        assert len(context.vnets_with_bastions) == 3
+
+    def test_bastion_without_subnet_not_tracked(self):
+        """Test that Bastion without valid subnet doesn't affect VNet tracking."""
+        handler = BastionHostHandler()
+        context = EmitterContext()
+        context.add_resource("azurerm_public_ip", "bastion_pip")
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/bastionHosts/no-subnet-bastion",
+            "name": "no-subnet-bastion",
+            "type": "Microsoft.Network/bastionHosts",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "ipConfigurations": [
+                        {
+                            "name": "IpConf",
+                            "properties": {
+                                # No subnet - will get unknown_subnet
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/bastion-pip"
+                                },
+                            },
+                        }
+                    ],
+                }
+            ),
+        }
+
+        result = handler.emit(resource, context)
+        # Should emit (with unknown subnet) but not track VNet since subnet ID is invalid
+        assert result is not None
+        assert len(context.vnets_with_bastions) == 0
+
+    def test_vnet_id_extraction_from_subnet(self):
+        """Test the VNet ID extraction helper method."""
+        handler = BastionHostHandler()
+
+        # Valid subnet ID
+        subnet_id = "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"
+        vnet_id = handler._extract_vnet_id_from_subnet(subnet_id)
+        assert vnet_id == "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1"
+
+        # Empty subnet ID
+        vnet_id = handler._extract_vnet_id_from_subnet("")
+        assert vnet_id is None
+
+        # Invalid subnet ID (missing virtualNetworks)
+        invalid_subnet_id = "/subscriptions/test-sub/resourceGroups/test-rg/subnets/subnet1"
+        vnet_id = handler._extract_vnet_id_from_subnet(invalid_subnet_id)
+        assert vnet_id is None

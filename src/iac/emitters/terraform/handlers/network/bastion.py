@@ -71,6 +71,20 @@ class BastionHostHandler(ResourceHandler):
             subnet_id, resource_name, context
         )
 
+        # Issue #327: Azure enforces 1 Bastion per VNet limit
+        # Extract VNet ID from subnet ID and check if this VNet already has a Bastion
+        vnet_id = self._extract_vnet_id_from_subnet(subnet_id)
+        if vnet_id:
+            if vnet_id in context.vnets_with_bastions:
+                vnet_name = self.extract_name_from_id(vnet_id, "virtualNetworks")
+                logger.warning(
+                    f"Skipping Bastion Host '{resource_name}': VNet '{vnet_name}' already has a Bastion. "
+                    f"Azure enforces a limit of 1 Bastion per VNet."
+                )
+                return None
+            # Track this VNet as having a Bastion
+            context.vnets_with_bastions.add(vnet_id)
+
         # Extract public IP reference (REQUIRED for Bastion Host)
         public_ip_info = ip_props.get("publicIPAddress", {})
         public_ip_id = public_ip_info.get("id", "")
@@ -146,3 +160,32 @@ class BastionHostHandler(ResourceHandler):
         scoped_name = f"{vnet_safe}_{subnet_safe}"
 
         return f"${{azurerm_subnet.{scoped_name}.id}}"
+
+    def _extract_vnet_id_from_subnet(self, subnet_id: str) -> Optional[str]:
+        """Extract VNet ID from a subnet ID.
+
+        Args:
+            subnet_id: Full Azure subnet resource ID
+
+        Returns:
+            VNet ID (up to virtualNetworks/vnet-name) or None if invalid
+
+        Example:
+            Input: /subscriptions/xxx/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1
+            Output: /subscriptions/xxx/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet1
+        """
+        if not subnet_id:
+            return None
+
+        # Find the virtualNetworks segment
+        parts = subnet_id.split("/")
+        try:
+            vnet_index = parts.index("virtualNetworks")
+            if vnet_index + 1 < len(parts):
+                # Reconstruct VNet ID up to and including the VNet name
+                vnet_id = "/".join(parts[: vnet_index + 2])
+                return vnet_id
+        except (ValueError, IndexError):
+            return None
+
+        return None
