@@ -4,6 +4,7 @@ from .application_gateway import ApplicationGatewayHandler
 from .bastion import BastionHostHandler
 from .load_balancer import LoadBalancerHandler
 from .nat_gateway import NATGatewayHandler
+from .network_watcher import NetworkWatcherHandler
 from .nic import NetworkInterfaceHandler
 from .nsg import NetworkSecurityGroupHandler
 from .nsg_associations import NSGAssociationHandler
@@ -20,6 +21,7 @@ __all__ = [
     "NSGAssociationHandler",
     "NetworkInterfaceHandler",
     "NetworkSecurityGroupHandler",
+    "NetworkWatcherHandler",
     "PublicIPHandler",
     "RouteTableHandler",
     "SubnetHandler",
