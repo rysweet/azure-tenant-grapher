@@ -135,7 +135,16 @@ class ScheduledQueryRulesHandler(ResourceHandler):
         criteria = []
         for criterion in all_of:
             criterion_config = self._map_criterion_fields(criterion)
-            criteria.append(criterion_config)
+            # Filter out empty criteria (e.g., when query validation fails)
+            if criterion_config:
+                criteria.append(criterion_config)
+
+        # Skip if all criteria were filtered out (invalid)
+        if not criteria:
+            logger.warning(
+                f"Scheduled Query Rules Alert '{self._sanitize_for_logging(resource_name)}' has no valid criteria after filtering, skipping"
+            )
+            return None
 
         config["criteria"] = criteria
 

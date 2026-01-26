@@ -558,9 +558,6 @@ class TestScheduledQueryRulesHandler:
 
         result = handler.emit(base_alert_resource, context)
 
-        # Should still emit but with empty criteria (query was skipped)
-        # This tests the DoS protection without breaking the entire emission
-        assert result is not None
-        _tf_type, _safe_name, _config = result
-        # Criteria should be empty or missing query in first criterion
-        # (depending on implementation details)
+        # Should skip emission when all criteria are filtered out due to oversized queries
+        # This tests the DoS protection correctly skips invalid alert rules
+        assert result is None, "Handler should skip alert when all criteria exceed size limit"
