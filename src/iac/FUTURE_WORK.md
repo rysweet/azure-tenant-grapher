@@ -133,11 +133,12 @@ client.vaults.begin_purge_deleted_vault(
 
 ---
 
-### TODO #6: Dependency Extraction Enhancement
+### ~~TODO #6: Dependency Extraction Enhancement~~ ✅ COMPLETED
 
-**File**: `src/iac/dependency_analyzer.py:198`
-**Status**: Only RG dependencies extracted
+**File**: `src/iac/dependency_analyzer.py:217-267`
+**Status**: ✅ Implemented - All dependency types now extracted
 **Complexity**: Medium
+**Completed**: 2026-01-26 (Issue #324)
 
 **Current State**:
 - Resource group dependencies work correctly
@@ -219,6 +220,29 @@ def _extract_resource_name_from_id(self, resource_id: str) -> str:
 - Optional dependencies (NIC can exist without VM)
 
 **Estimated Effort**: 3-4 hours
+
+**Implementation Summary**:
+✅ Added 4 new dependency extraction methods:
+1. `_extract_vnet_name_from_subnet()` - Extracts VNet from subnet resource ID
+2. `_extract_subnet_ids_from_nic()` - Extracts subnets from NIC IP configurations
+3. `_extract_nic_ids_from_vm()` - Extracts NICs from VM network profile
+4. `_extract_storage_from_diagnostics()` - Extracts storage account from VM diagnostics URI
+
+✅ Updated `_extract_dependencies()` to add 4 new dependency types:
+- VNet → Subnet (line 217)
+- Subnet → NIC (line 228)
+- NIC → VM (line 242)
+- Storage Account → VM diagnostics (line 256)
+
+✅ Comprehensive test coverage: 24 tests in `tests/iac/test_dependency_analyzer_resource_deps.py`
+- VNet/Subnet: 5 tests (valid ID, hyphenated names, missing ID, malformed ID, fallback)
+- Subnet/NIC: 5 tests (single IP config, multiple configs, no configs, empty ID, hyphenated)
+- NIC/VM: 5 tests (single NIC, multiple NICs, no profile, empty ID, hyphenated)
+- Storage/VM: 5 tests (valid URI, hyphenated, no profile, empty URI, malformed URI)
+- Combined: 2 tests (VM with all deps, full dependency chain)
+- Helper methods: 2 tests (resource name extraction, storage extraction)
+
+✅ All tests passing, no existing functionality broken.
 
 ---
 

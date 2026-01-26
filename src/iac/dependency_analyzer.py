@@ -214,12 +214,53 @@ class DependencyAnalyzer:
                     f"Added RG dependency for {resource.get('name', 'unknown')}: {terraform_ref}"
                 )
 
-        # Future Work: Extract additional explicit dependencies from properties
-        # See src/iac/FUTURE_WORK.md - TODO #6 for implementation specifications:
-        # - VNets for subnets
-        # - Subnets for NICs
-        # - NICs for VMs
-        # - Storage accounts for VM diagnostics
+        # VNet -> Subnet dependency (TODO #6)
+        if resource_type == "Microsoft.Network/subnets":
+            vnet_name = self._extract_vnet_name_from_subnet(resource)
+            if vnet_name:
+                safe_vnet = self._sanitize_terraform_name(vnet_name)
+                dependencies.add(f"azurerm_virtual_network.{safe_vnet}")
+                logger.debug(
+                    f"Added VNet dependency for {resource.get('name', 'unknown')}: "
+                    f"azurerm_virtual_network.{safe_vnet}"
+                )
+
+        # Subnet -> NIC dependency (TODO #6)
+        if resource_type == "Microsoft.Network/networkInterfaces":
+            subnet_ids = self._extract_subnet_ids_from_nic(resource)
+            for subnet_id in subnet_ids:
+                if subnet_id:
+                    subnet_name = self._extract_resource_name_from_id(subnet_id)
+                    safe_subnet = self._sanitize_terraform_name(subnet_name)
+                    dependencies.add(f"azurerm_subnet.{safe_subnet}")
+                    logger.debug(
+                        f"Added Subnet dependency for {resource.get('name', 'unknown')}: "
+                        f"azurerm_subnet.{safe_subnet}"
+                    )
+
+        # NIC -> VM dependency (TODO #6)
+        if resource_type == "Microsoft.Compute/virtualMachines":
+            nic_ids = self._extract_nic_ids_from_vm(resource)
+            for nic_id in nic_ids:
+                if nic_id:
+                    nic_name = self._extract_resource_name_from_id(nic_id)
+                    safe_nic = self._sanitize_terraform_name(nic_name)
+                    dependencies.add(f"azurerm_network_interface.{safe_nic}")
+                    logger.debug(
+                        f"Added NIC dependency for {resource.get('name', 'unknown')}: "
+                        f"azurerm_network_interface.{safe_nic}"
+                    )
+
+        # Storage Account -> VM diagnostics dependency (TODO #6)
+        if resource_type == "Microsoft.Compute/virtualMachines":
+            storage_account = self._extract_storage_from_diagnostics(resource)
+            if storage_account:
+                safe_storage = self._sanitize_terraform_name(storage_account)
+                dependencies.add(f"azurerm_storage_account.{safe_storage}")
+                logger.debug(
+                    f"Added Storage Account dependency for {resource.get('name', 'unknown')}: "
+                    f"azurerm_storage_account.{safe_storage}"
+                )
 
         return dependencies
 
@@ -251,6 +292,139 @@ class DependencyAnalyzer:
             logger.debug(str(f"Truncated long name to 80 chars: ...{sanitized[-20:]}"))
 
         return sanitized or "unnamed_resource"
+
+    # Resource Dependency Extraction Helper Methods (TODO #6)
+
+    def _extract_vnet_name_from_subnet(self, resource: Dict[str, Any]) -> str:
+        """Extract VNet name from subnet resource.
+
+        Subnet IDs follow format: /subscriptions/{sub}/resourceGroups/{rg}/providers/
+        Microsoft.Network/virtualNetworks/{vnet}/subnets/{subnet}
+
+        Args:
+            resource: Subnet resource dictionary
+
+        Returns:
+            VNet name or empty string if not found
+        """
+        # Try to extract from resource ID
+        resource_id = resource.get("id", "")
+        if resource_id:
+            # Match pattern: .../virtualNetworks/{vnet}/subnets/...
+            match = re.search(
+                r"/virtualNetworks/([^/]+)/subnets/", resource_id, re.IGNORECASE
+            )
+            if match:
+                return match.group(1)
+
+        # Fallback: check properties for vnet reference
+        properties = resource.get("properties", {})
+        vnet_id = properties.get("virtualNetwork", {}).get("id", "")
+        if vnet_id:
+            return self._extract_resource_name_from_id(vnet_id)
+
+        return ""
+
+    def _extract_subnet_ids_from_nic(self, resource: Dict[str, Any]) -> List[str]:
+        """Extract subnet IDs from NIC resource.
+
+        NICs can have multiple IP configurations, each with a subnet reference.
+
+        Args:
+            resource: NIC resource dictionary
+
+        Returns:
+            List of subnet IDs
+        """
+        subnet_ids = []
+        properties = resource.get("properties", {})
+        ip_configs = properties.get("ipConfigurations", [])
+
+        for ip_config in ip_configs:
+            subnet = ip_config.get("subnet", {})
+            subnet_id = subnet.get("id", "")
+            if subnet_id:
+                subnet_ids.append(subnet_id)
+
+        return subnet_ids
+
+    def _extract_nic_ids_from_vm(self, resource: Dict[str, Any]) -> List[str]:
+        """Extract NIC IDs from VM resource.
+
+        VMs can have multiple network interfaces.
+
+        Args:
+            resource: VM resource dictionary
+
+        Returns:
+            List of NIC IDs
+        """
+        nic_ids = []
+        properties = resource.get("properties", {})
+        network_profile = properties.get("networkProfile", {})
+        nic_refs = network_profile.get("networkInterfaces", [])
+
+        for nic_ref in nic_refs:
+            nic_id = nic_ref.get("id", "")
+            if nic_id:
+                nic_ids.append(nic_id)
+
+        return nic_ids
+
+    def _extract_storage_from_diagnostics(self, resource: Dict[str, Any]) -> str:
+        """Extract storage account name from VM diagnostics settings.
+
+        Boot diagnostics uses storage URI format:
+        https://{storage_account}.blob.core.windows.net/
+
+        Args:
+            resource: VM resource dictionary
+
+        Returns:
+            Storage account name or empty string if not found
+        """
+        properties = resource.get("properties", {})
+        diagnostics = properties.get("diagnosticsProfile", {})
+        boot_diagnostics = diagnostics.get("bootDiagnostics", {})
+        storage_uri = boot_diagnostics.get("storageUri", "")
+
+        if storage_uri:
+            # Extract storage account name from URI
+            # Format: https://<name>.blob.core.windows.net/
+            try:
+                # Split on '//' to get domain part
+                parts = storage_uri.split("//")
+                if len(parts) > 1:
+                    # Get the first part of the domain (storage account name)
+                    domain = parts[1].split(".")[0]
+                    return domain
+            except (IndexError, AttributeError):
+                logger.debug(f"Failed to parse storage URI: {storage_uri}")
+
+        return ""
+
+    def _extract_resource_name_from_id(self, resource_id: str) -> str:
+        """Extract resource name from Azure resource ID.
+
+        Azure ID format: /subscriptions/{sub}/resourceGroups/{rg}/providers/
+        {provider}/{type}/{name}[/{subtype}/{subname}]
+
+        Args:
+            resource_id: Azure Resource ID string
+
+        Returns:
+            Resource name or empty string if not found
+        """
+        if not resource_id:
+            return ""
+
+        # Split by '/' and get the last segment
+        parts = resource_id.split("/")
+        # Filter out empty strings
+        parts = [p for p in parts if p]
+
+        # Return the last non-empty part
+        return parts[-1] if parts else ""
 
     # Cross-Resource Group Dependency Methods
 
