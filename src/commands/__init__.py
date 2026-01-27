@@ -42,7 +42,6 @@ _COMMAND_MODULES: dict[str, str] = {
     # IaC commands
     "generate-iac": "src.commands.generate_iac",
     "deploy": "src.commands.deploy",
-    "undeploy": "src.commands.undeploy",
     "list-deployments": "src.commands.list_deployments",
     "validate-deployment": "src.commands.validate_deployment",
     # Tenant management
