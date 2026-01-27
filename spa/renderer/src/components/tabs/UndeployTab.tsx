@@ -76,32 +76,103 @@ const UndeployTab: React.FC = () => {
   const fetchDeployments = async () => {
     setLoading(true);
     setError(null);
+
+    // Timeout safety mechanism - reset loading after 30 seconds
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      setError('Request timed out after 30 seconds. Please try again.');
+    }, 30000);
+
     try {
       const result = await window.electronAPI.cli.execute('list-deployments', ['--json']);
 
+      // Accumulate all output chunks
+      const outputChunks: string[] = [];
+
       const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
-          try {
-            const deploymentData = JSON.parse(data.data.join('\n'));
-            setDeployments(deploymentData);
-          } catch (e) {
-            // Console error removed
-          }
+          // Collect all output chunks - don't parse yet!
+          outputChunks.push(...data.data);
         }
       };
 
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setLoading(false);
+          clearTimeout(timeoutId);
+
+          // Clean up event listeners to prevent accumulation
           window.electronAPI?.off?.('process:output', outputHandler);
           window.electronAPI?.off?.('process:exit', exitHandler);
+
+          // Handle non-zero exit codes
+          if (data.code !== 0) {
+            setError(`Failed to fetch deployments (exit code ${data.code})`);
+            return;
+          }
+
+          // Now parse the complete JSON output
+          try {
+            const completeOutput = outputChunks.join('').trim();
+            if (!completeOutput) {
+              // Empty output means no deployments
+              setDeployments([]);
+              return;
+            }
+
+            // Extract JSON from mixed output (status messages + JSON)
+            // Find the first '[' which marks the start of the JSON array
+            const jsonStartIndex = completeOutput.indexOf('[');
+
+            if (jsonStartIndex === -1) {
+              // No JSON array found - might be empty or error output
+              // Check if output contains "no deployments" or similar messages
+              if (completeOutput.toLowerCase().includes('no deployment') ||
+                  completeOutput.toLowerCase().includes('empty')) {
+                setDeployments([]);
+                return;
+              }
+              // Otherwise it's an error
+              setError('No deployment data found in response');
+              return;
+            }
+
+            // Find the matching closing ']' by counting brackets
+            let bracketCount = 0;
+            let jsonEndIndex = -1;
+
+            for (let i = jsonStartIndex; i < completeOutput.length; i++) {
+              if (completeOutput[i] === '[') bracketCount++;
+              if (completeOutput[i] === ']') bracketCount--;
+
+              if (bracketCount === 0) {
+                jsonEndIndex = i + 1;
+                break;
+              }
+            }
+
+            if (jsonEndIndex === -1) {
+              setError('Incomplete JSON data received');
+              return;
+            }
+
+            // Extract and parse the JSON portion
+            const jsonString = completeOutput.substring(jsonStartIndex, jsonEndIndex);
+            const deploymentData = JSON.parse(jsonString);
+            setDeployments(Array.isArray(deploymentData) ? deploymentData : []);
+          } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : 'Failed to parse deployment data';
+            setError(`Error parsing deployment data: ${errorMsg}`);
+          }
         }
       };
 
       window.electronAPI.on('process:output', outputHandler);
       window.electronAPI.on('process:exit', exitHandler);
+
     } catch (err: any) {
-      setError(err.message);
+      clearTimeout(timeoutId);
+      setError(err.message || 'Failed to fetch deployments');
       setLoading(false);
     }
   };

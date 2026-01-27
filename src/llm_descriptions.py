@@ -318,7 +318,7 @@ class AzureLLMDescriptionGenerator:
         *,
         system_prompt: Optional[str] = None,
         model: Optional[str] = None,
-        max_completion_tokens: int = 32768,
+        max_completion_tokens: int = 16384,
         **kwargs: Any,
     ) -> Any:
         """
@@ -469,7 +469,7 @@ Be specific about the actual configured values while explaining their architectu
                         },
                         {"role": "user", "content": prompt},
                     ],
-                    max_completion_tokens=32768,
+                    max_completion_tokens=16384,
                 )
 
                 content = response.choices[0].message.content
@@ -577,7 +577,7 @@ Be specific about the architectural implications while keeping it concise and ac
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=32768,
+                max_completion_tokens=16384,
             )
 
             content = response.choices[0].message.content
@@ -689,7 +689,7 @@ Focus on architectural significance and business purpose rather than just resour
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=32768,
+                max_completion_tokens=16384,
             )
 
             content = response.choices[0].message.content
@@ -808,7 +808,7 @@ Focus on the strategic purpose of this tagging rather than just describing what 
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=32768,
+                max_completion_tokens=16384,
             )
 
             content = response.choices[0].message.content
@@ -908,7 +908,7 @@ Focus on architectural details and relationships, not on recommendations or futu
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=32768,
+                max_completion_tokens=16384,
             )
 
             content = response.choices[0].message.content
@@ -1036,7 +1036,7 @@ The tenant contains {len(relationships)} relationships between resources, indica
                 },
                 {"role": "user", "content": prompt},
             ],
-            max_completion_tokens=32768,
+            max_completion_tokens=16384,
         )
         content = response.choices[0].message.content
         markdown = str(content).strip() if content else ""
