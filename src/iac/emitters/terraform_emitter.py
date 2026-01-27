@@ -1919,6 +1919,15 @@ class TerraformEmitter(IaCEmitter):
                                 ] = {}
                             terraform_config["resource"][res_type].update(resources)
 
+                    # Merge any data sources into main config
+                    if context.terraform_config.get("data"):
+                        for data_type, data_sources in context.terraform_config[
+                            "data"
+                        ].items():
+                            if data_type not in terraform_config.get("data", {}):
+                                terraform_config.setdefault("data", {})[data_type] = {}
+                            terraform_config["data"][data_type].update(data_sources)
+
                     logger.info(
                         f"✅ Handler emission successful for {azure_type}: {resource_name}"
                     )

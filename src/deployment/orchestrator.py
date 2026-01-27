@@ -378,7 +378,9 @@ def deploy_iac(
 
     # Deploy based on format
     if iac_format == "terraform":
-        return deploy_terraform(iac_dir, resource_group, location, dry_run, dashboard)
+        return deploy_terraform(
+            iac_dir, resource_group, location, dry_run, dashboard, subscription_id
+        )
     elif iac_format == "bicep":
         return deploy_bicep(
             iac_dir, resource_group, location, subscription_id, dry_run, dashboard
