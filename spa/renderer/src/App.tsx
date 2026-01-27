@@ -21,7 +21,6 @@ const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
 const DeployTab = lazy(() => import('./components/tabs/DeployTab'));
 const ValidateDeploymentTab = lazy(() => import('./components/tabs/ValidateDeploymentTab'));
-const UndeployTab = lazy(() => import('./components/tabs/UndeployTab'));
 const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
 const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
 const AgentModeTab = lazy(() => import('./components/tabs/AgentModeTab'));
@@ -205,9 +204,6 @@ const App: React.FC = () => {
                     <ValidateDeploymentTab />
                   </TabErrorBoundary>
                 } />
-                <Route path="/undeploy" element={
-                  <TabErrorBoundary tabName="Undeploy">
-                    <UndeployTab />
                   </TabErrorBoundary>
                 } />
                 <Route path="/create-tenant" element={
