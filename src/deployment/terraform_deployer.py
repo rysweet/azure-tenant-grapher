@@ -28,6 +28,7 @@ def deploy_terraform(
     location: str,
     dry_run: bool = False,
     dashboard: Optional["DeploymentDashboard"] = None,
+    subscription_id: Optional[str] = None,
 ) -> dict:
     """Deploy Terraform IaC.
 
@@ -40,6 +41,7 @@ def deploy_terraform(
         location: Azure region (for context/logging)
         dry_run: If True, only run plan without apply
         dashboard: Optional deployment dashboard for real-time updates
+        subscription_id: Optional Azure subscription ID to override Terraform variable
 
     Returns:
         Deployment result dictionary with:
@@ -111,9 +113,14 @@ def deploy_terraform(
             dashboard.update_phase("plan")
             dashboard.log_info("Running terraform plan (dry-run)...")
 
+        # Build terraform plan command with optional subscription_id override
+        plan_cmd = ["terraform", "plan", "-input=false"]
+        if subscription_id:
+            plan_cmd.extend(["-var", f"subscription_id={subscription_id}"])
+
         try:
             result = subprocess.run(
-                ["terraform", "plan", "-input=false"],
+                plan_cmd,
                 cwd=iac_dir,
                 capture_output=True,
                 text=True,
@@ -168,9 +175,14 @@ def deploy_terraform(
         dashboard.update_phase("apply")
         dashboard.log_info("Applying Terraform changes...")
 
+    # Build terraform apply command with optional subscription_id override
+    apply_cmd = ["terraform", "apply", "-auto-approve", "-input=false"]
+    if subscription_id:
+        apply_cmd.extend(["-var", f"subscription_id={subscription_id}"])
+
     try:
         result = subprocess.run(
-            ["terraform", "apply", "-auto-approve", "-input=false"],
+            apply_cmd,
             cwd=iac_dir,
             capture_output=True,
             text=True,

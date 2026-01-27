@@ -83,12 +83,25 @@ class KeyVaultHandler(ResourceHandler):
 
         # Tenant ID (required) - Fix #604: Use target tenant ID for cross-tenant deployment
         # ISSUE #475: NEVER use raw source tenantId - it leaks source tenant GUID
-        # Priority: target_tenant_id (cross-tenant) > variable reference (same-tenant)
+        # Priority:
+        # 1. context.target_tenant_id (cross-tenant override)
+        # 2. resource.tenant_id (if valid, not placeholder)
+        # 3. properties.tenantId (if valid, not placeholder)
+        # 4. data.azurerm_client_config.current.tenant_id (fallback)
         if context.target_tenant_id:
             config["tenant_id"] = context.target_tenant_id
         else:
-            # Use variable reference - NEVER fall back to properties.get("tenantId")
-            config["tenant_id"] = "${var.tenant_id}"
+            # Check resource for tenant_id
+            resource_tenant_id = resource.get("tenant_id") or properties.get("tenantId")
+
+            # Use resource tenant_id if valid (not placeholder)
+            if resource_tenant_id and resource_tenant_id != "00000000-0000-0000-0000-000000000000":
+                config["tenant_id"] = resource_tenant_id
+            else:
+                # Use data source reference for current tenant
+                config["tenant_id"] = "${data.azurerm_client_config.current.tenant_id}"
+                # Ensure data source is added to context
+                context.add_data_source("azurerm_client_config", "current", {})
 
         # Soft delete settings
         soft_delete_enabled = properties.get("enableSoftDelete", True)

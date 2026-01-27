@@ -187,6 +187,8 @@ def deploy_command(
             subscription_id=subscription_id,
             iac_format=cast(IaCFormat, iac_format) if iac_format else None,
             dry_run=dry_run,
+            sp_client_id=sp_client_id,
+            sp_client_secret=sp_client_secret,
         )
 
         # Deploy data plane if requested
