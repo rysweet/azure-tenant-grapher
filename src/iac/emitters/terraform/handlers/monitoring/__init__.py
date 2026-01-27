@@ -10,6 +10,7 @@ from .log_analytics import (
     LogAnalyticsWorkspaceHandler,
 )
 from .metric_alert import MetricAlertHandler
+from .scheduled_query_rules import ScheduledQueryRulesHandler
 from .workbook import WorkbooksHandler
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "LogAnalyticsSolutionHandler",
     "LogAnalyticsWorkspaceHandler",
     "MetricAlertHandler",
+    "ScheduledQueryRulesHandler",
     "WorkbooksHandler",
 ]
