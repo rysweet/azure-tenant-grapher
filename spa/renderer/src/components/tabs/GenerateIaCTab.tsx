@@ -373,12 +373,12 @@ const GenerateIaCTab: React.FC = () => {
 
           <Grid item xs={12} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Target Tenant</InputLabel>
+              <InputLabel>Gameboard Tenant</InputLabel>
               <Select
                 value={selectedTenant}
                 onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
                 disabled={isGenerating}
-                label="Target Tenant"
+                label="Gameboard Tenant"
               >
                 <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
                 <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>

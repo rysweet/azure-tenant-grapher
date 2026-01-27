@@ -42,7 +42,7 @@ const DeployTab: React.FC = () => {
 
   const handleDeploy = async () => {
     if (!sourceTenantId || !targetTenantId || !resourceGroup) {
-      setError('Source Tenant, Target Tenant, and Resource Group are required');
+      setError('Source Tenant ID, Gameboard Tenant ID, and Resource Group are required');
       return;
     }
 
@@ -261,12 +261,12 @@ const DeployTab: React.FC = () => {
 
           <Grid item xs={12} md={6}>
             <TenantSelector
-              label="Target Tenant"
+              label="Gameboard Tenant"
               value={targetTenantId}
               onChange={setTargetTenantId}
               disabled={isDeploying}
               required
-              helperText="Azure tenant to deploy resources to"
+              helperText="Azure tenant for the Gameboard deployment"
             />
           </Grid>
 

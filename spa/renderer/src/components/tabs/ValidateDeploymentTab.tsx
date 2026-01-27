@@ -61,7 +61,7 @@ const ValidateDeploymentTab: React.FC = () => {
 
   const handleValidate = async () => {
     if (!sourceTenantId || !targetTenantId) {
-      setError('Source and Target Tenant IDs are required');
+      setError('Source and Gameboard Tenant IDs are required');
       return;
     }
 
@@ -233,12 +233,12 @@ const ValidateDeploymentTab: React.FC = () => {
 
           <Grid item xs={12} md={6}>
             <FormControl fullWidth required>
-              <InputLabel>Target Tenant</InputLabel>
+              <InputLabel>Gameboard Tenant</InputLabel>
               <Select
                 value={selectedTargetTenant}
                 onChange={(e) => setSelectedTargetTenant(e.target.value as '1' | '2')}
                 disabled={isValidating}
-                label="Target Tenant"
+                label="Gameboard Tenant"
               >
                 <MenuItem value="1">Tenant 1 (DefenderATEVET17)</MenuItem>
                 <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
@@ -261,14 +261,14 @@ const ValidateDeploymentTab: React.FC = () => {
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Target Tenant ID"
+              label="Gameboard Tenant ID"
               value={targetTenantId}
               onChange={(e) => setTargetTenantId(e.target.value)}
               disabled={isValidating}
               fullWidth
               required
               placeholder="00000000-0000-0000-0000-000000000000"
-              helperText="Tenant ID to compare to (target)"
+              helperText="Tenant ID to compare to (gameboard)"
             />
           </Grid>
 
