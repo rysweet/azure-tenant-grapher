@@ -47,6 +47,7 @@ from src.commands.export_abstraction import export_abstraction_command
 from src.commands.layer_cmd import layer as layer_group
 from src.commands.list_deployments import list_deployments
 from src.commands.report import report as report_cmd
+from src.commands.reset import reset as reset_group
 from src.commands.scaling import (
     scale_clean as scale_clean_cmd,
 )
@@ -1285,6 +1286,9 @@ cli.add_command(container_cmd, "container")
 
 # Register reporting commands (Issue #569)
 cli.add_command(report_cmd, "report")
+
+# Register reset command group (Issue #627: Tenant Reset Feature)
+cli.add_command(reset_group)
 
 # Register layer command group (Issue #482: CLI Modularization - Phase 3)
 cli.add_command(layer_group)

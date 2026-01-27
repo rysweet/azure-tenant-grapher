@@ -25,7 +25,7 @@ from ..db.connection_manager import ConnectionManager
 from .config import ATGServerConfig, Neo4jConfig
 from .dependencies import set_config, set_connection_manager
 from .middleware import RateLimiter
-from .routers import generate, health, operations, scan
+from .routers import generate, health, operations, scan, reset
 from .routers import websocket as ws_router
 
 # Configure logging
@@ -183,6 +183,7 @@ app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(scan.router, prefix="/api/v1", tags=["Scan"])
 app.include_router(generate.router, prefix="/api/v1", tags=["Generate"])
 app.include_router(operations.router, prefix="/api/v1", tags=["Operations"])
+app.include_router(reset.router, prefix="/api/v1", tags=["Reset"])
 app.include_router(ws_router.router, tags=["WebSocket"])
 
 

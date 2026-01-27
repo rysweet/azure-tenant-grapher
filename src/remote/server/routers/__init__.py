@@ -11,6 +11,7 @@ Public API:
     scan: Scan operation endpoints
     generate: IaC generation endpoints
     operations: Operation management endpoints
+    reset: Tenant reset endpoints
 """
 
-__all__ = ["generate", "health", "operations", "scan"]
+__all__ = ["generate", "health", "operations", "reset", "scan"]
