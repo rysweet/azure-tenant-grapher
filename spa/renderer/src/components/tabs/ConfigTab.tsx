@@ -63,7 +63,18 @@ const ConfigTab: React.FC = () => {
   };
 
   const checkAppRegistration = async (clientId: string) => {
+    if (!clientId || clientId.trim() === '') {
+      setAppRegStatus({ exists: false, checking: false });
+      return;
+    }
+
     setAppRegStatus({ exists: false, checking: true });
+
+    // Set up timeout (15 seconds)
+    const timeoutId = setTimeout(() => {
+      setAppRegStatus({ exists: false, checking: false });
+    }, 15000);
+
     try {
       // Use Azure CLI to check if the app registration exists
       const result = await window.electronAPI.cli.execute('bash', [
@@ -72,8 +83,10 @@ const ConfigTab: React.FC = () => {
       ]);
 
       // Listen for the result
-      window.electronAPI.on('process:exit', (data: any) => {
+      const handleProcessExit = (data: any) => {
         if (data.id === result.data.id) {
+          clearTimeout(timeoutId);
+
           if (data.code === 0 && data.output && data.output.length > 0) {
             // App exists
             const appName = data.output.join('').trim();
@@ -82,10 +95,15 @@ const ConfigTab: React.FC = () => {
             // App doesn't exist or error
             setAppRegStatus({ exists: false, checking: false });
           }
+
+          // Clean up event listener
+          window.electronAPI.off('process:exit', handleProcessExit);
         }
-      });
+      };
+
+      window.electronAPI.on('process:exit', handleProcessExit);
     } catch (err) {
-      // Console error removed
+      clearTimeout(timeoutId);
       setAppRegStatus({ exists: false, checking: false });
     }
   };
