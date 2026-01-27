@@ -71,10 +71,12 @@ class TestServicePrincipalAuthentication:
                 mock_deploy.assert_called_once()
                 call_args = mock_deploy.call_args
                 assert call_args is not None
-                # Check that subscription_id was passed (should be 6th positional arg)
-                assert (
-                    call_args[0][5] == "test-subscription-id"
-                ), "subscription_id should be passed to deploy_terraform"
+                # Check that subscription_id was passed (robust: check both kwargs and positional)
+                subscription_passed = (
+                    call_args.kwargs.get("subscription_id") == "test-subscription-id"
+                    or (len(call_args.args) > 5 and call_args.args[5] == "test-subscription-id")
+                )
+                assert subscription_passed, "subscription_id should be passed to deploy_terraform"
 
 
 class TestTerraformSubscriptionOverride:
