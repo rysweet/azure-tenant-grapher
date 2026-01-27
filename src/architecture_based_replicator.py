@@ -557,6 +557,8 @@ class ArchitecturePatternReplicator:
         node_coverage_weight: Optional[float] = None,
         use_architecture_distribution: bool = True,
         use_configuration_coherence: bool = True,
+        use_spectral_guidance: bool = False,
+        spectral_weight: float = 0.4,
     ) -> Tuple[List[Tuple[str, List[List[Dict[str, Any]]]]], List[float], Optional[Dict[str, Any]]]:
         """
         Generate tenant replication plan to match source pattern graph.
@@ -564,7 +566,10 @@ class ArchitecturePatternReplicator:
         Multi-layer selection strategy:
         1. Architecture Distribution Analysis (optional): Compute distribution scores for patterns
         2. Proportional Pattern Sampling (optional): Allocate instances proportionally
-        3. Configuration-Coherent Instance Selection (optional): Select within patterns by similarity
+        3. Instance Selection (3 modes):
+           a. Hybrid Spectral-Guided: Distribution balance + spectral optimization (RECOMMENDED)
+           b. Configuration-Coherent: Select similar configurations within patterns
+           c. Random: Fast, no bias
         4. Greedy Spectral Matching (fallback): Original spectral distance-based selection
 
         Args:
@@ -578,6 +583,14 @@ class ArchitecturePatternReplicator:
                                  None = randomly choose 0.0 or 1.0 (default, exploration/exploitation)
             use_architecture_distribution: If True, uses distribution-based proportional allocation
             use_configuration_coherence: If True, prioritizes instances with similar configurations
+            use_spectral_guidance: If True, uses hybrid scoring (distribution + spectral) for selection
+                                  Improves node coverage by considering structural similarity.
+                                  Samples max 10 configs per pattern.
+            spectral_weight: Weight for spectral component in hybrid score (0.0-1.0, default: 0.4)
+                            Only used when use_spectral_guidance=True.
+                            0.0 = pure distribution adherence
+                            0.4 = recommended balance (60% distribution, 40% spectral)
+                            1.0 = pure spectral distance
 
         Returns:
             Tuple of (selected instances, spectral distance history, distribution metadata)
@@ -684,13 +697,21 @@ class ArchitecturePatternReplicator:
         # LAYER 3 & 4: INSTANCE SELECTION
         logger.info("=" * 80)
         if use_architecture_distribution and pattern_targets:
-            logger.info(
-                "LAYER 3: Configuration-coherent instance selection " +
-                "(enabled)" if use_configuration_coherence else "(disabled)"
-            )
+            if use_spectral_guidance:
+                logger.info(
+                    f"LAYER 3: Hybrid spectral-guided instance selection "
+                    f"(spectral_weight={spectral_weight:.2f})"
+                )
+            else:
+                logger.info(
+                    "LAYER 3: Configuration-coherent instance selection " +
+                    "(enabled)" if use_configuration_coherence else "(disabled)"
+                )
             selected_instances = self._select_instances_proportionally(
                 pattern_targets,
-                use_configuration_coherence
+                use_configuration_coherence,
+                use_spectral_guidance,
+                spectral_weight
             )
         else:
             logger.info(
@@ -1428,17 +1449,24 @@ class ArchitecturePatternReplicator:
     def _select_instances_proportionally(
         self,
         pattern_targets: Dict[str, int],
-        use_configuration_coherence: bool
+        use_configuration_coherence: bool,
+        use_spectral_guidance: bool = False,
+        spectral_weight: float = 0.4
     ) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Select instances proportionally from each pattern.
 
-        If configuration coherence is enabled, prioritizes instances with similar
-        configurations (location, SKU, tags) within each pattern.
+        Supports three selection modes:
+        1. Random: Fast, no bias
+        2. Configuration-coherent: Prioritizes similar configurations
+        3. Spectral-guided: Uses hybrid score (distribution + spectral) for best structural match
 
         Args:
             pattern_targets: Target count per pattern from proportional allocation
             use_configuration_coherence: If True, select instances by configuration similarity
+            use_spectral_guidance: If True, use hybrid scoring with spectral distance
+            spectral_weight: Weight for spectral component in hybrid score (0.0-1.0)
+                            distribution_weight = 1.0 - spectral_weight
 
         Returns:
             List of (pattern_name, instance) tuples
@@ -1446,6 +1474,8 @@ class ArchitecturePatternReplicator:
         import random
 
         selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
+        current_counts: Dict[str, int] = {p: 0 for p in pattern_targets}
+        total_target = sum(pattern_targets.values())
 
         for pattern_name, target_count in pattern_targets.items():
             if pattern_name not in self.pattern_resources:
@@ -1461,7 +1491,24 @@ class ArchitecturePatternReplicator:
             # Limit to available instances
             actual_count = min(target_count, len(available_instances))
 
-            if use_configuration_coherence:
+            if use_spectral_guidance:
+                # Hybrid spectral-guided selection
+                logger.info(
+                    f"  Selecting {actual_count}/{len(available_instances)} instances "
+                    f"from {pattern_name} (spectral-guided, weight={spectral_weight:.2f})"
+                )
+
+                chosen_instances = self._select_with_hybrid_scoring(
+                    available_instances,
+                    actual_count,
+                    pattern_name,
+                    selected_instances,
+                    current_counts,
+                    total_target,
+                    spectral_weight
+                )
+
+            elif use_configuration_coherence:
                 # Configuration-coherent selection: cluster by similarity and sample
                 logger.info(
                     f"  Selecting {actual_count}/{len(available_instances)} instances "
@@ -1503,9 +1550,190 @@ class ArchitecturePatternReplicator:
             # Add to selected
             for instance in chosen_instances:
                 selected_instances.append((pattern_name, instance))
+                current_counts[pattern_name] += 1
 
         logger.info(f"Selected {len(selected_instances)} total instances across all patterns")
         return selected_instances
+
+    def _select_with_hybrid_scoring(
+        self,
+        available_instances: List[List[Dict[str, Any]]],
+        target_count: int,
+        pattern_name: str,
+        selected_so_far: List[Tuple[str, List[Dict[str, Any]]]],
+        current_counts: Dict[str, int],
+        total_target: int,
+        spectral_weight: float
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Select instances using hybrid scoring: distribution adherence + spectral improvement.
+
+        Samples up to 10 representative configurations and scores each based on:
+        - Distribution adherence: How well it maintains proportional balance
+        - Spectral contribution: How much it improves structural similarity
+
+        Args:
+            available_instances: Pool of instances to select from
+            target_count: Number of instances to select
+            pattern_name: Name of the current pattern
+            selected_so_far: Instances already selected from all patterns
+            current_counts: Current count per pattern
+            total_target: Total target instance count across all patterns
+            spectral_weight: Weight for spectral component (0.0-1.0)
+
+        Returns:
+            List of selected instances
+        """
+        # Sample representative configurations (max 10)
+        sampled_instances = self._sample_representative_configs(
+            available_instances, max_samples=min(10, len(available_instances))
+        )
+
+        # Score each sampled instance using hybrid function
+        scored_instances = []
+        for instance in sampled_instances:
+            # Build hypothetical target graph with this instance added
+            hypothetical_selected = selected_so_far + [(pattern_name, instance)]
+            hypothetical_target = self._build_target_pattern_graph_from_instances(
+                hypothetical_selected
+            )
+
+            # Component 1: Distribution adherence (lower is better)
+            # Measures deviation from target distribution
+            total_selected = sum(current_counts.values())
+            if total_selected > 0:
+                actual_ratio = (current_counts[pattern_name] + 1) / (total_selected + 1)
+                target_ratio = (current_counts[pattern_name] + 1) / total_target
+                distribution_adherence = abs(actual_ratio - target_ratio)
+            else:
+                distribution_adherence = 0.0
+
+            # Component 2: Spectral contribution (lower is better)
+            # Measures structural similarity improvement
+            spectral_contribution = self._compute_spectral_distance(
+                self.source_pattern_graph,
+                hypothetical_target
+            )
+
+            # Hybrid score: weighted combination
+            distribution_weight = 1.0 - spectral_weight
+            hybrid_score = (
+                distribution_weight * distribution_adherence +
+                spectral_weight * spectral_contribution
+            )
+
+            scored_instances.append((hybrid_score, instance))
+
+        # Sort by score (lower is better) and take top instances
+        scored_instances.sort(key=lambda x: x[0])
+
+        # Select best instances up to target_count
+        # If we sampled < target_count, need to fill remaining slots
+        chosen = []
+        for score, instance in scored_instances[:target_count]:
+            chosen.append(instance)
+
+        # If we need more instances (sampled < target), fill with remaining
+        if len(chosen) < target_count:
+            import random
+            remaining = [inst for inst in available_instances if inst not in chosen]
+            additional_needed = target_count - len(chosen)
+            if remaining:
+                chosen.extend(random.sample(
+                    remaining,
+                    min(additional_needed, len(remaining))
+                ))
+
+        logger.debug(
+            f"    Hybrid scoring: sampled {len(sampled_instances)} configs, "
+            f"selected {len(chosen)} instances (dist_weight={1.0-spectral_weight:.2f}, "
+            f"spec_weight={spectral_weight:.2f})"
+        )
+
+        return chosen
+
+    def _sample_representative_configs(
+        self,
+        instances: List[List[Dict[str, Any]]],
+        max_samples: int = 10
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Sample representative instances using maximin diversity.
+
+        Ensures sampled instances are spread across configuration space
+        (different resource types, counts) rather than clustered.
+
+        Args:
+            instances: Pool of instances to sample from
+            max_samples: Maximum number of samples to return
+
+        Returns:
+            List of sampled instances (diverse configurations)
+        """
+        import random
+
+        if len(instances) <= max_samples:
+            return instances
+
+        sampled = []
+        remaining = list(instances)
+
+        # Pick first instance randomly
+        seed = random.choice(remaining)
+        sampled.append(seed)
+        remaining.remove(seed)
+
+        # Iteratively pick most diverse instance (maximin strategy)
+        while len(sampled) < max_samples and remaining:
+            best_diversity = -1
+            best_instance = None
+
+            for candidate in remaining:
+                # Compute minimum similarity to already sampled instances
+                # Use simplified diversity metric: resource type overlap
+                min_similarity = min(
+                    self._instance_similarity(candidate, s)
+                    for s in sampled
+                )
+
+                # Pick instance most different from existing samples
+                if min_similarity > best_diversity:
+                    best_diversity = min_similarity
+                    best_instance = candidate
+
+            if best_instance:
+                sampled.append(best_instance)
+                remaining.remove(best_instance)
+
+        return sampled
+
+    def _instance_similarity(
+        self,
+        instance1: List[Dict[str, Any]],
+        instance2: List[Dict[str, Any]]
+    ) -> float:
+        """
+        Compute similarity between two instances based on resource types.
+
+        Uses Jaccard similarity: |intersection| / |union| of resource types.
+
+        Args:
+            instance1: First instance (list of resources)
+            instance2: Second instance (list of resources)
+
+        Returns:
+            Similarity score (0.0 = completely different, 1.0 = identical types)
+        """
+        types1 = set(r["type"] for r in instance1)
+        types2 = set(r["type"] for r in instance2)
+
+        if not types1 and not types2:
+            return 1.0
+
+        intersection = len(types1 & types2)
+        union = len(types1 | types2)
+
+        return intersection / union if union > 0 else 0.0
 
     def _select_instances_greedy(
         self,
