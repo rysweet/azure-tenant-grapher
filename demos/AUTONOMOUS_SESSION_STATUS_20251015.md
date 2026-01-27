@@ -26,10 +26,10 @@ The autonomous tenant replication loop is now running continuously with critical
 **Verification**:
 ```bash
 # Before fix:
-Using target subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16  # SOURCE - WRONG!
+Using target subscription: <source-subscription-id>  # SOURCE - WRONG!
 
 # After fix:
-Using target subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285  # TARGET - CORRECT!
+Using target subscription: <subscription-2-id>  # TARGET - CORRECT!
 ```
 
 ### 2. Terraform Provider Subscription Bug (CRITICAL - FIXED ✅)
@@ -48,7 +48,7 @@ Using target subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285  # TARGET - CORR
 "default": ""  # Empty - caused terraform plan to fail
 
 # After fix:
-"default": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"  # Set to target subscription
+"default": "<subscription-2-id>"  # Set to target subscription
 terraform plan -out=tfplan  # SUCCESS! Plan: 94 to add, 0 to change, 0 to destroy
 ```
 
@@ -65,7 +65,7 @@ terraform plan -out=tfplan  # SUCCESS! Plan: 94 to add, 0 to change, 0 to destro
 - **Current Iteration**: 205
 - **Session**: `autonomous_final`
 - **Log File**: `logs/autonomous_loop_FIXED_20251015_123005.log`
-- **Target Subscription**: c190c55a-9ab2-4b1e-92c4-cc8b1a032285 (DefenderATEVET12)
+- **Target Subscription**: <subscription-2-id> (DefenderATEVET12)
 - **Resource Filter**: SimuLand resources only
 - **Resources Discovered**: 105 resources
 - **Resources in Generated Terraform**: 94 (after filtering unsupported types)
@@ -78,19 +78,19 @@ terraform plan -out=tfplan  # SUCCESS! Plan: 94 to add, 0 to change, 0 to destro
 ### Apply Failure Details
 **Error**: `AuthorizationFailed` - user `rysweet@DefenderATEVET12.onmicrosoft.com` lacks permission `Microsoft.Resources/subscriptions/resourcegroups/write`
 
-**Required Action**: Grant user Contributor or Owner role on target subscription `c190c55a-9ab2-4b1e-92c4-cc8b1a032285`
+**Required Action**: Grant user Contributor or Owner role on target subscription `<subscription-2-id>`
 
 **Impact**: Loop continues running, will retry on next iteration once permissions are granted
 
 ## Objective Progress
 
 ### Source Tenant (DefenderATEVET17)
-- Subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16
+- Subscription: <source-subscription-id>
 - Resources in Neo4j: Unknown (query returns 0 - needs investigation)
 - SimuLand Resources: 105
 
 ### Target Tenant (DefenderATEVET12)
-- Subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- Subscription: <subscription-2-id>
 - Current Status: Logged in and ready
 - Resources Deployed: 0 (awaiting permissions)
 - Ready to Deploy: 94 resources (validated and planned)
@@ -156,7 +156,7 @@ tail -100 logs/iteration205_apply.log | grep -A 5 "Error:"
 ## Next Steps
 
 ### Immediate (User Action Required)
-1. ✅ Grant `rysweet@DefenderATEVET12.onmicrosoft.com` Contributor or Owner role on subscription `c190c55a-9ab2-4b1e-92c4-cc8b1a032285`
+1. ✅ Grant `rysweet@DefenderATEVET12.onmicrosoft.com` Contributor or Owner role on subscription `<subscription-2-id>`
 2. Loop will automatically detect permissions and deploy successfully
 
 ### Short Term (Automated - In Progress)

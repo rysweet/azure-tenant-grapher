@@ -14,8 +14,8 @@
 
 ✅ **Neo4j Query Fixes**
 - Changed from tenantId (not set) to subscription ID in resource URLs
-- Source: `/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/`
-- Target: `/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/`
+- Source: `/subscriptions/<source-subscription-id>/`
+- Target: `/subscriptions/<subscription-2-id>/`
 
 ✅ **Autonomous Loop Implementation**
 - Created `scripts/autonomous_replication_loop.py`

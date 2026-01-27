@@ -3,7 +3,7 @@
 Parallel Azure Tenant Report Generator
 Generates comprehensive inventory report using 20+ parallel threads.
 
-Tenant: 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+Tenant: <tenant-id-2>
 """
 
 import asyncio
@@ -461,7 +461,7 @@ class ParallelTenantReporter:
 
 async def main():
     """Main entry point"""
-    tenant_id = "3cd87a41-1f61-4aef-a212-cefdecd9a2d1"
+    tenant_id = "<tenant-id-2>"
 
     print("=" * 80)
     print("🏴‍☠️  AZURE TENANT REPORT GENERATOR")

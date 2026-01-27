@@ -52,7 +52,7 @@ uv run atg monitor --watch --interval 60
 Monitor resources for a specific Azure subscription:
 
 ```bash
-uv run atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+uv run atg monitor --subscription-id <source-subscription-id>
 ```
 
 Example output:
@@ -62,7 +62,7 @@ Example output:
 
 Watch mode with subscription filter:
 ```bash
-uv run atg monitor --watch --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16 --interval 30
+uv run atg monitor --watch --subscription-id <source-subscription-id> --interval 30
 ```
 
 ## Stabilization Detection
@@ -350,7 +350,7 @@ driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 
 with driver.session() as session:
     source = session.run(
-        "MATCH (r:Resource) WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16' RETURN count(r) as count"
+        "MATCH (r:Resource) WHERE r.subscription_id = '<source-subscription-id>' RETURN count(r) as count"
     ).single()'count']
 
 driver.close()
@@ -368,7 +368,7 @@ print(f'{datetime.now().strftime("%H:%M:%S")}] Source={source}')
 ### After (CLI Command)
 
 ```bash
-uv run atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+uv run atg monitor --subscription-id <source-subscription-id>
 ```
 
 **Benefits:**

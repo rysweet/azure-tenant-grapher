@@ -83,10 +83,10 @@ class AutonomousTenantReplicator:
         self.iteration_prefix = "iteration"
         self.current_iteration = self._find_latest_iteration()
         self.source_subscription = (
-            "9b00bc5e-9abc-45de-9958-02a9d9277b16"  # DefenderATEVET17
+            "<source-subscription-id>"  # DefenderATEVET17
         )
         self.target_subscription = (
-            "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"  # DefenderATEVET12
+            "<subscription-2-id>"  # DefenderATEVET12
         )
         self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
         self.neo4j_password = os.getenv("NEO4J_PASSWORD", "")

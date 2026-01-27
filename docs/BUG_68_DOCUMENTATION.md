@@ -126,7 +126,7 @@ translated_id = self._normalize_provider_casing(translated_id)
 
 **1. IaC Generation** (PASSED):
 ```bash
-uv run atg generate-iac --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+uv run atg generate-iac --target-subscription <subscription-2-id>
 ```
 Result: 3,451 resources generated with 1,017 role assignments
 

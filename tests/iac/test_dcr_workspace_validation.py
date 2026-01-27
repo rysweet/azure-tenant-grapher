@@ -5,7 +5,7 @@ that reference non-existent Log Analytics workspaces are skipped during
 IaC generation.
 
 Bug Context: 8 Data Collection Rules referenced a non-existent workspace:
-DefaultWorkspace-c190c55a-9ab2-4b1e-92c4-cc8b1a032285-CUS
+DefaultWorkspace-<subscription-2-id>-CUS
 
 Fix: Lines 3067-3075 in terraform_emitter.py now validate workspace existence
 in the graph before including the DCR in the generated Terraform.
@@ -117,7 +117,7 @@ class TestDCRWorkspaceValidation:
         missing_workspace_id = (
             "/subscriptions/test-sub/resourceGroups/test-rg/"
             "providers/Microsoft.OperationalInsights/workspaces/"
-            "DefaultWorkspace-c190c55a-9ab2-4b1e-92c4-cc8b1a032285-CUS"
+            "DefaultWorkspace-<subscription-2-id>-CUS"
         )
 
         dcr_properties = {

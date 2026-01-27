@@ -13,7 +13,7 @@ _Generated at: 2025-08-27 19:55:08 UTC_
 - **Subscription:** anon-sub
 - **Properties:**
 - **Tags:**
-    - hidden-related:/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverfarms/ASP-160224hpcp4rein6: empty
+    - hidden-related:/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverfarms/ASP-160224hpcp4rein6: empty
     - Creator: ARTBAS
     - DeployedBy: mmelndezlujn@microsoft.com
     - ARTBasCampaignManager: 160224hpcp4rein6

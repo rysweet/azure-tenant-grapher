@@ -47,12 +47,12 @@ driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 with driver.session() as session:
     source = session.run(
         "MATCH (r:Resource) WHERE r.subscription_id = $sub RETURN count(r) as count",
-        sub='9b00bc5e-9abc-45de-9958-02a9d9277b16'
+        sub='<source-subscription-id>'
     ).single()['count']
 
     target = session.run(
         "MATCH (r:Resource) WHERE r.subscription_id = $sub RETURN count(r) as count",
-        sub='c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
+        sub='<subscription-2-id>'
     ).single()['count']
 
     print(str(f"{source},{target}"))

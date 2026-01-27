@@ -21,8 +21,8 @@ DEMOS_DIR = REPO_ROOT / "demos"
 STATUS_FILE = DEMOS_DIR / "continuous_engine_status.json"
 LOG_FILE = DEMOS_DIR / "continuous_engine.log"
 
-SOURCE_SUB = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUB = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+SOURCE_SUB = "<source-subscription-id>"
+TARGET_SUB = "<subscription-2-id>"
 
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7688")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
@@ -206,7 +206,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             "atg",
             "generate-iac",
             "--resource-filters",
-            "subscription_id=~'9b00bc5e-9abc-45de-9958-02a9d9277b16'",
+            "subscription_id=~'<source-subscription-id>'",
             "--resource-group-prefix",
             f"ITERATION{self.current_iteration}_",
             "--skip-name-validation",

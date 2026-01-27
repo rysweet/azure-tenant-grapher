@@ -2107,9 +2107,9 @@ class TerraformEmitter(IaCEmitter):
 
         Example:
             >>> emitter._extract_subscription_from_resource_id(
-            ...     "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/rg/..."
+            ...     "/subscriptions/<source-subscription-id>/resourceGroups/rg/..."
             ... )
-            '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+            '<source-subscription-id>'
         """
         if not resource_id or "/subscriptions/" not in resource_id:
             return None

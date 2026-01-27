@@ -117,8 +117,8 @@ def objective_achieved() -> bool:
 ### Current Baseline (2025-10-15 04:25 UTC)
 
 Based on Neo4j database inspection:
-- **Source (DefenderATEVET17)**: 410 resources in subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16
-- **Target (DefenderATEVET12)**: 158 resources in subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- **Source (DefenderATEVET17)**: 410 resources in subscription <source-subscription-id>
+- **Target (DefenderATEVET12)**: 158 resources in subscription <subscription-2-id>
 - **Current Fidelity**: 38.5% (158/410)
 - **Latest Iteration**: 98
 - **Validation Status**: Unknown (needs check)

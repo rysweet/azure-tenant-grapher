@@ -46,7 +46,7 @@ All affected resources are in resource group `ARTBAS-160224hpcp4rein6`:
 - **VNet Name**: `vnet-ljio3xx7w6o6y`
 - **Subnet Name**: `snet-pe`
 - **Expected Terraform Name**: `vnet_ljio3xx7w6o6y_snet_pe`
-- **Azure ID**: `/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe`
+- **Azure ID**: `/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe`
 
 ### Root Cause Analysis
 

@@ -56,7 +56,7 @@ The Azure Tenant Grapher is now autonomously working toward 100% tenant replicat
 - **Terraform Plan**: Success (619 resources to create)
 - **Terraform Apply**: In progress
 - **Target Tenant**: DefenderATEVET12 (c7674d41-af6c-46f5-89a5-d41495d2151e)
-- **Subscription**: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- **Subscription**: <subscription-2-id>
 
 ---
 

@@ -292,7 +292,7 @@ The Azure Tenant Grapher IaC generator traverses the Neo4j graph and emits Terra
 ## Appendix A: Error Sample
 
 ```
-Error: creating Network Security Group (Subscription: "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+Error: creating Network Security Group (Subscription: "<subscription-2-id>"
 Resource Group Name: "sparta_attackbot"
 Network Security Group Name: "andyye-vm-nsg"):
 performing CreateOrUpdate: unexpected status 404 (404 Not Found)

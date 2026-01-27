@@ -60,10 +60,10 @@ OPTIONS:
 
 EXAMPLES:
     # Generate report from cached Neo4j data (requires prior scan)
-    atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+    atg report --tenant-id <tenant-id-2>
 
     # Generate report with live Azure data (no scan required)
-    atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 --live
+    atg report --tenant-id <tenant-id-2> --live
 
     # Generate report with cost data
     atg report --tenant-id <TENANT_ID> --include-costs --output ./reports/cost-report.md
@@ -222,7 +222,7 @@ def report_command(
 
     Examples:
         >>> # Generate report from Neo4j (fast)
-        >>> atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+        >>> atg report --tenant-id <tenant-id-2>
 
         >>> # Generate report with live Azure data
         >>> atg report --tenant-id <TENANT_ID> --live

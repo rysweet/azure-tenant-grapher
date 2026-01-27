@@ -233,7 +233,7 @@ All affected NICs are associated with **private endpoints** for storage accounts
 - **VNet Name**: `vnet-ljio3xx7w6o6y`
 - **Subnet Name**: `snet-pe`
 - **Expected Terraform Name**: `vnet_ljio3xx7w6o6y_snet_pe`
-- **Azure Resource ID**: `/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe`
+- **Azure Resource ID**: `/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe`
 
 #### Root Cause Analysis
 
@@ -801,13 +801,13 @@ The affected resource group (`ARTBAS-160224hpcp4rein6`) contains approximately 3
 The source tenant (ATEVET17) was scanned using Azure Tenant Grapher on 2025-10-13:
 
 ```bash
-uv run atg scan --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+uv run atg scan --tenant-id <tenant-id-2>
 ```
 
 Resources were stored in Neo4j graph database and subsequently used for IaC generation:
 
 ```bash
-uv run atg generate-iac --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+uv run atg generate-iac --tenant-id <tenant-id-2> \
   --format terraform --output demos/simuland_iteration2
 ```
 

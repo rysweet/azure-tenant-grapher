@@ -18,8 +18,8 @@ Achieve 100% tenant replication fidelity from source (DefenderATEVET17) to targe
 ## Current Status
 
 ### Fidelity Metrics
-- **Source Resources**: 410 (subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16)
-- **Target Resources**: 158 (subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285)
+- **Source Resources**: 410 (subscription <source-subscription-id>)
+- **Target Resources**: 158 (subscription <subscription-2-id>)
 - **Current Fidelity**: 38.5%
 - **Gap**: 252 resources (61.5%)
 

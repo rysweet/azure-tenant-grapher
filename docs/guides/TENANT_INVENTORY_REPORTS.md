@@ -18,16 +18,16 @@ Reports pull data from your Neo4j graph by default (fast, cached) or can query A
 
 ```bash
 # Generate report from Neo4j graph (requires prior scan)
-atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+atg report --tenant-id <tenant-id-2>
 
 # Generate report with live Azure data (no scan required)
-atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 --live
+atg report --tenant-id <tenant-id-2> --live
 
 # Save report to specific file
-atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 --output ./reports/tenant-inventory.md
+atg report --tenant-id <tenant-id-2> --output ./reports/tenant-inventory.md
 
 # Include cost data (requires Cost Management permissions)
-atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 --include-costs
+atg report --tenant-id <tenant-id-2> --include-costs
 ```
 
 ## Report Contents
@@ -37,7 +37,7 @@ atg report --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 --include-costs
 ```markdown
 # Azure Tenant Inventory Report
 
-**Tenant ID:** 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+**Tenant ID:** <tenant-id-2>
 **Generated:** 2024-12-03 15:30:45 UTC
 **Data Source:** Neo4j Graph Database
 
@@ -281,7 +281,7 @@ If `--output` is not specified, reports are saved to:
 ./reports/tenant-inventory-<TENANT_ID>-<TIMESTAMP>.md
 ```
 
-Example: `./reports/tenant-inventory-3cd87a41-1f61-4aef-a212-cefdecd9a2d1-20241203-153045.md`
+Example: `./reports/tenant-inventory-<tenant-id-2>-20241203-153045.md`
 
 ## Troubleshooting
 

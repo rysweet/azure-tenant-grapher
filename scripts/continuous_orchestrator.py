@@ -28,8 +28,8 @@ ORCHESTRATOR_STATE.mkdir(parents=True, exist_ok=True)
 AGENT_LOGS.mkdir(parents=True, exist_ok=True)
 
 # Source and target tenant subscription IDs
-SOURCE_SUB_ID = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUB_ID = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+SOURCE_SUB_ID = "<source-subscription-id>"
+TARGET_SUB_ID = "<subscription-2-id>"
 
 
 @dataclass

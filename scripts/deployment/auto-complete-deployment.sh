@@ -114,7 +114,7 @@ mkdir -p ./outputs/deployment-improved
 uv run azure-tenant-grapher generate-iac \
   --format terraform \
   --output ./outputs/deployment-improved \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --target-subscription <subscription-2-id> \
   --naming-suffix v2 \
   --skip-conflict-check
 

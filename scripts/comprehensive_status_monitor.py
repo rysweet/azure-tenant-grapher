@@ -50,11 +50,11 @@ def get_neo4j_counts():
         graph = Graph("bolt://localhost:7688", auth=("neo4j", neo4j_password))
 
         # Source count
-        source_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/' RETURN count(r) as count"
+        source_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/<source-subscription-id>/' RETURN count(r) as count"
         source_count = graph.run(source_q).data()[0]["count"]
 
         # Target count
-        target_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/' RETURN count(r) as count"
+        target_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/<subscription-2-id>/' RETURN count(r) as count"
         target_count = graph.run(target_q).data()[0]["count"]
 
         return source_count, target_count

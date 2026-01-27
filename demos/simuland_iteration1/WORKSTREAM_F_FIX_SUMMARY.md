@@ -136,7 +136,7 @@ This may indicate:
 Regenerated IaC for the simuland tenant:
 
 ```bash
-uv run atg generate-iac --tenant-id 9b00bc5e-9abc-45de-9958-02a9d9277b16 --format terraform --output demos/simuland_iteration1/terraform_fixed
+uv run atg generate-iac --tenant-id <source-subscription-id> --format terraform --output demos/simuland_iteration1/terraform_fixed
 ```
 
 - Missing NIC reference detected and reported

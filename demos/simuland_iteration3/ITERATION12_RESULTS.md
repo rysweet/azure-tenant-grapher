@@ -47,7 +47,7 @@ Simply ordering resources in the JSON file does NOT control execution order.
 ### Evidence from Deployment Log
 
 ```
-Error: creating Network Security Group (Subscription: "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+Error: creating Network Security Group (Subscription: "<subscription-2-id>"
 Resource Group Name: "sparta_attackbot"
 Network Security Group Name: "andyye-vm-nsg"): performing CreateOrUpdate: unexpected status 404 (404 Not Found)
 with error: ResourceGroupNotFound: Resource group 'sparta_attackbot' could not be found.

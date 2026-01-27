@@ -34,7 +34,7 @@ if [ $# -lt 2 ]; then
     echo "Usage: $0 <TENANT_NAME> <TENANT_ID> [SUBSCRIPTION_ID]"
     echo ""
     echo "Example:"
-    echo "  $0 DefenderATEVET17 3cd87a41-1f61-4aef-a212-cefdecd9a2d1"
+    echo "  $0 DefenderATEVET17 <tenant-id-2>"
     echo ""
     echo "Prerequisites:"
     echo "  - Logged in as Global Admin: az login --tenant <TENANT_ID>"

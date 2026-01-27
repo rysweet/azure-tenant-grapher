@@ -179,12 +179,12 @@ terraform apply -auto-approve tfplan
 ```cypher
 // Source count
 MATCH (r:Resource)
-WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+WHERE r.subscription_id = '<source-subscription-id>'
 RETURN count(r)
 
 // Target count
 MATCH (r:Resource)
-WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
+WHERE r.subscription_id = '<subscription-2-id>'
 RETURN count(r)
 ```
 
@@ -373,7 +373,7 @@ docker-compose -f docker/docker-compose.yml up -d neo4j
 ```bash
 # Re-authenticate
 az login
-az account set --subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+az account set --subscription <subscription-2-id>
 ```
 
 ### Need Human Help
@@ -398,8 +398,8 @@ az account set --subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
 - Neo4j: bolt://localhost:7688
 - Source Tenant: DefenderATEVET17
 - Target Tenant: DefenderATEVET12
-- Source Subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16
-- Target Subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- Source Subscription: <source-subscription-id>
+- Target Subscription: <subscription-2-id>
 
 ---
 

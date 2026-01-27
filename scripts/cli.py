@@ -1369,7 +1369,7 @@ async def monitor(
         atg monitor
 
         # Single check for specific subscription
-        atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+        atg monitor --subscription-id <source-subscription-id>
 
         # Watch mode with 60 second interval
         atg monitor --watch --interval 60
@@ -1511,8 +1511,8 @@ async def fidelity(
     Examples:
 
         # Calculate current fidelity
-        atg fidelity --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \\
-                     --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+        atg fidelity --source-subscription <source-subscription-id> \\
+                     --target-subscription <subscription-2-id>
 
         # Track fidelity over time
         atg fidelity --source-subscription SOURCE_ID \\

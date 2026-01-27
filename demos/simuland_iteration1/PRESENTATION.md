@@ -395,7 +395,7 @@ While the 0% deployment rate appears negative, it represents significant progres
 ### Commands Used
 ```bash
 # IaC Generation
-uv run atg generate-iac --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+uv run atg generate-iac --tenant-id <tenant-id-2> \
   --output-dir demos/simuland_iteration1
 
 # Terraform Validation

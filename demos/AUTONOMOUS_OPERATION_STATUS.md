@@ -110,7 +110,7 @@ Faithfully replicate source Azure tenant (DefenderATEVET17) to target tenant (De
 ### Target Tenant
 - **Name**: DefenderATEVET12
 - **Tenant ID**: c7674d41-af6c-46f5-89a5-d41495d2151e
-- **Subscription**: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- **Subscription**: <subscription-2-id>
 - **Authentication**: Service Principal (2fe45864-c331-4c23-b5b1-440db7c8088a)
 
 ---

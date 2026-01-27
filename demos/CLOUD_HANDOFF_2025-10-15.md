@@ -60,12 +60,12 @@ while not objective_achieved():
 
 ### Azure Tenants
 - **Source**: DefenderATEVET17
-  - Subscription ID: `9b00bc5e-9abc-45de-9958-02a9d9277b16`
+  - Subscription ID: `<source-subscription-id>`
   - Resources: 410 total
   - Status: Fully scanned into Neo4j
 
 - **Target**: DefenderATEVET12
-  - Subscription ID: `c190c55a-9ab2-4b1e-92c4-cc8b1a032285`
+  - Subscription ID: `<subscription-2-id>`
   - Resources: 158 pre-existing + deployments
   - Credentials: Available via `az account show`
   - Status: Deployment in progress
@@ -342,7 +342,7 @@ g = Graph("bolt://localhost:7688", auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
 # Source tenant
 source_query = """
 MATCH (r:Resource)
-WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+WHERE r.subscription_id = '<source-subscription-id>'
 RETURN count(r) as count
 """
 source_count = g.evaluate(source_query)
@@ -350,7 +350,7 @@ source_count = g.evaluate(source_query)
 # Target tenant
 target_query = """
 MATCH (r:Resource)
-WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
+WHERE r.subscription_id = '<subscription-2-id>'
 RETURN count(r) as count
 """
 target_count = g.evaluate(target_query)
