@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -268,3 +268,29 @@ class IdentityRule(RelationshipRule):
                     MANAGED_IDENTITY,
                     "id",
                 )
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract user-assigned managed identity resource IDs.
+
+        Returns IDs of user-assigned managed identities referenced by resources.
+        Does NOT return system-assigned identities (those have no resource ID),
+        role assignments, or role definitions (those are generic nodes, not resources).
+        """
+        target_ids: Set[str] = set()
+
+        # Extract user-assigned managed identity IDs
+        identity = resource.get("identity")
+        if identity and isinstance(identity, dict):
+            if (
+                identity.get("type") == "UserAssigned"
+                and "userAssignedIdentities" in identity
+            ):
+                user_identities = identity.get("userAssignedIdentities", {})
+                # Handle case where userAssignedIdentities might be a string or None
+                if isinstance(user_identities, dict):
+                    for uai_id in user_identities:
+                        if uai_id:
+                            target_ids.add(str(uai_id))
+
+        return target_ids

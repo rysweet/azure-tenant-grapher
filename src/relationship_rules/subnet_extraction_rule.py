@@ -8,7 +8,7 @@ independent resources.
 
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -236,3 +236,13 @@ class SubnetExtractionRule(RelationshipRule):
             return json.dumps(value)
         except (TypeError, ValueError):
             return str(value)
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract VNet ID from subnet resources.
+
+        Subnets are extracted FROM VNets, so the relationship is VNet -> Subnet.
+        When processing a VNet, we create subnet nodes, so no cross-RG dependencies.
+        Return empty set.
+        """
+        return set()

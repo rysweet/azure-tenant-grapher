@@ -14,7 +14,7 @@ create_relationship() methods. Now uses upsert_generic() and
 create_dual_graph_generic_rel() as per the standard pattern.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -97,3 +97,12 @@ class SecretRule(RelationshipRule):
                     "KeyVaultSecret",
                     "name",
                 )
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract target resource IDs for secret relationships.
+
+        KeyVaultSecret nodes are generic nodes (not resources), so this returns
+        empty set. No cross-RG dependencies to fetch.
+        """
+        return set()

@@ -9,7 +9,7 @@ Performance improvement: 100-400x faster for large scans
 - New: O(1) queries, ~1-5ms per relationship in batches of 100
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -172,3 +172,45 @@ class NetworkRuleOptimized(RelationshipRule):
                 "Resource",
                 "id",
             )
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract target resource IDs from network relationships.
+
+        Returns subnet IDs, NSG IDs, and private endpoint target IDs.
+        Does NOT return PrivateEndpoint or DNSZone IDs (those are generic nodes).
+        """
+        target_ids: Set[str] = set()
+        rtype = resource.get("type", "")
+
+        # Extract subnet IDs from VirtualMachine network profiles
+        if rtype.endswith("virtualMachines") and "network_profile" in resource:
+            nics = resource["network_profile"].get("network_interfaces", [])
+            for nic in nics:
+                ip_cfgs = nic.get("ip_configurations", [])
+                for ipcfg in ip_cfgs:
+                    subnet = ipcfg.get("subnet")
+                    if subnet and isinstance(subnet, dict):
+                        subnet_id = subnet.get("id")
+                        if subnet_id:
+                            target_ids.add(str(subnet_id))
+
+        # Extract NSG IDs from Subnet resources
+        if rtype.endswith("subnets"):
+            nsg = resource.get("network_security_group")
+            if nsg and isinstance(nsg, dict):
+                nsg_id = nsg.get("id")
+                if nsg_id:
+                    target_ids.add(str(nsg_id))
+
+        # Extract private link service IDs from PrivateEndpoint resources
+        if rtype == "Microsoft.Network/privateEndpoints":
+            connections: List[Dict[str, Any]] = resource.get("properties", {}).get(
+                "privateLinkServiceConnections", []
+            )
+            for conn in connections:
+                pe_target_id = conn.get("privateLinkServiceId")
+                if pe_target_id:
+                    target_ids.add(str(pe_target_id))
+
+        return target_ids

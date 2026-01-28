@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -25,3 +25,17 @@ class MonitoringRule(RelationshipRule):
                 self.create_dual_graph_relationship(
                     db_ops, str(rid), "LOGS_TO", str(ws)
                 )
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract Log Analytics Workspace resource IDs.
+
+        Returns workspace IDs that resources log to.
+        """
+        target_ids: Set[str] = set()
+        diag_settings = resource.get("diagnosticSettings", [])
+        for ds in diag_settings:
+            ws = ds.get("workspaceId")
+            if ws:
+                target_ids.add(str(ws))
+        return target_ids

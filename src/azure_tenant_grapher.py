@@ -281,6 +281,56 @@ class AzureTenantGrapher:
                     logger.exception(f"Error collecting referenced resources: {e}")
                     logger.warning("Continuing without referenced resource inclusion")
 
+            # Phase 2.6: Collect cross-RG dependencies from relationship rules
+            if filter_config and (
+                filter_config.subscription_ids or filter_config.resource_group_names
+            ):
+                logger.info("=" * 70)
+                logger.info("Phase 2.6: Collecting cross-RG dependencies")
+                logger.info("=" * 70)
+
+                from src.relationship_rules import ALL_RELATIONSHIP_RULES
+                from src.services.relationship_dependency_collector import (
+                    RelationshipDependencyCollector,
+                )
+
+                # Create a processor instance for database operations
+                processor = self.processing_service.processor_factory(
+                    self.session_manager,
+                    self.processing_service.llm_generator,
+                    getattr(self.config.processing, "resource_limit", None),
+                    getattr(self.config.processing, "max_retries", 3),
+                    self.config.tenant_id,
+                )
+
+                dependency_collector = RelationshipDependencyCollector(
+                    discovery_service=self.discovery_service,
+                    db_ops=processor.db_ops,
+                    relationship_rules=ALL_RELATIONSHIP_RULES,
+                )
+
+                try:
+                    missing_dependencies = (
+                        await dependency_collector.collect_missing_dependencies(
+                            filtered_resources=all_resources,
+                            filter_config=filter_config,
+                        )
+                    )
+
+                    if missing_dependencies:
+                        logger.info(
+                            f"✅ Adding {len(missing_dependencies)} cross-RG dependency resources"
+                        )
+                        all_resources.extend(missing_dependencies)
+                        logger.info(
+                            f"Total resources after cross-RG dependency collection: {len(all_resources)}"
+                        )
+                    else:
+                        logger.info("No additional cross-RG dependencies found")
+                except Exception as e:
+                    logger.exception(f"Error collecting cross-RG dependencies: {e}")
+                    logger.warning("Continuing without cross-RG dependency collection")
+
             # 3. Enrich with Entra ID identity data
             if self.aad_graph_service:
                 logger.info("=" * 70)

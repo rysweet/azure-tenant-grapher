@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -103,3 +103,33 @@ class DiagnosticRule(RelationshipRule):
                             ds_id, "LOGS_TO", ws_id, "LogAnalyticsWorkspace", "id"
                         )
         # 3. (Future) AlertRule support can be added similarly
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract Log Analytics Workspace resource IDs from diagnostic settings.
+
+        Returns workspace IDs that diagnostics log to.
+        Does NOT return DiagnosticSetting IDs (those are generic nodes, not resources).
+        """
+        target_ids: Set[str] = set()
+
+        # Extract workspace IDs from diagnosticSettings property
+        diag_settings: List[Dict[str, Any]] = resource.get("diagnosticSettings", [])
+        for ds in diag_settings:
+            ws_id = ds.get("properties", {}).get("workspaceId")
+            if ws_id:
+                target_ids.add(str(ws_id))
+
+        # Extract workspace IDs from ARM children
+        children = resource.get("resources") or resource.get("children")
+        if isinstance(children, list):
+            for child in children:
+                if (
+                    child.get("type", "").lower()
+                    == "microsoft.insights/diagnosticsettings"
+                ):
+                    ws_id = child.get("properties", {}).get("workspaceId")
+                    if ws_id:
+                        target_ids.add(str(ws_id))
+
+        return target_ids

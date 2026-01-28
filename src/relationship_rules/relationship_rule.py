@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import structlog  # type: ignore[import-untyped]
 
@@ -67,6 +67,51 @@ class RelationshipRule(ABC):
         db_ops: DatabaseOperations instance.
         """
         pass
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract resource IDs that this rule would create relationships to.
+
+        This method enables relationship-driven cross-RG dependency collection
+        by identifying target resource IDs BEFORE relationships are created.
+        When filtering by resource group, missing target resources can be
+        fetched from Azure and included in the graph.
+
+        Default implementation returns empty set (rules that don't create
+        Resource-to-Resource relationships can use this default).
+
+        Args:
+            resource: Resource dict with 'id', 'type', 'properties', etc.
+
+        Returns:
+            Set of target resource IDs (full Azure resource IDs) that this
+            rule would create relationships to. Empty set if no dependencies.
+
+        Example:
+            For a VM resource, NetworkRule.extract_target_ids() returns:
+            {
+                "/subscriptions/.../networkInterfaces/nic1",
+                "/subscriptions/.../networkInterfaces/nic2"
+            }
+
+            For a subnet resource, NetworkRule.extract_target_ids() returns:
+            {
+                "/subscriptions/.../networkSecurityGroups/nsg1"
+            }
+
+        Implementation Notes:
+            - Only return Resource-to-Resource relationship targets
+            - Skip shared nodes (Tag, Region, Creator) - those aren't fetched
+            - Return empty set for rules that only create relationships to
+              shared nodes (TagRule, RegionRule, CreatorRule)
+            - Parse resource properties the same way emit() does, but only
+              extract IDs instead of creating relationships
+
+        Performance:
+            This method is called once per resource during Phase 2.6
+            (dependency collection). Keep it fast - no I/O, just property parsing.
+        """
+        return set()
 
     def create_dual_graph_relationship(
         self,
@@ -317,36 +362,12 @@ class RelationshipRule(ABC):
                     abs_created = record["abs_created"]
 
                     if orig_created == 1 and abs_created == 1:
-                        logger.debug(
-                            f"✅ Created immediate {rel_type} relationship: {src_id} -> {tgt_id}"
-                        )
                         return True
-                    else:
-                        # Provide clear diagnostic information about which nodes are missing
-                        if orig_created == 0 and abs_created == 0:
-                            logger.warning(
-                                f"⚠️ Failed to create {rel_type} relationship: "
-                                f"Both original AND abstracted nodes missing. "
-                                f"Source: {src_id}, Target: {tgt_id}"
-                            )
-                        elif orig_created == 0:
-                            logger.warning(
-                                f"⚠️ Failed to create {rel_type} relationship: "
-                                f"Original nodes missing (graph inconsistency). "
-                                f"Source: {src_id}, Target: {tgt_id}"
-                            )
-                        elif abs_created == 0:
-                            logger.warning(
-                                f"⚠️ Failed to create {rel_type} relationship: "
-                                f"Abstracted nodes missing (graph inconsistency). "
-                                f"Source: {src_id}, Target: {tgt_id}"
-                            )
-                        return False
-
-                logger.warning(
-                    f"⚠️ No result returned when creating {rel_type} relationship: "
-                    f"{src_id} -> {tgt_id}"
-                )
+                    logger.warning(
+                        f"Failed to create {rel_type} relationship: "
+                        f"orig_created={orig_created}, abs_created={abs_created}, "
+                        f"src={src_id}, tgt={tgt_id}"
+                    )
                 return False
 
         except Exception as e:
@@ -587,17 +608,9 @@ class RelationshipRule(ABC):
                             )
 
                             # Log with appropriate level based on success rate
-                            if created == expected_count:
-                                logger.info(
-                                    f"✅ Batch created {created}/{expected_count} {rel_type} relationships (100%)"
-                                )
-                            elif created > 0:
+                            if created < expected_count:
                                 logger.warning(
-                                    f"⚠️ Partial batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%) - some nodes may be missing"
-                                )
-                            else:
-                                logger.warning(
-                                    f"❌ Failed to create any {rel_type} relationships (0/{expected_count}) - all nodes missing"
+                                    f"Batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%)"
                                 )
 
                     # Commit the transaction (all relationships created atomically)
@@ -607,22 +620,12 @@ class RelationshipRule(ABC):
             buffer_size = len(self._relationship_buffer)
             self._relationship_buffer.clear()
 
-            # Calculate overall success rate
-            overall_success_rate = (
-                (total_created / total_expected * 100) if total_expected > 0 else 0
-            )
-
-            if total_created == total_expected:
-                logger.info(
-                    f"✅ Flushed {buffer_size} buffered relationships, created {total_created}/{total_expected} in both graphs (100%)"
+            if total_created < total_expected:
+                success_rate = (
+                    (total_created / total_expected * 100) if total_expected > 0 else 0
                 )
-            elif total_created > 0:
                 logger.warning(
-                    f"⚠️ Flushed {buffer_size} buffered relationships, created {total_created}/{total_expected} in both graphs ({overall_success_rate:.1f}%)"
-                )
-            else:
-                logger.warning(
-                    f"❌ Flushed {buffer_size} buffered relationships, created 0/{total_expected} in both graphs (0%)"
+                    f"Flushed {buffer_size} relationships: {total_created}/{total_expected} ({success_rate:.1f}%)"
                 )
 
             return total_created
