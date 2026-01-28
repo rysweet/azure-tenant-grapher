@@ -67,7 +67,6 @@ from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
 from src.commands.spec import generate_spec_command_handler, spec_command_handler
 from src.commands.tenant import create_tenant as create_tenant_cmd
-from src.commands.undeploy import undeploy
 from src.commands.validate_deployment import validate_deployment_command
 from src.commands.version import (
     backup_metadata as backup_metadata_cmd,
@@ -1253,7 +1252,6 @@ cli.add_command(app_registration_cmd, "app-registration")
 
 # Register deployment commands (existing)
 cli.add_command(deploy_command, "deploy")
-cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
 cli.add_command(validate_deployment_command, "validate-deployment")
 
