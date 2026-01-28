@@ -608,9 +608,12 @@ class ArchitecturePatternReplicator:
                             0.4 = recommended balance (60% distribution, 40% spectral)
                             1.0 = pure spectral distance
             max_config_samples: Maximum number of representative configurations to sample per pattern
-                               when using spectral guidance (default: 100). Higher values increase
-                               diversity and improve spectral weight responsiveness but slow execution.
-                               Recommended: 10 (fast), 100 (balanced), 500 (thorough)
+                               when using spectral guidance (default: 100). Only affects patterns
+                               with MORE instances than this value. For small datasets (all patterns
+                               < 100 instances), this parameter has no effect as all instances are
+                               evaluated. Higher values increase diversity but slow execution.
+                               Recommended: 10 (fast), 100 (balanced, sufficient for most datasets),
+                               500+ (for very large patterns only)
             sampling_strategy: Strategy for selecting configuration samples within patterns.
                               "coverage" (default): Greedy set cover to maximize unique resource types
                               "diversity": Maximin diversity sampling for configuration variation
@@ -1666,20 +1669,38 @@ class ArchitecturePatternReplicator:
             current_counts: Current count per pattern
             total_target: Total target instance count across all patterns
             spectral_weight: Weight for spectral component (0.0-1.0)
-            max_config_samples: Maximum samples to consider
+            max_config_samples: Maximum samples to consider per pattern.
+                               Only affects patterns with MORE instances than this value.
+                               Example: With max_config_samples=100, patterns with 50 instances
+                               will evaluate all 50, but patterns with 200 will sample 100.
+                               Default 100 is sufficient for most datasets.
             sampling_strategy: "coverage" (greedy set cover) or "diversity" (maximin)
 
         Returns:
             List of selected instances
         """
         # Sample representative configurations using chosen strategy
+        actual_max_samples = min(max_config_samples, len(available_instances))
+
+        # Log sampling behavior for diagnostics
+        if actual_max_samples < len(available_instances):
+            logger.info(
+                f"    Sampling limited: {actual_max_samples}/{len(available_instances)} instances "
+                f"(max_config_samples={max_config_samples})"
+            )
+        else:
+            logger.debug(
+                f"    No sampling limit: evaluating all {len(available_instances)} instances "
+                f"(max_config_samples={max_config_samples} >= available)"
+            )
+
         if sampling_strategy == "coverage":
             sampled_instances = self._sample_for_coverage(
-                available_instances, max_samples=min(max_config_samples, len(available_instances))
+                available_instances, max_samples=actual_max_samples
             )
         else:  # "diversity" or default
             sampled_instances = self._sample_representative_configs(
-                available_instances, max_samples=min(max_config_samples, len(available_instances))
+                available_instances, max_samples=actual_max_samples
             )
 
         # Score each sampled instance using hybrid function
