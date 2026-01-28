@@ -570,6 +570,8 @@ class ArchitecturePatternReplicator:
         use_configuration_coherence: bool = True,
         use_spectral_guidance: bool = False,
         spectral_weight: float = 0.4,
+        max_config_samples: int = 100,
+        sampling_strategy: str = "coverage",
     ) -> Tuple[
         List[Tuple[str, List[List[Dict[str, Any]]]]],
         List[float],
@@ -600,12 +602,19 @@ class ArchitecturePatternReplicator:
             use_configuration_coherence: If True, prioritizes instances with similar configurations
             use_spectral_guidance: If True, uses hybrid scoring (distribution + spectral) for selection
                                   Improves node coverage by considering structural similarity.
-                                  Samples max 10 configs per pattern.
             spectral_weight: Weight for spectral component in hybrid score (0.0-1.0, default: 0.4)
                             Only used when use_spectral_guidance=True.
                             0.0 = pure distribution adherence
                             0.4 = recommended balance (60% distribution, 40% spectral)
                             1.0 = pure spectral distance
+            max_config_samples: Maximum number of representative configurations to sample per pattern
+                               when using spectral guidance (default: 100). Higher values increase
+                               diversity and improve spectral weight responsiveness but slow execution.
+                               Recommended: 10 (fast), 100 (balanced), 500 (thorough)
+            sampling_strategy: Strategy for selecting configuration samples within patterns.
+                              "coverage" (default): Greedy set cover to maximize unique resource types
+                              "diversity": Maximin diversity sampling for configuration variation
+                              Use "coverage" for maximizing node coverage, "diversity" for config exploration
 
         Returns:
             Tuple of (selected instances, spectral distance history, distribution metadata)
@@ -697,6 +706,20 @@ class ArchitecturePatternReplicator:
                 distribution_scores, target_instance_count
             )
 
+            # Include orphaned instances in pattern targets for selection
+            if include_orphaned_node_patterns and orphaned_instances:
+                # Reserve budget for orphaned resources (25% of total by default)
+                orphaned_target_count = max(1, int(target_instance_count * 0.25))
+                pattern_targets["Orphaned Resources"] = orphaned_target_count
+
+                # Add to pattern_resources so selection loop can find them
+                self.pattern_resources["Orphaned Resources"] = orphaned_instances
+
+                logger.info(
+                    f"Added 'Orphaned Resources' pattern with {len(orphaned_instances)} instances "
+                    f"(target: {orphaned_target_count} instances, {orphaned_target_count / target_instance_count * 100:.1f}%)"
+                )
+
             logger.info(
                 f"Proportional allocation for {target_instance_count} instances:"
             )
@@ -725,7 +748,9 @@ class ArchitecturePatternReplicator:
                 pattern_targets,
                 use_configuration_coherence,
                 use_spectral_guidance,
-                spectral_weight
+                spectral_weight,
+                max_config_samples,
+                sampling_strategy
             )
         else:
             logger.info("LAYER 3: Greedy spectral matching (fallback mode)")
@@ -1494,7 +1519,9 @@ class ArchitecturePatternReplicator:
         pattern_targets: Dict[str, int],
         use_configuration_coherence: bool,
         use_spectral_guidance: bool = False,
-        spectral_weight: float = 0.4
+        spectral_weight: float = 0.4,
+        max_config_samples: int = 100,
+        sampling_strategy: str = "coverage"
     ) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Select instances proportionally from each pattern.
@@ -1552,7 +1579,9 @@ class ArchitecturePatternReplicator:
                     selected_instances,
                     current_counts,
                     total_target,
-                    spectral_weight
+                    spectral_weight,
+                    max_config_samples,
+                    sampling_strategy
                 )
 
             elif use_configuration_coherence:
@@ -1614,12 +1643,15 @@ class ArchitecturePatternReplicator:
         selected_so_far: List[Tuple[str, List[Dict[str, Any]]]],
         current_counts: Dict[str, int],
         total_target: int,
-        spectral_weight: float
+        spectral_weight: float,
+        max_config_samples: int = 100,
+        sampling_strategy: str = "coverage"
     ) -> List[List[Dict[str, Any]]]:
         """
         Select instances using hybrid scoring: distribution adherence + spectral improvement.
 
-        Samples up to 10 representative configurations and scores each based on:
+        Samples representative configurations (up to max_config_samples) using specified
+        strategy, then scores each based on:
         - Distribution adherence: How well it maintains proportional balance
         - Spectral contribution: How much it improves structural similarity
 
@@ -1631,14 +1663,21 @@ class ArchitecturePatternReplicator:
             current_counts: Current count per pattern
             total_target: Total target instance count across all patterns
             spectral_weight: Weight for spectral component (0.0-1.0)
+            max_config_samples: Maximum samples to consider
+            sampling_strategy: "coverage" (greedy set cover) or "diversity" (maximin)
 
         Returns:
             List of selected instances
         """
-        # Sample representative configurations (max 10)
-        sampled_instances = self._sample_representative_configs(
-            available_instances, max_samples=min(10, len(available_instances))
-        )
+        # Sample representative configurations using chosen strategy
+        if sampling_strategy == "coverage":
+            sampled_instances = self._sample_for_coverage(
+                available_instances, max_samples=min(max_config_samples, len(available_instances))
+            )
+        else:  # "diversity" or default
+            sampled_instances = self._sample_representative_configs(
+                available_instances, max_samples=min(max_config_samples, len(available_instances))
+            )
 
         # Score each sampled instance using hybrid function
         scored_instances = []
@@ -1755,6 +1794,80 @@ class ArchitecturePatternReplicator:
             if best_instance:
                 sampled.append(best_instance)
                 remaining.remove(best_instance)
+
+        return sampled
+
+    def _sample_for_coverage(
+        self,
+        instances: List[List[Dict[str, Any]]],
+        max_samples: int = 100
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Sample instances using greedy set cover to maximize unique resource types.
+
+        Uses greedy algorithm to prioritize instances containing rare resource types,
+        ensuring maximum node coverage in the pattern graph.
+
+        Args:
+            instances: Pool of instances to sample from
+            max_samples: Maximum number of samples to return
+
+        Returns:
+            List of sampled instances (coverage-optimized)
+        """
+        if len(instances) <= max_samples:
+            return instances
+
+        # Build type frequency map across all instances
+        type_counts: Dict[str, int] = {}
+        instance_types: List[Set[str]] = []
+
+        for instance in instances:
+            types_in_instance = set()
+            for resource in instance:
+                resource_type = resource.get("type", "unknown")
+                types_in_instance.add(resource_type)
+                type_counts[resource_type] = type_counts.get(resource_type, 0) + 1
+            instance_types.append(types_in_instance)
+
+        # Greedy set cover: prioritize instances with rare types
+        sampled = []
+        covered_types: Set[str] = set()
+        remaining_indices = list(range(len(instances)))
+
+        for _ in range(min(max_samples, len(instances))):
+            if not remaining_indices:
+                break
+
+            best_idx = None
+            best_score = -1
+
+            for idx in remaining_indices:
+                # Calculate coverage score: prioritize rare uncovered types
+                new_types = instance_types[idx] - covered_types
+                if not new_types:
+                    continue
+
+                # Score based on rarity: sum of inverse frequencies
+                score = sum(1.0 / type_counts[t] for t in new_types)
+
+                if score > best_score:
+                    best_score = score
+                    best_idx = idx
+
+            if best_idx is None:
+                # No more new types to cover, sample randomly from remaining
+                import random
+                best_idx = random.choice(remaining_indices)
+
+            sampled.append(instances[best_idx])
+            covered_types.update(instance_types[best_idx])
+            remaining_indices.remove(best_idx)
+
+        logger.debug(
+            f"    Coverage sampling: selected {len(sampled)} instances covering "
+            f"{len(covered_types)} unique resource types"
+        )
 
         return sampled
 
