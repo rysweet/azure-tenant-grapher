@@ -713,7 +713,10 @@ class ArchitecturePatternReplicator:
                 pattern_targets["Orphaned Resources"] = orphaned_target_count
 
                 # Add to pattern_resources so selection loop can find them
-                self.pattern_resources["Orphaned Resources"] = orphaned_instances
+                # Extract resource lists from tuples (orphaned_instances is List[Tuple[str, List[Dict]]])
+                self.pattern_resources["Orphaned Resources"] = [
+                    resources for _, resources in orphaned_instances
+                ]
 
                 logger.info(
                     f"Added 'Orphaned Resources' pattern with {len(orphaned_instances)} instances "
