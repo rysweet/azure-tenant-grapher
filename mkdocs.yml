@@ -1,10 +1,10 @@
 site_name: Azure Tenant Grapher
 site_description: Security-focused tool that builds a Neo4j graph database representation of Azure tenant resources
 site_author: Azure Tenant Grapher Team
-site_url: https://rysweet.github.io/pr600
+site_url: https://rysweet.github.io/azure-tenant-grapher
 
-repo_url: https://github.com/rysweet/pr600
-repo_name: rysweet/pr600
+repo_url: https://github.com/rysweet/azure-tenant-grapher
+repo_name: rysweet/azure-tenant-grapher
 edit_uri: edit/main/docs/
 
 theme:
@@ -77,7 +77,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/rysweet/pr600
+      link: https://github.com/rysweet/azure-tenant-grapher
   version:
     provider: mike
 

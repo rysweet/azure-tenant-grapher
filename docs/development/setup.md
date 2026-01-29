@@ -16,11 +16,11 @@ Complete development environment setup for contributing to Azure Tenant Grapher.
 
 ```bash
 # Fork on GitHub first, then clone your fork
-git clone https://github.com/YOUR_USERNAME/pr600.git
-cd pr600
+git clone https://github.com/YOUR_USERNAME/azure-tenant-grapher.git
+cd azure-tenant-grapher
 
 # Add upstream remote
-git remote add upstream https://github.com/rysweet/pr600.git
+git remote add upstream https://github.com/rysweet/azure-tenant-grapher.git
 ```
 
 ### 2. Install Dependencies
@@ -337,6 +337,6 @@ uv sync
 
 ## Getting Help
 
-- Check [GitHub Issues](https://github.com/rysweet/pr600/issues)
-- Read [Documentation](https://rysweet.github.io/pr600/)
+- Check [GitHub Issues](https://github.com/rysweet/azure-tenant-grapher/issues)
+- Read [Documentation](https://rysweet.github.io/azure-tenant-grapher/)
 - Ask in GitHub Discussions
