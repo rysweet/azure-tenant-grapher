@@ -8,8 +8,8 @@ import StatusBar from './components/common/StatusBar';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import TabErrorBoundary from './components/common/TabErrorBoundary';
 import { useApp } from './context/AppContext';
-import { LayerProvider } from './context/LayerContext';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { AuthProvider } from './context/AuthContext';
 import { withErrorHandling, withNetworkErrorHandling } from './utils/errorUtils';
 import { errorService } from './services/errorService';
 
@@ -29,6 +29,7 @@ const ThreatModelTab = lazy(() => import('./components/tabs/ThreatModelTab'));
 const ScaleOperationsTab = lazy(() => import('./components/tabs/ScaleOperationsTab'));
 const DocsTab = lazy(() => import('./components/tabs/DocsTab'));
 const ConfigTab = lazy(() => import('./components/tabs/ConfigTab'));
+const AuthTab = lazy(() => import('./components/tabs/AuthTab'));
 
 const App: React.FC = () => {
   const { dispatch } = useApp();
@@ -149,6 +150,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <AuthProvider>
     <WebSocketProvider>
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
@@ -240,6 +242,11 @@ const App: React.FC = () => {
                     <ConfigTab />
                   </TabErrorBoundary>
                 } />
+                <Route path="/auth" element={
+                  <TabErrorBoundary tabName="Authentication">
+                    <AuthTab sourceTenantId="" targetTenantId="" />
+                  </TabErrorBoundary>
+                } />
               </Routes>
             </Suspense>
           </ErrorBoundary>
@@ -249,6 +256,7 @@ const App: React.FC = () => {
       <StatusBar connectionStatus={connectionStatus} />
     </Box>
     </WebSocketProvider>
+    </AuthProvider>
   );
 };
 

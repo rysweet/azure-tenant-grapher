@@ -26,6 +26,7 @@ import {
 import axios from 'axios';
 import LogViewer from '../common/LogViewer';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { useBackgroundOperations } from '../../hooks/useBackgroundOperations';
 import { useWebSocketContext } from '../../context/WebSocketContext';
 import { useLogger } from '../../hooks/useLogger';
@@ -52,6 +53,7 @@ interface DBStats {
 
 const ScanTab: React.FC = () => {
   const { state, dispatch } = useApp();
+  const auth = useAuth();
   const { addBackgroundOperation, updateBackgroundOperation, removeBackgroundOperation } = useBackgroundOperations();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput, onProcessExit } = useWebSocketContext();
   const logger = useLogger('Scan');
@@ -587,6 +589,14 @@ const ScanTab: React.FC = () => {
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Authentication Check */}
+      {!auth.canScan && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          ⚠️ Authentication Required: You must authenticate with the Source Tenant before scanning.
+          Please go to the Authentication tab to sign in.
+        </Alert>
+      )}
+
       {/* WebSocket Connection Status */}
       {connectionStatus !== 'connected' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
