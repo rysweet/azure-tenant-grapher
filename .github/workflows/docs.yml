@@ -55,4 +55,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Documentation has been successfully deployed to GitHub Pages." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **[View Documentation](https://rysweet.github.io/pr600/)**" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **[View Documentation](https://rysweet.github.io/azure-tenant-grapher/)**" >> $GITHUB_STEP_SUMMARY

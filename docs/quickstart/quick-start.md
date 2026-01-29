@@ -149,4 +149,4 @@ atg scan --tenant-id <tenant> --limit 1000
 For more help:
 - [Documentation Index](../INDEX.md)
 - [Autonomous Deployment FAQ](../guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)
-- [GitHub Issues](https://github.com/rysweet/pr600/issues)
+- [GitHub Issues](https://github.com/rysweet/azure-tenant-grapher/issues)

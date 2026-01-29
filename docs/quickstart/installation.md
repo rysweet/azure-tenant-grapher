@@ -12,8 +12,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/rysweet/pr600.git
-cd pr600
+git clone https://github.com/rysweet/azure-tenant-grapher.git
+cd azure-tenant-grapher
 ```
 
 ### 2. Install Dependencies
