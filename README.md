@@ -64,7 +64,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 
 ### Prerequisites
 
-- Python **3.8+**
+- Python **3.11+**
 - [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
 - Docker & Docker Compose (for Neo4j)
 - Azure CLI & Bicep CLI (for authentication and IaC deployment)

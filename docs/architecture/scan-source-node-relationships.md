@@ -1,15 +1,15 @@
 # SCAN_SOURCE_NODE Relationships in Layer Operations
 
-Arrr! This document explains the critical SCAN_SOURCE_NODE relationships that connect abstracted resources to their original Azure IDs, and why layer operations preserve 'em.
+This document explains the critical SCAN_SOURCE_NODE relationships that connect abstracted resources to their original Azure IDs, and why layer operations preserve them.
 
 ## Overview
 
 The dual-graph architecture stores every Azure resource as **two nodes**:
 
-1. **Abstracted nodes** (`:Resource`) - Deterministic hash-based IDs fer cross-tenant deployment
+1. **Abstracted nodes** (`:Resource`) - Deterministic hash-based IDs for cross-tenant deployment
 2. **Original nodes** (`:Resource:Original`) - Real Azure IDs from the scanned tenant
 
-These nodes be connected by `SCAN_SOURCE_NODE` relationships:
+These nodes are connected by `SCAN_SOURCE_NODE` relationships:
 
 ```cypher
 (abstracted:Resource)-[:SCAN_SOURCE_NODE]->(original:Resource:Original)
@@ -19,10 +19,10 @@ These nodes be connected by `SCAN_SOURCE_NODE` relationships:
 
 ### Original Azure IDs Are Essential
 
-When generatin' Infrastructure-as-Code (IaC), the system needs **original Azure resource IDs** to:
+When generating Infrastructure-as-Code (IaC), the system needs **original Azure resource IDs** to:
 
 - **Smart Import Comparison**: Compare generated IaC against existing tenant resources (Bug #115)
-- **Same-Tenant Deployments**: Use original principal IDs fer role assignments (Bug #96)
+- **Same-Tenant Deployments**: Use original principal IDs for role assignments (Bug #96)
 - **Validation**: Verify generated resources match source topology
 - **Traceability**: Track which abstracted resource came from which Azure resource
 
@@ -39,8 +39,8 @@ RETURN r, orig.id as original_id, orig as original_properties
 
 **Without SCAN_SOURCE_NODE in layers**, this query returns:
 - ✅ Abstracted resources (`r`)
-- ❌ NULL fer `original_id` (causes 900+ false positives!)
-- ❌ NULL fer `original_properties`
+- ❌ NULL for `original_id` (causes 900+ false positives!)
+- ❌ NULL for `original_properties`
 
 **With SCAN_SOURCE_NODE preserved**, this query returns:
 - ✅ Abstracted resources (`r`)
@@ -51,7 +51,7 @@ RETURN r, orig.id as original_id, orig as original_properties
 
 ### Copy Layer Operation
 
-When copyin' a layer, SCAN_SOURCE_NODE relationships **are preserved**:
+When copying a layer, SCAN_SOURCE_NODE relationships **are preserved**:
 
 ```python
 # From src/services/layer/export.py copy_layer()
@@ -110,7 +110,7 @@ rel_result = session.run("""
 
 ### Restore Layer Operation
 
-When restorin' a layer from archive, **all relationships** (including SCAN_SOURCE_NODE) are restored:
+When restoring a layer from archive, **all relationships** (including SCAN_SOURCE_NODE) are restored:
 
 ```python
 # From src/services/layer/export.py restore_layer()
@@ -155,7 +155,7 @@ Removed the exclusion filter from lines 166 and 255:
 
 ## Archive Format Versioning
 
-Archives now include version metadata fer backward compatibility:
+Archives now include version metadata for backward compatibility:
 
 ```json
 {
@@ -170,7 +170,7 @@ Archives now include version metadata fer backward compatibility:
 - **v1.0 archives** (old): Missing SCAN_SOURCE_NODE relationships
 - **v2.0 archives** (new): Include SCAN_SOURCE_NODE relationships
 
-When restorin' v1.0 archives:
+When restoring v1.0 archives:
 - System detects missing version field
 - Logs warning: "Archive may be missing SCAN_SOURCE_NODE relationships"
 - Restores what's available (graceful degradation)
@@ -204,7 +204,7 @@ When restorin' v1.0 archives:
 
 ### Troubleshooting Missing Original IDs
 
-If IaC generation returns NULL fer `original_id`:
+If IaC generation returns NULL for `original_id`:
 
 1. **Check SCAN_SOURCE_NODE relationships exist**:
    ```cypher
@@ -254,7 +254,7 @@ OPTIONAL MATCH (r)-[:SCAN_SOURCE_NODE]->(orig:Resource:Original)
 
 Original nodes (`Resource:Original`) **are NOT copied** to layers because:
 
-1. **Original nodes are global**: Single source of truth fer real Azure IDs
+1. **Original nodes are global**: Single source of truth for real Azure IDs
 2. **SCAN_SOURCE_NODE crosses layer boundary**: Abstracted nodes in layers reference Original nodes in base graph
 3. **Storage efficiency**: No duplication of Original nodes across layers
 4. **Update once, reference everywhere**: Original node updates don't require layer synchronization
@@ -283,7 +283,7 @@ Layer "experimental-01":
 ## References
 
 - **Bug #115**: Smart import false positives (900+ errors)
-- **Bug #116**: Heuristic ID cleanup fer relationship queries
+- **Bug #116**: Heuristic ID cleanup for relationship queries
 - **Bug #117**: Layer export excluding SCAN_SOURCE_NODE
 - **Issue #570**: Preserve SCAN_SOURCE_NODE in layer operations
 
