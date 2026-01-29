@@ -310,17 +310,7 @@ category: <category>
 
 ## Investigations
 
-### Issue #591: VM Replication
-- **[Investigation README](investigations/issue-591/README.md)** ⭐ - Complete investigation timeline
-- **[Session Report: Bug #10](investigations/issue-591/SESSION_20251218_BUG10_FIX.md)** - Child resource fix session
-- **[Permission Issue](investigations/issue-591/PERMISSION_ISSUE.md)** - Cross-tenant permissions
-
-### Final Reports (December 2025)
-- **[Master Achievement Summary](investigations/MASTER_ACHIEVEMENT_SUMMARY_20251201.md)** - Overall achievements
-- **[Final Complete Summary](investigations/FINAL_COMPLETE_SUMMARY_20251201.md)** - Complete final report
-- **[Final Status Report](investigations/FINAL_STATUS_REPORT_20251201.md)** - Final status
-- **[Ultimate Victory Report](investigations/ULTIMATE_VICTORY_REPORT_20251201.md)** - Victory summary
-- **[Role Assignment Investigation](investigations/role_assignment_import_investigation_20251201.md)** - Role assignment deep dive
+*Investigation reports have been archived. For current investigation workflows, see the Investigation Workflow documentation.*
 
 ## Deployment Guides
 
