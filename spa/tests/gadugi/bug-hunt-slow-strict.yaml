@@ -1,0 +1,562 @@
+# Azure Tenant Grapher - Slow & Strict Bug Hunt
+# Purpose: Run tests SLOWLY with NO failure tolerance to see exactly what breaks
+# Configuration: Delays between steps, strict assertions, fail-fast mode
+
+name: "ATG Bug Hunt - Slow & Strict Mode"
+description: "Deliberately slow execution to observe failures and edge case handling"
+version: "1.0.0"
+
+config:
+  timeout: 900000  # 15 minutes
+  retries: 0  # Don't retry - we want to see first failure
+  parallel: false
+  evidence_dir: "./evidence/bug-hunt-strict"
+  strict_mode: true
+  step_delay: 2000  # 2 second delay between ALL steps
+
+metadata:
+  tags: ["bug-hunt", "strict", "slow", "fail-fast"]
+  priority: "critical"
+  application: "Azure Tenant Grapher"
+  test_strategy: "fail-fast"
+
+prerequisites:
+  - "Neo4j database installed"
+  - "Backend server available"
+  - "Electron app built"
+
+environment:
+  variables:
+    NODE_ENV: "test"
+    PORT: "3001"
+    TEST_TENANT_ID: "test-tenant-12345.onmicrosoft.com"
+    DRY_RUN: "true"
+    DEBUG: "true"
+
+agents:
+  - name: "electron-ui"
+    type: "electron"
+    config:
+      executable: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+      viewport:
+        width: 1920
+        height: 1080
+      strict_assertions: true
+      slow_mo: 1000  # 1 second delay for all Playwright actions
+
+steps:
+  # ============================================
+  # PHASE 1: Application Launch (Strict)
+  # ============================================
+
+  - name: "Launch ATG"
+    agent: "electron-ui"
+    action: "launch"
+    params:
+      target: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+    expect:
+      window_visible: true
+    description: "STEP 1/50: Launch application - MUST succeed"
+
+  - name: "Verify single window only"
+    agent: "electron-ui"
+    action: "verify_window"
+    params:
+      count: 1
+    description: "STEP 2/50: STRICT - Only 1 window should exist"
+
+  - name: "Verify window title"
+    agent: "electron-ui"
+    action: "verify_window"
+    params:
+      title: "Azure Tenant Grapher"
+    description: "STEP 3/50: STRICT - Window must have exact title"
+
+  - name: "Wait for tabs to render"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "[role='tablist']"
+      timeout: 10000
+    description: "STEP 4/50: Navigation tabs MUST render"
+
+  - name: "Screenshot: App launched"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "01-launched.png"
+      full_page: true
+    description: "STEP 5/50: Evidence - Initial state"
+
+  # ============================================
+  # PHASE 2: Empty Input Validation (STRICT - NO CONTINUE ON FAILURE)
+  # ============================================
+
+  - name: "Navigate to Scan tab"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Scan"
+      timeout: 5000
+    description: "STEP 6/50: Click Scan tab"
+
+  - name: "Wait for Tenant ID input"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      timeout: 5000
+    description: "STEP 7/50: Wait for input field to load"
+
+  - name: "Screenshot: Scan tab loaded"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "02-scan-tab-empty.png"
+      full_page: true
+    description: "STEP 8/50: Evidence - Scan tab with empty inputs"
+
+  - name: "BUG TEST 1: Click Update Database with empty tenant"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 3000
+    description: "STEP 9/50: STRICT TEST - Should this be allowed?"
+
+  - name: "ASSERTION: Verify error message appears for empty tenant"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiAlert-root"
+      timeout: 5000
+    description: "STEP 10/50: STRICT - Error message MUST appear (will fail if no validation)"
+
+  - name: "Screenshot: Empty tenant error state"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "03-empty-tenant-error.png"
+      full_page: true
+    description: "STEP 11/50: Evidence - Error state"
+
+  # ============================================
+  # PHASE 3: Invalid Input Validation (STRICT)
+  # ============================================
+
+  - name: "Clear any error state"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 2000
+    description: "STEP 12/50: 2 second pause to observe state"
+
+  - name: "BUG TEST 2: Enter invalid tenant ID with special chars"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      value: "invalid@@@tenant!!!.com"
+    description: "STEP 13/50: STRICT TEST - Enter completely invalid format"
+
+  - name: "Screenshot: Invalid tenant entered"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "04-invalid-tenant-entered.png"
+      full_page: true
+    description: "STEP 14/50: Evidence - Invalid input in field"
+
+  - name: "BUG TEST 2: Try to scan with invalid tenant"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 3000
+    description: "STEP 15/50: STRICT TEST - Should validation prevent this?"
+
+  - name: "ASSERTION: Verify validation error appears"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiAlert-root"
+      timeout: 5000
+    description: "STEP 16/50: STRICT - Validation error MUST appear (will fail if accepted)"
+
+  - name: "Screenshot: Invalid tenant validation error"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "05-invalid-tenant-error.png"
+      full_page: true
+    description: "STEP 17/50: Evidence - Validation error state"
+
+  # ============================================
+  # PHASE 4: Resource Limit Edge Cases (STRICT)
+  # ============================================
+
+  - name: "Clear tenant ID"
+    agent: "electron-ui"
+    action: "clear"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+    description: "STEP 18/50: Clear field for next test"
+
+  - name: "Enter valid tenant for resource limit tests"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      value: "${TEST_TENANT_ID}"
+    description: "STEP 19/50: Set valid tenant ID"
+
+  - name: "Enable resource limit checkbox"
+    agent: "electron-ui"
+    action: "checkbox"
+    params:
+      selector: "input[type='checkbox'][aria-label*='Resource Limit']"
+      checked: true
+    description: "STEP 20/50: Enable resource limit option"
+
+  - name: "BUG TEST 3: Enter zero resource limit"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+      value: "0"
+    description: "STEP 21/50: STRICT TEST - Zero should be rejected"
+
+  - name: "Screenshot: Zero resource limit"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "06-zero-resource-limit.png"
+      full_page: true
+    description: "STEP 22/50: Evidence - Zero limit entered"
+
+  - name: "BUG TEST 3: Try to scan with zero limit"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 3000
+    description: "STEP 23/50: Should zero limit be rejected?"
+
+  - name: "Wait to observe behavior"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 3000
+    description: "STEP 24/50: 3 second pause to observe if error appears"
+
+  - name: "Screenshot: After zero limit scan attempt"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "07-zero-limit-result.png"
+      full_page: true
+    description: "STEP 25/50: Evidence - Did scan start or error appear?"
+
+  - name: "Clear resource limit"
+    agent: "electron-ui"
+    action: "clear"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+    description: "STEP 26/50: Clear for next test"
+
+  - name: "BUG TEST 4: Enter negative resource limit"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+      value: "-10"
+    description: "STEP 27/50: STRICT TEST - Negative should be rejected"
+
+  - name: "Screenshot: Negative resource limit"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "08-negative-resource-limit.png"
+      full_page: true
+    description: "STEP 28/50: Evidence - Negative limit entered"
+
+  - name: "ASSERTION: Negative values should be rejected or show error"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiAlert-root, input:invalid"
+      timeout: 3000
+    description: "STEP 29/50: STRICT - Must show error or mark input invalid"
+
+  - name: "Screenshot: Negative limit validation"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "09-negative-limit-validation.png"
+      full_page: true
+    description: "STEP 30/50: Evidence - Validation state"
+
+  # Set valid limit for continuing
+  - name: "Clear resource limit"
+    agent: "electron-ui"
+    action: "clear"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+    description: "STEP 31/50: Clear field"
+
+  - name: "Set valid small resource limit"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+      value: "5"
+    description: "STEP 32/50: Set to 5 for quick test"
+
+  - name: "Screenshot: Valid configuration"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "10-valid-scan-config.png"
+      full_page: true
+    description: "STEP 33/50: Evidence - Ready to scan"
+
+  # ============================================
+  # PHASE 5: Race Condition Test - Double Click (STRICT)
+  # ============================================
+
+  - name: "Wait before starting scan"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 2000
+    description: "STEP 34/50: 2 second pause before scan"
+
+  - name: "BUG TEST 5: First click on Update Database"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 5000
+    description: "STEP 35/50: Start scan - first click"
+
+  - name: "Wait 500ms"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 500
+    description: "STEP 36/50: Brief pause"
+
+  - name: "BUG TEST 5: Second click on Update Database (race condition)"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 2000
+    description: "STEP 37/50: STRICT TEST - Second click should be prevented"
+
+  - name: "ASSERTION: Verify only ONE scan started (not two)"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "[role='progressbar']"
+      count: 1
+      timeout: 5000
+    description: "STEP 38/50: STRICT - Only ONE progress bar (will fail if double-scan)"
+
+  - name: "Screenshot: Scan started"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "11-scan-started.png"
+      full_page: true
+    description: "STEP 39/50: Evidence - Scan in progress"
+
+  - name: "Wait 5 seconds to observe scan progress"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 5000
+    description: "STEP 40/50: 5 second observation window"
+
+  - name: "Screenshot: Scan progressing"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "12-scan-progressing.png"
+      full_page: true
+    description: "STEP 41/50: Evidence - Scan mid-execution"
+
+  - name: "Wait for scan completion"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "button:has-text('Update Database')"
+      timeout: 120000
+      reappears: true
+    description: "STEP 42/50: Wait for scan to finish (max 2 min)"
+
+  - name: "Wait 2 seconds after completion"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 2000
+    description: "STEP 43/50: Pause to observe completion state"
+
+  - name: "Screenshot: Scan completed"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "13-scan-completed.png"
+      full_page: true
+    description: "STEP 44/50: Evidence - Scan finished"
+
+  - name: "ASSERTION: Verify scan results visible"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiCard-root"
+      timeout: 5000
+    description: "STEP 45/50: STRICT - Results MUST be displayed"
+
+  # ============================================
+  # PHASE 6: Tab Switching Race Condition (STRICT)
+  # ============================================
+
+  - name: "BUG TEST 6: Rapid tab switch to Status"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Status"
+      timeout: 2000
+    description: "STEP 46/50: Switch to Status immediately"
+
+  - name: "Wait 500ms"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 500
+    description: "STEP 47/50: Brief pause"
+
+  - name: "BUG TEST 6: Rapid switch back to Scan"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Scan"
+      timeout: 2000
+    description: "STEP 48/50: Quick return to Scan"
+
+  - name: "Wait 500ms"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 500
+    description: "STEP 49/50: Brief pause"
+
+  - name: "BUG TEST 6: Rapid switch to Deploy"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Deploy"
+      timeout: 2000
+    description: "STEP 50/50: Switch to Deploy during rapid navigation"
+
+  - name: "Wait 3 seconds to observe Deploy tab"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 3000
+    description: "STEP 51/52: Let Deploy tab fully load"
+
+  - name: "ASSERTION: Deploy tab must be functional after rapid switching"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "button:has-text('Deploy')"
+      timeout: 5000
+    description: "STEP 52/52: STRICT - Deploy button MUST be present (will fail if tab broken)"
+
+  - name: "Screenshot: Final state"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "14-final-state.png"
+      full_page: true
+    description: "Evidence - Final application state"
+
+cleanup:
+  - name: "Wait 2 seconds before closing"
+    agent: "electron-ui"
+    action: "wait"
+    params:
+      duration: 2000
+
+  - name: "Final screenshot"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "99-cleanup.png"
+      full_page: true
+
+  - name: "Close application"
+    agent: "electron-ui"
+    action: "window_action"
+    params:
+      action: "close"
+
+success_criteria:
+  - "All strict assertions pass"
+  - "No edge case validations missing"
+  - "Race conditions handled correctly"
+  - "Error messages appear when expected"
+  - "Tab switching doesn't break state"
+
+expected_failures:
+  - "STEP 10: Empty tenant validation (if no validation implemented)"
+  - "STEP 16: Invalid tenant validation (if no validation implemented)"
+  - "STEP 29: Negative resource limit validation (if HTML5 validation missing)"
+  - "STEP 38: Double-scan prevention (if no debouncing)"
+  - "STEP 52: Tab state corruption (if state management buggy)"
+
+notes: |
+  **Slow & Strict Mode**
+
+  This test runs DELIBERATELY SLOWLY to:
+  1. Make failures observable
+  2. Give time for error messages to appear
+  3. Capture screenshots at each critical point
+  4. Allow manual observation of behavior
+
+  Configuration:
+  - step_delay: 2000ms (2 second delay between ALL steps)
+  - slow_mo: 1000ms (Playwright actions slowed)
+  - NO continue_on_failure flags (except where noted)
+  - Strict assertions that WILL FAIL if validation missing
+
+  Expected Duration: 5-10 minutes (due to delays)
+
+  Running the test:
+  ```bash
+  cd /home/sumallepally/ATG_WSL/spa/gadugi-comparison/gadugi
+
+  ELECTRON_APP_PATH=/home/sumallepally/ATG_WSL/spa \
+  TEST_TENANT_ID="test-tenant-12345.onmicrosoft.com" \
+  DRY_RUN="true" \
+  DEBUG="true" \
+  node dist/cli.js run --verbose --timeout 900000 \
+    -d /home/sumallepally/ATG_WSL/spa/tests/gadugi/ \
+    -s "ATG Bug Hunt - Slow & Strict Mode"
+  ```
+
+  Interpreting Results:
+  - If test PASSES: Edge case handling is robust
+  - If test FAILS at STEP N: Check expected_failures list - that edge case needs fixing
+  - Check screenshots in ./evidence/bug-hunt-strict/ to see exact failure state
+  - Review verbose logs for detailed error messages
+
+  This test trades speed for thoroughness - use for deep validation.

@@ -1,0 +1,492 @@
+# Azure Tenant Grapher - Full Scan Workflow Test
+# Level 2: Multi-step workflow with real-time validation
+# Tests the complete user journey from launching the app to completing a scan
+
+name: "ATG Full Scan Workflow - End-to-End"
+description: "Verifies complete user workflow: launch app, configure scan, execute scan, verify results"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 300000  # 5 minutes for complete scan workflow
+  retries: 1
+  parallel: false
+  evidence_dir: "./evidence/scan-workflow"
+
+# Test metadata
+metadata:
+  tags: ["e2e", "scan", "critical", "electron"]
+  priority: "high"
+  application: "Azure Tenant Grapher"
+  author: "ATG Team"
+
+# Prerequisites - conditions that must be true before test runs
+prerequisites:
+  - "Neo4j database is installed and accessible"
+  - "Backend server can start on port 3001"
+  - "Azure CLI is installed and configured"
+  - "Valid Azure tenant credentials available"
+  - "Electron app built and ready to launch"
+
+# Environment variables
+environment:
+  variables:
+    NODE_ENV: "test"
+    PORT: "3001"
+    # Override with actual tenant ID if testing against real tenant
+    TEST_TENANT_ID: "contoso.onmicrosoft.com"
+
+# Specialized agent configuration for Electron app
+agents:
+  - name: "electron-ui"
+    type: "electron"
+    config:
+      executable: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+      viewport:
+        width: 1920
+        height: 1080
+
+# Test steps - executed sequentially
+steps:
+  # ============================================
+  # Phase 1: Application Launch and Initialization
+  # ============================================
+
+  - name: "Launch Azure Tenant Grapher"
+    agent: "electron-ui"
+    action: "launch"
+    params:
+      target: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+    expect:
+      window_visible: true
+    timeout: 30000
+    description: "Start the Electron application and wait for main window"
+
+  - name: "Wait for app initialization"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "[role='tablist']"
+      timeout: 10000
+    description: "Wait for main tab navigation to render"
+
+  - name: "Verify app title"
+    agent: "electron-ui"
+    action: "verify_window"
+    params:
+      title_contains: "Azure Tenant Grapher"
+    description: "Confirm application loaded with correct title"
+
+  - name: "Capture initial state"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "01-app-launched.png"
+      full_page: true
+    description: "Evidence: Application successfully launched"
+
+  # ============================================
+  # Phase 2: Navigate to Scan Tab
+  # ============================================
+
+  - name: "Navigate to Scan tab"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Scan"
+      timeout: 5000
+    description: "Click the Scan tab in navigation"
+
+  - name: "Wait for Scan tab to load"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "input[label='Tenant ID']"
+      timeout: 5000
+    description: "Wait for Tenant ID input field to appear"
+
+  - name: "Verify Scan tab active"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "h6"
+      contains: "Tenant Configuration"
+    description: "Confirm Scan tab content loaded"
+
+  - name: "Check backend connection status"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiAlert-root"
+      contains: "Backend"
+      timeout: 5000
+      continue_on_failure: true
+    description: "Verify WebSocket connection to backend (may take a moment)"
+
+  - name: "Capture Scan tab state"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "02-scan-tab-loaded.png"
+      full_page: true
+    description: "Evidence: Scan tab successfully loaded"
+
+  # ============================================
+  # Phase 3: Configure Scan Parameters
+  # ============================================
+
+  - name: "Clear existing Tenant ID"
+    agent: "electron-ui"
+    action: "clear"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+    description: "Clear any pre-filled tenant ID"
+    continue_on_failure: true
+
+  - name: "Enter Tenant ID"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      value: "${TEST_TENANT_ID}"
+    description: "Enter the Azure tenant ID to scan"
+
+  - name: "Verify Tenant ID entered"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      value_contains: "contoso"
+    description: "Confirm tenant ID was entered correctly"
+
+  - name: "Select Azure Tenant dropdown"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "label:has-text('Azure Tenant')"
+      timeout: 3000
+    description: "Open Azure Tenant dropdown"
+    continue_on_failure: true
+
+  - name: "Set resource limit checkbox"
+    agent: "electron-ui"
+    action: "checkbox"
+    params:
+      selector: "input[type='checkbox'][aria-label*='Resource Limit']"
+      checked: true
+    description: "Enable resource limit for faster test scan"
+    continue_on_failure: true
+
+  - name: "Configure resource limit"
+    agent: "electron-ui"
+    action: "type"
+    params:
+      selector: "input[type='number'][aria-label*='Resource Limit']"
+      value: "50"
+    description: "Set resource limit to 50 for test scan"
+    continue_on_failure: true
+
+  - name: "Verify rebuild edges checkbox"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "input[type='checkbox']"
+      checked: true
+    description: "Confirm 'Rebuild Edges' is checked by default"
+    continue_on_failure: true
+
+  - name: "Capture scan configuration"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "03-scan-configured.png"
+      full_page: true
+    description: "Evidence: Scan parameters configured"
+
+  # ============================================
+  # Phase 4: Start Scan Operation
+  # ============================================
+
+  - name: "Wait for Neo4j status"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: ".MuiAlert-root"
+      timeout: 15000
+    description: "Wait for Neo4j status alert to appear"
+    continue_on_failure: true
+
+  - name: "Check if Neo4j needs to be started"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      text: "Start Neo4j"
+      timeout: 3000
+    id: "neo4j_check"
+    continue_on_failure: true
+    description: "Check if Neo4j start button is present"
+
+  - name: "Start Neo4j if needed"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Start Neo4j"
+      timeout: 3000
+    condition: "neo4j_check.passed"
+    continue_on_failure: true
+    description: "Click Start Neo4j button if database not running"
+
+  - name: "Wait for Neo4j to start"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: ".MuiAlert-root"
+      contains: "Neo4j is connected"
+      timeout: 30000
+    condition: "neo4j_check.passed"
+    continue_on_failure: true
+    description: "Wait for Neo4j connection confirmation"
+
+  - name: "Find Start Scan button"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "button"
+      text_contains: "Start Scan"
+      timeout: 5000
+    description: "Verify Start Scan button is present and enabled"
+
+  - name: "Click Start Scan button"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      selector: "button:has-text('Start Scan')"
+      timeout: 5000
+    description: "Initiate the tenant scan operation"
+
+  - name: "Verify scan started"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "h6:has-text('Scan Progress')"
+      timeout: 10000
+    description: "Confirm scan dashboard appeared (scan started)"
+
+  - name: "Capture scan started"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "04-scan-started.png"
+      full_page: true
+    description: "Evidence: Scan operation initiated"
+
+  # ============================================
+  # Phase 5: Monitor Scan Progress
+  # ============================================
+
+  - name: "Verify progress bar exists"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiLinearProgress-root"
+    description: "Confirm progress bar is visible"
+
+  - name: "Verify Stop button available"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "button:has-text('Stop Scan')"
+    description: "Confirm Stop Scan button is present during execution"
+    continue_on_failure: true
+
+  - name: "Wait for scan initialization"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: ".MuiTypography-root"
+      contains: "Phase:"
+      timeout: 15000
+    description: "Wait for scan phase information to appear"
+    continue_on_failure: true
+
+  - name: "Monitor log viewer"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "[class*='LogViewer']"
+      timeout: 10000
+    description: "Verify log viewer is displaying scan output"
+    continue_on_failure: true
+
+  - name: "Capture scan in progress"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "05-scan-in-progress.png"
+      full_page: true
+    description: "Evidence: Scan actively running"
+
+  # Wait for scan to complete (or timeout after 2 minutes)
+  - name: "Wait for scan completion or timeout"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "button:has-text('Start Scan')"
+      timeout: 120000
+      reappears: true
+    description: "Wait for Start Scan button to reappear (indicates completion)"
+    continue_on_failure: true
+
+  # ============================================
+  # Phase 6: Verify Scan Results
+  # ============================================
+
+  - name: "Check for completion status"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiAlert-root"
+      timeout: 5000
+    description: "Look for status alert (success or error)"
+    continue_on_failure: true
+
+  - name: "Verify scan statistics"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiCard-root"
+      timeout: 5000
+    description: "Check if statistics cards are visible"
+    continue_on_failure: true
+
+  - name: "Check resources discovered count"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiTypography-root"
+      contains: "Resources Discovered"
+      timeout: 5000
+    description: "Verify resources counter exists"
+    continue_on_failure: true
+
+  - name: "Check nodes created count"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiTypography-root"
+      contains: "Nodes Created"
+      timeout: 5000
+    description: "Verify nodes counter exists"
+    continue_on_failure: true
+
+  - name: "Capture final scan results"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "06-scan-completed.png"
+      full_page: true
+    description: "Evidence: Scan completion state"
+
+  # ============================================
+  # Phase 7: Navigate to Status Tab (Verify Graph Data)
+  # ============================================
+
+  - name: "Navigate to Status tab"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Status"
+      timeout: 5000
+    description: "Click Status tab to verify graph data"
+    continue_on_failure: true
+
+  - name: "Wait for Status tab to load"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "h6"
+      timeout: 10000
+    description: "Wait for Status tab content"
+    continue_on_failure: true
+
+  - name: "Verify database stats visible"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: ".MuiCard-root"
+      timeout: 5000
+    description: "Confirm database statistics cards displayed"
+    continue_on_failure: true
+
+  - name: "Capture Status tab"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "07-status-tab.png"
+      full_page: true
+    description: "Evidence: Database status after scan"
+
+# Cleanup actions - always run after steps complete
+cleanup:
+  - name: "Return to Scan tab"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Scan"
+      timeout: 3000
+    continue_on_failure: true
+
+  - name: "Final screenshot"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "08-cleanup-final.png"
+      full_page: true
+
+  - name: "Close application"
+    agent: "electron-ui"
+    action: "window_action"
+    params:
+      action: "close"
+
+# Test success criteria
+success_criteria:
+  - "Application launches successfully"
+  - "Scan tab loads without errors"
+  - "Scan can be configured with tenant ID"
+  - "Start Scan button is clickable"
+  - "Scan initiates and shows progress"
+  - "Scan completes or runs for at least 30 seconds"
+  - "All evidence screenshots captured"
+
+# Notes for test execution
+notes: |
+  This test performs a complete end-to-end scan workflow test.
+
+  **Prerequisites:**
+  1. Build the Electron app: npm run build
+  2. Ensure Neo4j is available (will auto-start if needed)
+  3. Ensure Azure CLI is configured (az login)
+  4. Set TEST_TENANT_ID environment variable if testing real tenant
+
+  **Running the test:**
+  ```bash
+  cd /path/to/gadugi-agentic-test
+  node dist/cli.js run /path/to/spa/tests/gadugi/scan-workflow-complete.yaml --verbose
+  ```
+
+  **Expected Duration:** 3-5 minutes
+
+  **Evidence Location:** ./evidence/scan-workflow/
+
+  **Troubleshooting:**
+  - If Neo4j fails to start, manually start it before running test
+  - If backend connection fails, check port 3001 is available
+  - If Azure auth fails, run: az login
+  - Increase timeout if scanning large tenant

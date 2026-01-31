@@ -1,0 +1,111 @@
+# Azure Tenant Grapher - Scan Tab Smoke Test
+# Level 1: Basic smoke test for quick validation
+# Tests that app launches and Scan tab is accessible
+
+name: "ATG Scan Tab - Smoke Test"
+description: "Quick validation that app launches and Scan tab is functional"
+version: "1.0.0"
+
+config:
+  timeout: 60000  # 1 minute for smoke test
+  retries: 2
+  parallel: false
+  evidence_dir: "./evidence/smoke-test"
+
+metadata:
+  tags: ["smoke", "scan", "quick"]
+  priority: "critical"
+  application: "Azure Tenant Grapher"
+
+prerequisites:
+  - "Electron app built and ready"
+  - "Backend can start on port 3001"
+
+agents:
+  - name: "electron-ui"
+    type: "electron"
+    config:
+      executable: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+
+steps:
+  # Launch app
+  - name: "Launch Azure Tenant Grapher"
+    agent: "electron-ui"
+    action: "launch"
+    params:
+      target: "./node_modules/.bin/electron"
+      args: ["."]
+      wait_for_window: true
+      timeout: 30000
+    expect:
+      window_visible: true
+    description: "Start the application"
+
+  # Wait for UI
+  - name: "Wait for UI to load"
+    agent: "electron-ui"
+    action: "wait_for_element"
+    params:
+      selector: "[role='tablist']"
+      timeout: 10000
+    description: "Wait for navigation tabs"
+
+  # Navigate to Scan tab
+  - name: "Click Scan tab"
+    agent: "electron-ui"
+    action: "click"
+    params:
+      text: "Scan"
+      timeout: 5000
+    description: "Navigate to Scan tab"
+
+  # Verify key elements exist
+  - name: "Verify Tenant ID input"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "input[aria-label='Tenant ID']"
+      timeout: 5000
+    description: "Check Tenant ID field exists"
+
+  - name: "Verify Start Scan button"
+    agent: "electron-ui"
+    action: "verify_element"
+    params:
+      selector: "button"
+      text_contains: "Start Scan"
+      timeout: 5000
+    description: "Check Start Scan button exists"
+
+  # Capture evidence
+  - name: "Take screenshot"
+    agent: "electron-ui"
+    action: "screenshot"
+    params:
+      save_as: "scan-tab-smoke.png"
+      full_page: true
+    description: "Capture Scan tab state"
+
+cleanup:
+  - name: "Close app"
+    agent: "electron-ui"
+    action: "window_action"
+    params:
+      action: "close"
+
+success_criteria:
+  - "App launches in under 30 seconds"
+  - "Scan tab loads and displays correctly"
+  - "Critical UI elements are present"
+
+notes: |
+  **Quick Smoke Test** - Runs in ~30 seconds
+
+  Run with:
+  ```bash
+  cd /path/to/gadugi-agentic-test
+  node dist/cli.js run /path/to/spa/tests/gadugi/scan-tab-smoke-test.yaml
+  ```

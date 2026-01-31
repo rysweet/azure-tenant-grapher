@@ -31,7 +31,8 @@ export const useTenantName = (): string => {
         if (auth.sourceAuth?.authenticated) {
           // Get tenant ID from stored token
           try {
-            const response = await axios.get('http://localhost:3001/api/auth/token?tenantType=source');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            const response = await axios.get(`${apiUrl}/api/auth/token?tenantType=source`);
             if (response.data && response.data.tenantId) {
               setTenantName(formatTenantName(response.data.tenantId));
               return;
@@ -45,7 +46,8 @@ export const useTenantName = (): string => {
         // PRIORITY 2: Try to get tenant from Azure CLI (az account show)
         // This works if user manually ran az login in terminal
         try {
-          const response = await axios.get('http://localhost:3001/api/tenant-name');
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+          const response = await axios.get(`${apiUrl}/api/tenant-name`);
           if (response.data && response.data.name) {
             const name = response.data.name;
             // If it's a UUID (tenant ID), format it for display

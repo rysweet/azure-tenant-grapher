@@ -1,0 +1,1 @@
+/home/sumallepally/.atg-workflow/UI_BUG_TEMPLATE.md
