@@ -23,11 +23,13 @@ import {
   Terminal as TerminalIcon,
   MenuBook as DocsIcon,
   ZoomOutMap as ScaleIcon,
+  VpnKey as AuthIcon,
 } from '@mui/icons-material';
 
 // All tabs in a simple flat array
 const allTabs = [
   { label: 'Status', path: '/status', icon: <StatusIcon /> },
+  { label: 'Auth', path: '/auth', icon: <AuthIcon /> },
   { label: 'Scan', path: '/scan', icon: <ScanIcon /> },
   { label: 'Visualize', path: '/visualize', icon: <VisualizeIcon /> },
   { label: 'Export Spec', path: '/generate-spec', icon: <SpecIcon /> },
