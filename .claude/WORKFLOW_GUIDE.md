@@ -1,1 +1,0 @@
-/home/sumallepally/.atg-workflow/WORKFLOW_GUIDE.md
