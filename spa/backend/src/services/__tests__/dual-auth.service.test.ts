@@ -45,8 +45,20 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         message: 'To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code ABCD1234 to authenticate.',
       };
 
-      mockDeviceCodeCredential.prototype.authenticate = jest.fn().mockResolvedValue({
-        deviceCodeInfo: mockDeviceCodeInfo,
+      // Mock the DeviceCodeCredential constructor to capture callback
+      let userPromptCallback: any;
+      (DeviceCodeCredential as any).mockImplementation((options: any) => {
+        userPromptCallback = options.userPromptCallback;
+        return {
+          getToken: jest.fn().mockImplementation(async () => {
+            // Trigger the callback with device code info
+            if (userPromptCallback) {
+              userPromptCallback(mockDeviceCodeInfo);
+            }
+            // Return a promise that never resolves (device code flow waits for user)
+            return new Promise(() => {});
+          }),
+        };
       });
 
       const result = await service.startDeviceCodeFlow('source', sourceTenantId);
@@ -56,11 +68,13 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         verificationUri: 'https://microsoft.com/devicelogin',
         expiresIn: expect.any(Number),
         message: expect.stringContaining('ABCD1234'),
+        requestId: expect.any(String),
       });
 
-      expect(mockDeviceCodeCredential).toHaveBeenCalledWith({
+      expect(DeviceCodeCredential).toHaveBeenCalledWith({
         tenantId: sourceTenantId,
         clientId: clientId,
+        userPromptCallback: expect.any(Function),
       });
     });
 
@@ -74,8 +88,20 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         message: 'To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code EFGH5678 to authenticate.',
       };
 
-      mockDeviceCodeCredential.prototype.authenticate = jest.fn().mockResolvedValue({
-        deviceCodeInfo: mockDeviceCodeInfo,
+      // Mock the DeviceCodeCredential constructor to capture callback
+      let userPromptCallback: any;
+      (DeviceCodeCredential as any).mockImplementation((options: any) => {
+        userPromptCallback = options.userPromptCallback;
+        return {
+          getToken: jest.fn().mockImplementation(async () => {
+            // Trigger the callback with device code info
+            if (userPromptCallback) {
+              userPromptCallback(mockDeviceCodeInfo);
+            }
+            // Return a promise that never resolves (device code flow waits for user)
+            return new Promise(() => {});
+          }),
+        };
       });
 
       const result = await service.startDeviceCodeFlow('target', targetTenantId);
@@ -85,11 +111,13 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         verificationUri: 'https://microsoft.com/devicelogin',
         expiresIn: expect.any(Number),
         message: expect.stringContaining('EFGH5678'),
+        requestId: expect.any(String),
       });
 
-      expect(mockDeviceCodeCredential).toHaveBeenCalledWith({
+      expect(DeviceCodeCredential).toHaveBeenCalledWith({
         tenantId: targetTenantId,
         clientId: clientId,
+        userPromptCallback: expect.any(Function),
       });
     });
 
@@ -102,9 +130,14 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
     });
 
     it('should handle Azure AD errors gracefully', async () => {
-      mockDeviceCodeCredential.prototype.authenticate = jest.fn().mockRejectedValue(
-        new Error('Azure AD service unavailable')
-      );
+      // Mock credential that throws error on getToken
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockRejectedValue(
+            new Error('Azure AD service unavailable')
+          ),
+        };
+      });
 
       await expect(service.startDeviceCodeFlow('source', sourceTenantId)).rejects.toThrow('Failed to start device code flow');
     });
