@@ -14,6 +14,9 @@ import { initializeLogger, createLogger } from './logger-setup';
 import { WebSocketServer } from 'ws';
 import { InputValidator } from './security/input-validator';
 import { AuthMiddleware } from './security/auth-middleware';
+import { authRouter } from './routes/auth.routes';
+import { TokenStorageService } from './services/token-storage.service';
+import { DualAuthService } from './services/dual-auth.service';
 
 // Declare global rate limit cache
 declare global {
@@ -129,6 +132,17 @@ const activeProcesses = new Map<string, ChildProcess>();
 // Initialize Neo4j service and container manager
 const neo4jService = new Neo4jService();
 const neo4jContainer = new Neo4jContainer();
+
+// Initialize authentication services
+const encryptionKey = process.env.TOKEN_ENCRYPTION_KEY || 'default-encryption-key-change-in-production';
+const tokenStorageService = new TokenStorageService(encryptionKey);
+const dualAuthService = new DualAuthService(
+  tokenStorageService,
+  process.env.AZURE_CLIENT_ID || 'your-app-client-id-here'
+);
+
+// Mount auth routes for dual-account authentication (after service initialization)
+app.use('/api/auth', authRouter(dualAuthService));
 
 // Apply authentication middleware to WebSocket connections
 io.use(AuthMiddleware.authenticate);

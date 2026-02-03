@@ -8,8 +8,10 @@ proper error handling and dependency injection patterns.
 
 import asyncio
 import logging
+import os
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
+from azure.core.credentials import AccessToken  # type: ignore[import-untyped]
 from azure.core.exceptions import AzureError  # type: ignore[import-untyped]
 from azure.identity import (  # type: ignore[import-untyped]
     AzureCliCredential,
@@ -30,6 +32,52 @@ from ..exceptions import (
 from ..models.filter_config import FilterConfig
 
 logger = logging.getLogger(__name__)
+
+
+class StaticTokenCredential:
+    """
+    Custom credential that uses a static access token.
+    Used for SPA-provided authentication tokens.
+
+    SECURITY: This credential does NOT log the token value.
+    """
+
+    def __init__(self, access_token: str):
+        """
+        Initialize with a static access token.
+
+        Args:
+            access_token: Azure access token from device code flow
+
+        Raises:
+            ValueError: If token is invalid (empty or too short)
+        """
+        if not access_token or not access_token.strip():
+            raise ValueError("Invalid access token: Token cannot be empty")
+
+        if len(access_token) < 50:
+            raise ValueError("Token too short: Token appears to be invalid")
+
+        self._token = access_token
+        # NOTE: We do NOT log the token value (security requirement)
+        logger.info("Using static token credential (token value not logged)")
+
+    def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
+        """
+        Get the static access token.
+
+        Args:
+            *scopes: Token scopes (ignored for static token)
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            AccessToken with the static token (expires in 1 hour as placeholder)
+        """
+        # Return token with a far-future expiry (we don't know actual expiry)
+        # The token will be validated by Azure API calls
+        import time
+        expiry = int(time.time()) + 3600  # 1 hour from now
+        return AccessToken(self._token, expiry)
 
 
 class AzureDiscoveryService:
@@ -62,7 +110,23 @@ class AzureDiscoveryService:
             change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
-        self.credential = credential or DefaultAzureCredential()
+
+        # Check for environment token (from SPA device code flow)
+        # SECURITY: Token is cleared from environment after use
+        access_token = os.environ.get('AZURE_ACCESS_TOKEN')
+        if access_token and not credential:
+            # Use static token credential with environment token
+            logger.info("Using access token from environment (AZURE_ACCESS_TOKEN)")
+            self.credential = StaticTokenCredential(access_token)
+
+            # SECURITY CRITICAL: Clear token from environment immediately
+            # This prevents token leakage through logs, child processes, etc.
+            del os.environ['AZURE_ACCESS_TOKEN']
+            logger.info("Token cleared from environment for security")
+        else:
+            # Fall back to provided credential or DefaultAzureCredential
+            self.credential = credential or DefaultAzureCredential()
+
         self.subscription_client_factory = (
             subscription_client_factory or SubscriptionClient
         )
