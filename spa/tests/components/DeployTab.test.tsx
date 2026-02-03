@@ -225,4 +225,33 @@ describe('DeployTab - Issues #839 and #840', () => {
       expect(mockExecute).not.toHaveBeenCalled();
     });
   });
+
+  it('should include --agent flag in deploy command', async () => {
+    mockExecute.mockResolvedValue({ data: { id: 'deploy-123' } });
+
+    renderWithProviders(<DeployTab />);
+
+    // Fill required fields
+    const sourceTenantInput = screen.getByLabelText(/source tenant/i);
+    const targetTenantInput = screen.getByLabelText(/target.*tenant/i);
+    const resourceGroupInput = screen.getByLabelText(/resource group/i);
+
+    fireEvent.change(sourceTenantInput, { target: { value: 'source-tenant-id' } });
+    fireEvent.change(targetTenantInput, { target: { value: 'target-tenant-id' } });
+    fireEvent.change(resourceGroupInput, { target: { value: 'test-rg' } });
+
+    // Click Deploy button
+    const deployButton = screen.getByRole('button', { name: /deploy/i });
+    fireEvent.click(deployButton);
+
+    // Wait for execute to be called
+    await waitFor(() => {
+      expect(mockExecute).toHaveBeenCalled();
+    });
+
+    // Verify deploy command includes --agent flag
+    const deployCall = mockExecute.mock.calls.find((call: any) => call[0] === 'deploy');
+    expect(deployCall).toBeDefined();
+    expect(deployCall[1]).toContain('--agent');
+  });
 });

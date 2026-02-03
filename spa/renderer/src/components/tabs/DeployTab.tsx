@@ -144,6 +144,9 @@ const DeployTab: React.FC = () => {
         deployArgs.push('--dry-run');
       }
 
+      // Enable agent mode for autonomous error recovery
+      deployArgs.push('--agent');
+
       const deployResult = await window.electronAPI.cli.execute('deploy', deployArgs);
 
       let deployOutputContent = '';
