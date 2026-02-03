@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Trigger az login subprocess on backend
       // Backend will spawn process and capture device code
-      const response = await axios.post('/api/auth/azure-cli/login', {
+      const response = await axios.post('http://localhost:3001/api/auth/azure-cli/login', {
         tenantType,
         tenantId,
       });
@@ -240,7 +240,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const pollInterval = setInterval(async () => {
       try {
         // Check if az login completed and token is available
-        const response = await axios.get('/api/auth/azure-cli/status', {
+        const response = await axios.get('http://localhost:3001/api/auth/azure-cli/status', {
           params: {
             tenantType: pollingTenantType,
             tenantId: pollingTenantId,
@@ -312,7 +312,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (sourceAuth?.authenticated && sourceAuth.expiresAt) {
         if (sourceAuth.expiresAt - now < fiveMinutes) {
           try {
-            const response = await axios.get('/api/auth/token?tenantType=source');
+            const response = await axios.get('http://localhost:3001/api/auth/token?tenantType=source');
             setSourceAuth({
               authenticated: true,
               accessToken: response.data.accessToken,
@@ -330,7 +330,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (targetAuth?.authenticated && targetAuth.expiresAt) {
         if (targetAuth.expiresAt - now < fiveMinutes) {
           try {
-            const response = await axios.get('/api/auth/token?tenantType=target');
+            const response = await axios.get('http://localhost:3001/api/auth/token?tenantType=target');
             setTargetAuth({
               authenticated: true,
               accessToken: response.data.accessToken,
@@ -352,7 +352,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const signOut = useCallback(async (tenantType: TenantType) => {
     try {
-      await axios.post('/api/auth/signout', { tenantType });
+      await axios.post('http://localhost:3001/api/auth/signout', { tenantType });
 
       if (tenantType === 'source') {
         setSourceAuth({ authenticated: false });
@@ -370,7 +370,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const signOutAll = useCallback(async () => {
     try {
-      await axios.post('/api/auth/signout', {});
+      await axios.post('http://localhost:3001/api/auth/signout', {});
       setSourceAuth({ authenticated: false });
       setTargetAuth({ authenticated: false });
     } catch (error) {

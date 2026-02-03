@@ -318,9 +318,18 @@ export class DualAuthService {
           message: error.message || 'Device code has expired',
         };
       } else if (error.message === 'Tenant ID validation failed') {
-        throw error; // Re-throw security errors
+        throw error; // Re-throw security errors with original message
       } else if (error.name === 'NetworkError') {
         throw new Error('Network error during authentication');
+      }
+
+      // Check if error message contains specific failures that should be surfaced
+      if (error.message && error.message.includes('expired')) {
+        return {
+          success: false,
+          status: 'expired',
+          message: error.message,
+        };
       }
 
       throw new Error('Authentication failed');

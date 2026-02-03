@@ -150,8 +150,15 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         expiresOnTimestamp: Date.now() + 3600000,
       };
 
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockResolvedValue(mockToken);
+      // Mock DeviceCodeCredential constructor
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockResolvedValue(mockToken),
+        };
+      });
+
       mockStorage.storeToken.mockResolvedValue(undefined);
+      mockStorage.validateTenantId.mockResolvedValue(true); // Validation passes
 
       const result = await service.pollForAuthentication('source', sourceTenantId);
 
@@ -163,16 +170,22 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
 
       expect(mockStorage.storeToken).toHaveBeenCalledWith('source', {
         accessToken: 'mock-access-token',
-        refreshToken: expect.any(String),
+        refreshToken: 'mock-access-token', // Device code flow uses same token
         expiresAt: mockToken.expiresOnTimestamp,
         tenantId: sourceTenantId,
       });
     });
 
     it('should poll for authentication completion (pending)', async () => {
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockRejectedValue({
-        name: 'CredentialUnavailableError',
-        message: 'User has not yet authenticated',
+      // Create proper Error object
+      const pendingError = new Error('User has not yet authenticated');
+      pendingError.name = 'CredentialUnavailableError';
+
+      // Mock DeviceCodeCredential to throw pending error
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockRejectedValue(pendingError),
+        };
       });
 
       const result = await service.pollForAuthentication('source', sourceTenantId);
@@ -187,9 +200,15 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
     });
 
     it('should poll for authentication completion (expired)', async () => {
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockRejectedValue({
-        name: 'AuthenticationError',
-        message: 'Device code has expired',
+      // Create proper Error object
+      const expiredError = new Error('Device code has expired');
+      expiredError.name = 'AuthenticationError';
+
+      // Mock DeviceCodeCredential to throw expired error
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockRejectedValue(expiredError),
+        };
       });
 
       const result = await service.pollForAuthentication('source', sourceTenantId);
@@ -232,7 +251,14 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
 
       mockStorage.getToken.mockResolvedValue(oldToken);
       mockStorage.needsRefresh.mockReturnValue(true);
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockResolvedValue(newToken);
+
+      // Mock DeviceCodeCredential instance method
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockResolvedValue(newToken),
+        };
+      });
+
       mockStorage.storeToken.mockResolvedValue(undefined);
 
       const result = await service.refreshTokenIfNeeded('source');
@@ -293,9 +319,13 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
 
       mockStorage.getToken.mockResolvedValue(oldToken);
       mockStorage.needsRefresh.mockReturnValue(true);
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockRejectedValue(
-        new Error('Refresh token expired')
-      );
+
+      // Mock DeviceCodeCredential to throw error
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockRejectedValue(new Error('Refresh token expired')),
+        };
+      });
 
       const result = await service.refreshTokenIfNeeded('source');
 
@@ -491,10 +521,18 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
 
       mockStorage.getToken.mockResolvedValue(oldToken);
       mockStorage.needsRefresh.mockReturnValue(true);
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockResolvedValue({
-        token: 'new-token',
-        expiresOnTimestamp: Date.now() + 3600000,
+
+      // Mock DeviceCodeCredential instance method
+      (DeviceCodeCredential as any).mockImplementation(() => {
+        return {
+          getToken: jest.fn().mockResolvedValue({
+            token: 'new-token',
+            expiresOnTimestamp: Date.now() + 3600000,
+          }),
+        };
       });
+
+      mockStorage.storeToken.mockResolvedValue(undefined);
 
       // Simulate concurrent refresh requests
       const results = await Promise.all([
@@ -503,15 +541,16 @@ describe('DualAuthService - Unit Tests (60% coverage)', () => {
         service.refreshTokenIfNeeded('source'),
       ]);
 
-      // Should only refresh once
+      // Should only refresh once (first request succeeds, others skip due to refreshInProgress flag)
       expect(mockStorage.storeToken).toHaveBeenCalledTimes(1);
     });
 
     it('should handle network timeout during authentication', async () => {
-      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockRejectedValue({
-        name: 'NetworkError',
-        message: 'Request timeout',
-      });
+      // Create proper Error object with name property
+      const networkError = new Error('Request timeout');
+      networkError.name = 'NetworkError';
+
+      mockDeviceCodeCredential.prototype.getToken = jest.fn().mockRejectedValue(networkError);
 
       await expect(service.pollForAuthentication('source', sourceTenantId)).rejects.toThrow('Network error during authentication');
     });

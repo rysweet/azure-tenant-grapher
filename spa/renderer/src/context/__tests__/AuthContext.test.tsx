@@ -618,4 +618,88 @@ describe('AuthContext - Unit Tests (60% coverage)', () => {
       expect(clearIntervalSpy).toHaveBeenCalled();
     });
   });
+
+  describe('Electron Compatibility', () => {
+    it('should use full URLs for API calls (not relative URLs)', async () => {
+      // This ensures Electron mode works (no Vite proxy in Electron)
+      mockAxios.post.mockResolvedValue({
+        data: {
+          success: true,
+          userCode: 'TEST123',
+          verificationUri: 'https://microsoft.com/device',
+          message: 'Test',
+          expiresIn: 900,
+        },
+      });
+
+      render(
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>
+      );
+
+      const button = screen.getByText('Sign In Source');
+
+      await act(async () => {
+        button.click();
+      });
+
+      await waitFor(() => {
+        // Verify axios.post was called with FULL URL (not relative)
+        expect(mockAxios.post).toHaveBeenCalledWith(
+          'http://localhost:3001/api/auth/azure-cli/login',
+          expect.objectContaining({
+            tenantType: 'source',
+            tenantId: 'source-tenant-id',
+          })
+        );
+      });
+    });
+
+    it('should use full URL for polling endpoint', async () => {
+      mockAxios.post.mockResolvedValue({
+        data: {
+          success: true,
+          userCode: 'TEST123',
+          verificationUri: 'https://microsoft.com/device',
+          message: 'Test',
+          expiresIn: 900,
+        },
+      });
+
+      mockAxios.get.mockResolvedValue({
+        data: { success: false, status: 'pending' },
+      });
+
+      render(
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>
+      );
+
+      const button = screen.getByText('Sign In Source');
+
+      await act(async () => {
+        button.click();
+      });
+
+      // Fast-forward to trigger polling
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+      });
+
+      await waitFor(() => {
+        // Verify polling uses full URL
+        expect(mockAxios.get).toHaveBeenCalledWith(
+          'http://localhost:3001/api/auth/azure-cli/status',
+          expect.objectContaining({
+            params: expect.objectContaining({
+              tenantType: 'source',
+              tenantId: 'source-tenant-id',
+            }),
+          })
+        );
+      });
+    });
+  });
 });
