@@ -204,8 +204,6 @@ const App: React.FC = () => {
                     <ValidateDeploymentTab />
                   </TabErrorBoundary>
                 } />
-                  </TabErrorBoundary>
-                } />
                 <Route path="/create-tenant" element={
                   <TabErrorBoundary tabName="Create Tenant">
                     <CreateTenantTab />
