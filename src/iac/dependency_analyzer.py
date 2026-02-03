@@ -107,6 +107,14 @@ class DependencyAnalyzer:
         # Build resource dependencies
         dependencies = []
         for resource in resources:
+            # DEFENSIVE: Skip if resource is not a dictionary
+            # This can happen if translators malfunction or data corruption occurs
+            if not isinstance(resource, dict):
+                logger.warning(
+                    f"Skipping invalid resource (expected dict, got {type(resource).__name__}): {resource}"
+                )
+                continue
+
             tier = self._calculate_tier(resource)
             depends_on = self._extract_dependencies(resource)
 
@@ -319,6 +327,13 @@ class DependencyAnalyzer:
 
         # Fallback: check properties for vnet reference
         properties = resource.get("properties", {})
+        # DEFENSIVE: Ensure properties is a dict
+        if not isinstance(properties, dict):
+            logger.warning(
+                f"Subnet {resource.get('name', 'unknown')} has non-dict properties "
+                f"(type: {type(properties).__name__}). Skipping VNet extraction."
+            )
+            return ""
         vnet_id = properties.get("virtualNetwork", {}).get("id", "")
         if vnet_id:
             return self._extract_resource_name_from_id(vnet_id)
@@ -338,6 +353,10 @@ class DependencyAnalyzer:
         """
         subnet_ids = []
         properties = resource.get("properties", {})
+        # DEFENSIVE: Ensure properties is a dict (can be string if data corrupted)
+        if not isinstance(properties, dict):
+            logger.warning(f"NIC properties is {type(properties).__name__}, expected dict")
+            return []
         ip_configs = properties.get("ipConfigurations", [])
 
         for ip_config in ip_configs:
@@ -361,6 +380,10 @@ class DependencyAnalyzer:
         """
         nic_ids = []
         properties = resource.get("properties", {})
+        # DEFENSIVE: Ensure properties is a dict
+        if not isinstance(properties, dict):
+            logger.warning(f"VM properties is {type(properties).__name__}, expected dict")
+            return []
         network_profile = properties.get("networkProfile", {})
         nic_refs = network_profile.get("networkInterfaces", [])
 
@@ -384,6 +407,13 @@ class DependencyAnalyzer:
             Storage account name or empty string if not found
         """
         properties = resource.get("properties", {})
+        # DEFENSIVE: Ensure properties is a dict
+        if not isinstance(properties, dict):
+            logger.warning(
+                f"VM {resource.get('name', 'unknown')} has non-dict properties "
+                f"(type: {type(properties).__name__}). Skipping storage account extraction."
+            )
+            return ""
         diagnostics = properties.get("diagnosticsProfile", {})
         boot_diagnostics = diagnostics.get("bootDiagnostics", {})
         storage_uri = boot_diagnostics.get("storageUri", "")
@@ -512,6 +542,13 @@ class DependencyAnalyzer:
                     resource_ids.add(obj)
 
         properties = resource.get("properties", {})
+        # DEFENSIVE: Ensure properties is a dict before extracting
+        if not isinstance(properties, dict):
+            logger.warning(
+                f"Resource {resource.get('name', 'unknown')} has non-dict properties "
+                f"(type: {type(properties).__name__}). Skipping resource ID extraction."
+            )
+            return resource_ids
         extract_from_dict(properties)
 
         return resource_ids

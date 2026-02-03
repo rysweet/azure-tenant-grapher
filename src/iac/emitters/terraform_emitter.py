@@ -760,7 +760,23 @@ class TerraformEmitter(IaCEmitter):
         # Analyze dependencies and sort resources by tier
         logger.info("Analyzing resource dependencies and calculating tiers")
         analyzer = DependencyAnalyzer()
-        resource_dependencies = analyzer.analyze(all_resources)
+        try:
+            resource_dependencies = analyzer.analyze(all_resources)
+        except Exception as e:
+            logger.error(
+                f"Dependency analysis failed: {e}. Continuing without dependency ordering.",
+                exc_info=True,
+            )
+            # Graceful degradation: Create dependencies without tier ordering
+            from ..dependency_analyzer import ResourceDependency
+            resource_dependencies = [
+                ResourceDependency(resource=r, tier=0, depends_on=set())
+                for r in all_resources
+                if isinstance(r, dict)  # Skip any non-dict resources
+            ]
+            logger.warning(
+                f"Generated {len(resource_dependencies)} dependencies with default tier 0"
+            )
 
         # Smart import generation (Phase 1E) - opt-in feature
         # When comparison_result is provided, generate import blocks and filter resources
