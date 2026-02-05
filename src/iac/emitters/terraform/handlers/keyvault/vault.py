@@ -95,7 +95,10 @@ class KeyVaultHandler(ResourceHandler):
             resource_tenant_id = resource.get("tenant_id") or properties.get("tenantId")
 
             # Use resource tenant_id if valid (not placeholder)
-            if resource_tenant_id and resource_tenant_id != "00000000-0000-0000-0000-000000000000":
+            if (
+                resource_tenant_id
+                and resource_tenant_id != "00000000-0000-0000-0000-000000000000"
+            ):
                 config["tenant_id"] = resource_tenant_id
             else:
                 # Use data source reference for current tenant

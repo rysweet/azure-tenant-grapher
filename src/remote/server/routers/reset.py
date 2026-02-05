@@ -18,18 +18,18 @@ All endpoints require authentication and enforce:
 """
 
 from typing import List, Optional
+
+from azure.identity import DefaultAzureCredential
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from azure.identity import DefaultAzureCredential
 
-from src.services.tenant_reset_service import (
-    TenantResetService,
-    TenantResetRateLimiter,
-    SecurityError,
-    RateLimitError,
-)
 from src.services.reset_confirmation import ResetScope
-
+from src.services.tenant_reset_service import (
+    RateLimitError,
+    SecurityError,
+    TenantResetRateLimiter,
+    TenantResetService,
+)
 
 router = APIRouter(prefix="/reset", tags=["tenant-reset"])
 
@@ -169,16 +169,16 @@ async def calculate_reset_scope(
     except SecurityError as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=f"Security error: {e}"
-        )
+        ) from e
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid input: {e}"
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal error: {e}",
-        )
+        ) from e
 
 
 @router.post("/execute", response_model=ResetExecuteResponse)
@@ -268,27 +268,27 @@ async def execute_tenant_reset(
             failed_count=len(results["failed"]),
             deleted_resources=results["deleted"][:10],  # Limit to first 10
             failed_resources=results["failed"][:10],  # Limit to first 10
-            errors={k: v for k, v in list(results["errors"].items())[:10]},
+            errors=dict(list(results["errors"].items())[:10]),
             duration_seconds=duration,
         )
 
     except SecurityError as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=f"Security error: {e}"
-        )
+        ) from e
     except RateLimitError as e:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=f"Rate limit: {e}"
-        )
+        ) from e
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid input: {e}"
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal error: {e}",
-        )
+        ) from e
 
 
 @router.get("/health")

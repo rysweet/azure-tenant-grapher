@@ -20,7 +20,7 @@ All tests are FAILING by design (TDD methodology) until implementation is comple
 __all__ = [
     "test_atg_sp_preservation",
     "test_confirmation_flow",
+    "test_deletion_logic",
     "test_scope_calculation",
     "test_security_controls",
-    "test_deletion_logic",
 ]

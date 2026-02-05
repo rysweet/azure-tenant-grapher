@@ -23,18 +23,18 @@ class TestNeo4jCredentials:
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://localhost:7687"
         assert creds.username == "neo4j"
-        assert creds.password == "test123"  # #ggignore
+        assert creds.password == "test123"  # pragma: allowlist secret
 
     def test_valid_credentials_neo4j(self):
         """Valid neo4j:// URI should pass validation."""
         creds = Neo4jCredentials(
             uri="neo4j://localhost:7687",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "neo4j://localhost:7687"
 
@@ -43,7 +43,7 @@ class TestNeo4jCredentials:
         creds = Neo4jCredentials(
             uri="bolt+s://secure.neo4j.io:7687",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt+s://secure.neo4j.io:7687"
 
@@ -53,7 +53,7 @@ class TestNeo4jCredentials:
             Neo4jCredentials(
                 uri="http://localhost:7687",
                 username="neo4j",
-                password="test123",  # #ggignore
+                password="test123",  # pragma: allowlist secret
             )
         assert "Invalid Neo4j URI format" in str(exc_info.value)
 
@@ -61,7 +61,9 @@ class TestNeo4jCredentials:
         """URI without hostname should raise validation error."""
         with pytest.raises(CredentialValidationError):
             Neo4jCredentials(
-                uri="bolt://", username="neo4j", password="test123"  # #ggignore - test fixture
+                uri="bolt://",
+                username="neo4j",
+                password="test123",  # pragma: allowlist secret - test fixture
             )
 
     def test_empty_username(self):
@@ -70,7 +72,7 @@ class TestNeo4jCredentials:
             Neo4jCredentials(
                 uri="bolt://localhost:7687",
                 username="",
-                password="test123",  # #ggignore
+                password="test123",  # pragma: allowlist secret
             )
         assert "Username cannot be empty" in str(exc_info.value)
 
@@ -80,7 +82,7 @@ class TestNeo4jCredentials:
             Neo4jCredentials(
                 uri="bolt://localhost:7687",
                 username="   ",
-                password="test123",  # #ggignore
+                password="test123",  # pragma: allowlist secret
             )
 
     def test_empty_password(self):
@@ -103,7 +105,7 @@ class TestNeo4jCredentials:
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687",
             username="neo4j",
-            password="supersecret123",  # #ggignore
+            password="supersecret123",  # pragma: allowlist secret
         )
         repr_str = repr(creds)
         assert "supersecret123" not in repr_str  # #ggignore
@@ -116,7 +118,7 @@ class TestNeo4jCredentials:
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687",
             username="neo4j",
-            password="supersecret123",  # #ggignore
+            password="supersecret123",  # pragma: allowlist secret
         )
         str_str = str(creds)
         assert "supersecret123" not in str_str  # #ggignore
@@ -217,7 +219,7 @@ class TestGetNeo4jCredentials:
             creds = get_neo4j_credentials()
             assert creds.uri == "bolt://keyvault.example.com:7687"
             assert creds.username == "kv_user"
-            assert creds.password == "kv_pass"  # #ggignore
+            assert creds.password == "kv_pass"  # pragma: allowlist secret
 
     @patch("src.utils.secure_credentials.SecretClient")
     @patch("src.utils.secure_credentials.DefaultAzureCredential")
@@ -317,16 +319,16 @@ class TestCredentialValidation:
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687",
             username="neo4j",
-            password="p@ssw0rd!#$%^&*()",  # #ggignore
+            password="p@ssw0rd!#$%^&*()",  # pragma: allowlist secret
         )
-        assert creds.password == "p@ssw0rd!#$%^&*()"  # #ggignore
+        assert creds.password == "p@ssw0rd!#$%^&*()"  # pragma: allowlist secret
 
     def test_credentials_with_ipv4_uri(self):
         """IPv4 address in URI should be accepted."""
         creds = Neo4jCredentials(
             uri="bolt://192.168.1.100:7687",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://192.168.1.100:7687"
 
@@ -335,7 +337,7 @@ class TestCredentialValidation:
         creds = Neo4jCredentials(
             uri="bolt://neo4j.example.com:7687",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://neo4j.example.com:7687"
 
@@ -344,6 +346,6 @@ class TestCredentialValidation:
         creds = Neo4jCredentials(
             uri="bolt://localhost",
             username="neo4j",
-            password="test123",  # #ggignore
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://localhost"

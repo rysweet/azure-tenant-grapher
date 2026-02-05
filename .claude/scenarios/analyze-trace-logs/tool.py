@@ -307,7 +307,7 @@ class TraceLogAnalyzer:
         return patterns
 
     def analyze(
-        self, log_dir: Path, sample_size: int = 15, options: dict = None
+        self, log_dir: Path, sample_size: int = 15, options: dict | None = None
     ) -> dict[str, Any]:
         """
         Analyze a sample of log files and extract patterns.

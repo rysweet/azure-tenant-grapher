@@ -16,10 +16,11 @@ Test Coverage:
 Target: 100% coverage for deletion execution
 """
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from azure.core.exceptions import ResourceNotFoundError, HttpResponseError
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 
 # Imports will fail until implementation exists
 from src.services.tenant_reset_service import TenantResetService
@@ -32,8 +33,7 @@ class TestDependencyOrdering:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -129,7 +129,7 @@ class TestDeletionExecution:
         return TenantResetService(
             credential=Mock(),
             tenant_id="12345678-1234-1234-1234-123456789abc",
-            concurrency=5
+            concurrency=5,
         )
 
     @pytest.mark.asyncio
@@ -184,8 +184,9 @@ class TestDeletionExecution:
     async def test_delete_resources_respects_concurrency(self, service):
         """Test that deletion respects concurrency limit."""
         deletion_waves = [
-            [f"/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-{i}"
-             for i in range(1, 11)  # 10 resources
+            [
+                f"/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-{i}"
+                for i in range(1, 11)  # 10 resources
             ]
         ]
 
@@ -224,8 +225,12 @@ class TestDeletionExecution:
     async def test_delete_resources_waves_sequential(self, service):
         """Test that deletion waves are executed sequentially."""
         deletion_waves = [
-            ["/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"],
-            ["/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Network/networkInterfaces/nic-1"],
+            [
+                "/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+            ],
+            [
+                "/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Network/networkInterfaces/nic-1"
+            ],
         ]
 
         execution_order = []
@@ -252,8 +257,7 @@ class TestAzureSDKIntegration:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -268,10 +272,14 @@ class TestAzureSDKIntegration:
         mock_poller.result = Mock()
 
         mock_resource_client = Mock()
-        mock_resource_client.resources.begin_delete_by_id = Mock(return_value=mock_poller)
+        mock_resource_client.resources.begin_delete_by_id = Mock(
+            return_value=mock_poller
+        )
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             await service._delete_single_resource(resource_id)
 
@@ -294,7 +302,9 @@ class TestAzureSDKIntegration:
         )
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             # Should not raise - already deleted is success
             await service._delete_single_resource(resource_id)
@@ -313,7 +323,9 @@ class TestAzureSDKIntegration:
         )
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             with pytest.raises(HttpResponseError):
                 await service._delete_single_resource(resource_id)
@@ -326,8 +338,7 @@ class TestEntraIDDeletion:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -339,14 +350,16 @@ class TestEntraIDDeletion:
         mock_sp_request.delete = AsyncMock()
 
         mock_graph_client = AsyncMock()
-        mock_graph_client.service_principals.by_service_principal_id = Mock(return_value=mock_sp_request)
+        mock_graph_client.service_principals.by_service_principal_id = Mock(
+            return_value=mock_sp_request
+        )
 
-        with patch.object(
-            service, "_get_graph_client", return_value=mock_graph_client
-        ):
+        with patch.object(service, "_get_graph_client", return_value=mock_graph_client):
             await service._delete_service_principal(sp_id)
 
-            mock_graph_client.service_principals.by_service_principal_id.assert_called_once_with(sp_id)
+            mock_graph_client.service_principals.by_service_principal_id.assert_called_once_with(
+                sp_id
+            )
             mock_sp_request.delete.assert_called_once()
 
     @pytest.mark.asyncio
@@ -360,9 +373,7 @@ class TestEntraIDDeletion:
         mock_graph_client = AsyncMock()
         mock_graph_client.users.by_user_id = Mock(return_value=mock_user_request)
 
-        with patch.object(
-            service, "_get_graph_client", return_value=mock_graph_client
-        ):
+        with patch.object(service, "_get_graph_client", return_value=mock_graph_client):
             await service._delete_user(user_id)
 
             mock_graph_client.users.by_user_id.assert_called_once_with(user_id)
@@ -379,9 +390,7 @@ class TestEntraIDDeletion:
         mock_graph_client = AsyncMock()
         mock_graph_client.groups.by_group_id = Mock(return_value=mock_group_request)
 
-        with patch.object(
-            service, "_get_graph_client", return_value=mock_graph_client
-        ):
+        with patch.object(service, "_get_graph_client", return_value=mock_graph_client):
             await service._delete_group(group_id)
 
             mock_graph_client.groups.by_group_id.assert_called_once_with(group_id)
@@ -395,8 +404,7 @@ class TestGraphCleanup:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -443,7 +451,9 @@ class TestGraphCleanup:
             mock_neo4j_session.run_query.assert_called_once()
             call_args = mock_neo4j_session.run_query.call_args
             assert call_args[0][0]  # Query string (first positional arg)
-            assert "resource_ids" in call_args[0][1]  # Parameters dict (second positional arg)
+            assert (
+                "resource_ids" in call_args[0][1]
+            )  # Parameters dict (second positional arg)
 
 
 class TestErrorHandling:
@@ -453,8 +463,7 @@ class TestErrorHandling:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -471,7 +480,9 @@ class TestErrorHandling:
         )
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             with pytest.raises(HttpResponseError) as exc:
                 await service._delete_single_resource(resource_id)
@@ -494,7 +505,9 @@ class TestErrorHandling:
         mock_resource_client.resources.begin_delete_by_id = Mock(side_effect=error)
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             with pytest.raises(HttpResponseError) as exc:
                 await service._delete_single_resource(resource_id)
@@ -515,7 +528,9 @@ class TestErrorHandling:
         )
 
         with patch.object(
-            service, "_get_resource_management_client", return_value=mock_resource_client
+            service,
+            "_get_resource_management_client",
+            return_value=mock_resource_client,
         ):
             with pytest.raises(Exception) as exc:
                 await service._delete_single_resource(resource_id)
