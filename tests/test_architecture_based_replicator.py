@@ -701,7 +701,7 @@ class TestOrphanedNodeHandling:
                 ]
             )
         ]
-        
+
         with patch.object(replicator.orphaned_handler, 'find_orphaned_node_instances', return_value=mock_orphaned_result):
             orphaned_instances = replicator._find_orphaned_node_instances()
 
