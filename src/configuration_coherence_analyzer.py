@@ -79,12 +79,12 @@ class ConfigurationCoherenceAnalyzer:
         if isinstance(tags1_data, str):
             try:
                 tags1_data = json.loads(tags1_data)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 tags1_data = {}
         if isinstance(tags2_data, str):
             try:
                 tags2_data = json.loads(tags2_data)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 tags2_data = {}
         
         tags1 = set(tags1_data.keys() if isinstance(tags1_data, dict) else [])
