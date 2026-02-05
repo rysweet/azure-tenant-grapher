@@ -10,7 +10,11 @@ from typing import Any, Dict, List, Set, Tuple
 
 from neo4j import GraphDatabase
 
-from .architecture_replication_constants import ORPHANED_PATTERN_NAME
+from .architecture_replication_constants import (
+    ORPHANED_PATTERN_NAME,
+    STANDALONE_ORPHANED_BUDGET_FRACTION,
+    MAX_INSTANCES_PER_STANDALONE_TYPE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +183,7 @@ class OrphanedResourceHandler:
                 
                 # Also search for standalone orphaned resources NOT in any ResourceGroup
                 rg_instance_count = len(orphaned_instances)
-                max_standalone = int(rg_instance_count * 0.5)  # Cap at 50% of RG instances
+                max_standalone = int(rg_instance_count * STANDALONE_ORPHANED_BUDGET_FRACTION)
                 
                 logger.info("=" * 80)
                 logger.info("[STANDALONE] Searching for standalone orphaned resources")
@@ -219,10 +223,10 @@ class OrphanedResourceHandler:
                         if simplified_type not in orphaned_types_simplified:
                             continue
                         
-                        # Prioritize types we haven't seen yet (max 2 instances per standalone type)
+                        # Prioritize types we haven't seen yet
                         type_count = standalone_type_counts.get(simplified_type, 0)
                         
-                        if type_count < 2:
+                        if type_count < MAX_INSTANCES_PER_STANDALONE_TYPE:
                             singleton_instance = [
                                 {
                                     "id": record["id"],

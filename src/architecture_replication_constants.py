@@ -60,8 +60,15 @@ PROGRESS_LOG_FREQUENCY = 10
 ORPHANED_PATTERN_NAME = "Orphaned Resources"
 """Name used for the synthetic pattern containing orphaned resources"""
 
+# Orphaned Resource Constants
 ORPHANED_PATTERN_BUDGET_FRACTION = 0.25
 """Fraction of instance budget allocated to orphaned resources (25%)"""
+
+STANDALONE_ORPHANED_BUDGET_FRACTION = 0.5
+"""Fraction of RG-based orphaned instances to allocate for standalone orphaned resources (50%)"""
+
+MAX_INSTANCES_PER_STANDALONE_TYPE = 2
+"""Maximum number of instances per standalone orphaned type"""
 
 
 @dataclass(frozen=True)
@@ -110,5 +117,7 @@ __all__ = [
     "PROGRESS_LOG_FREQUENCY",
     "ORPHANED_PATTERN_NAME",
     "ORPHANED_PATTERN_BUDGET_FRACTION",
+    "STANDALONE_ORPHANED_BUDGET_FRACTION",
+    "MAX_INSTANCES_PER_STANDALONE_TYPE",
     "ReplicationDefaults",
 ]
