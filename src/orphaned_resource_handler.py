@@ -78,6 +78,8 @@ class OrphanedResourceHandler:
         try:
             with driver.session() as session:
                 # Step 1: Query Neo4j for ALL resource types (full names)
+                # TODO: Consider caching this type mapping at initialization or class level
+                # to avoid repeated expensive database queries on every call
                 type_query = """
                 MATCH (r:Resource:Original)
                 RETURN DISTINCT r.type as full_type
