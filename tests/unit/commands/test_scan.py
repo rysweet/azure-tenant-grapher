@@ -15,7 +15,7 @@ This module tests the core Azure tenant scanning functionality including:
 
 import pytest
 
-from src.commands.scan import build, build_command_handler, scan, test_scan
+from src.commands.scan import build, build_command_handler, scan, test
 
 # ============================================================================
 # UNIT TESTS (60%) - Test individual functions with mocked dependencies

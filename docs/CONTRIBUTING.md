@@ -5,7 +5,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/pr600.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/azure-tenant-grapher.git`
 3. Create a feature branch: `git checkout -b feat/my-feature`
 4. Make your changes
 5. Test your changes
@@ -188,8 +188,8 @@ Include:
 
 ## Questions?
 
-- Check existing [issues](https://github.com/rysweet/pr600/issues)
-- Read the [documentation](https://rysweet.github.io/pr600/)
+- Check existing [issues](https://github.com/rysweet/azure-tenant-grapher/issues)
+- Read the [documentation](https://rysweet.github.io/azure-tenant-grapher/)
 - Ask in GitHub Discussions
 
 ## License

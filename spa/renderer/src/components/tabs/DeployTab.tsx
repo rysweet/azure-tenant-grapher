@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { CloudUpload as DeployIcon } from '@mui/icons-material';
 import TenantSelector from '../shared/TenantSelector';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProcessOutputData {
   id: string;
@@ -28,6 +29,7 @@ interface ProcessExitData {
 }
 
 const DeployTab: React.FC = () => {
+  const auth = useAuth();
   const [sourceTenantId, setSourceTenantId] = useState('3cd87a41-1f61-4aef-a212-cefdecd9a2d1');
   const [targetTenantId, setTargetTenantId] = useState('506f82b2-e2e7-40a2-b0be-ea6f8cb908f8');
   const [resourceGroup, setResourceGroup] = useState('');
@@ -142,6 +144,9 @@ const DeployTab: React.FC = () => {
         deployArgs.push('--dry-run');
       }
 
+      // Enable agent mode for autonomous error recovery
+      deployArgs.push('--agent');
+
       const deployResult = await window.electronAPI.cli.execute('deploy', deployArgs);
 
       let deployOutputContent = '';
@@ -223,6 +228,14 @@ const DeployTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Deploy Infrastructure as Code to Azure
         </Typography>
+
+        {/* Authentication Check */}
+        {!auth.canDeploy && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            ⚠️ Authentication Required: You must authenticate with BOTH Source Tenant and Gameboard Tenant before deploying.
+            Please go to the Authentication tab to sign in.
+          </Alert>
+        )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>

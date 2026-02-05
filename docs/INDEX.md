@@ -14,6 +14,7 @@
 - **[Autonomous Deployment Quick Reference](quickstart/AUTONOMOUS_DEPLOYMENT_QUICK_REF.md)** - Commands and concepts at a glance
 - **[Terraform Import Quick Reference](quickstart/terraform-import-quick-ref.md)** - Import existing resources
 - **[SCAN_SOURCE_NODE Quick Reference](quickstart/scan-source-node-quick-ref.md)** - Essential queries and examples
+- **[Tenant Reset Quick Reference](howto/TENANT_RESET_QUICK_REFERENCE.md)** 🚀 - Quick command reference for resource cleanup
 - **[Web App Mode](quickstart/web-app-mode.md)** - Run ATG as a web application
 
 ## User Guides
@@ -26,6 +27,8 @@
 - **[Tenant Inventory Reports](guides/TENANT_INVENTORY_REPORTS.md)** - Generate comprehensive tenant reports
 - **[Terraform Import Troubleshooting](guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md)** - Debug missing or broken import blocks
 - **[SCAN_SOURCE_NODE Migration Guide](guides/scan-source-node-migration.md)** - Migrate legacy layers
+- **[Tenant Reset Guide](guides/TENANT_RESET_GUIDE.md)** ⭐ - Safe Azure resource cleanup with ATG SP preservation
+- **[Tenant Reset Safety Guide](guides/TENANT_RESET_SAFETY.md)** - Detailed safety mechanisms and recovery procedures
 
 ## Architecture & Concepts
 
@@ -97,6 +100,10 @@
 - **[Scale Operations UI Code Review](SCALE_OPERATIONS_UI_CODE_REVIEW.md)** - UI implementation review
 - **[Scale Config Reference](SCALE_CONFIG_REFERENCE.md)** - Configuration options
 - **[Scale Performance Guide](SCALE_PERFORMANCE_GUIDE.md)** - Performance optimization
+
+### Tenant Reset
+- **[Tenant Reset API Reference](reference/TENANT_RESET_API.md)** 🔧 - Service architecture and API documentation
+- **[Tenant Reset Troubleshooting](reference/TENANT_RESET_TROUBLESHOOTING.md)** - Common errors and solutions
 
 ## CTF Overlay System
 
@@ -310,17 +317,7 @@ category: <category>
 
 ## Investigations
 
-### Issue #591: VM Replication
-- **[Investigation README](investigations/issue-591/README.md)** ⭐ - Complete investigation timeline
-- **[Session Report: Bug #10](investigations/issue-591/SESSION_20251218_BUG10_FIX.md)** - Child resource fix session
-- **[Permission Issue](investigations/issue-591/PERMISSION_ISSUE.md)** - Cross-tenant permissions
-
-### Final Reports (December 2025)
-- **[Master Achievement Summary](investigations/MASTER_ACHIEVEMENT_SUMMARY_20251201.md)** - Overall achievements
-- **[Final Complete Summary](investigations/FINAL_COMPLETE_SUMMARY_20251201.md)** - Complete final report
-- **[Final Status Report](investigations/FINAL_STATUS_REPORT_20251201.md)** - Final status
-- **[Ultimate Victory Report](investigations/ULTIMATE_VICTORY_REPORT_20251201.md)** - Victory summary
-- **[Role Assignment Investigation](investigations/role_assignment_import_investigation_20251201.md)** - Role assignment deep dive
+*Investigation reports have been archived. For current investigation workflows, see the Investigation Workflow documentation.*
 
 ## Deployment Guides
 

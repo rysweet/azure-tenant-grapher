@@ -8,8 +8,8 @@ import StatusBar from './components/common/StatusBar';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import TabErrorBoundary from './components/common/TabErrorBoundary';
 import { useApp } from './context/AppContext';
-import { LayerProvider } from './context/LayerContext';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { AuthProvider } from './context/AuthContext';
 import { withErrorHandling, withNetworkErrorHandling } from './utils/errorUtils';
 import { errorService } from './services/errorService';
 
@@ -21,7 +21,6 @@ const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
 const DeployTab = lazy(() => import('./components/tabs/DeployTab'));
 const ValidateDeploymentTab = lazy(() => import('./components/tabs/ValidateDeploymentTab'));
-const UndeployTab = lazy(() => import('./components/tabs/UndeployTab'));
 const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
 const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
 const AgentModeTab = lazy(() => import('./components/tabs/AgentModeTab'));
@@ -29,6 +28,7 @@ const ThreatModelTab = lazy(() => import('./components/tabs/ThreatModelTab'));
 const ScaleOperationsTab = lazy(() => import('./components/tabs/ScaleOperationsTab'));
 const DocsTab = lazy(() => import('./components/tabs/DocsTab'));
 const ConfigTab = lazy(() => import('./components/tabs/ConfigTab'));
+const AuthTab = lazy(() => import('./components/tabs/AuthTab'));
 
 const App: React.FC = () => {
   const { dispatch } = useApp();
@@ -149,6 +149,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <AuthProvider>
     <WebSocketProvider>
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
@@ -205,11 +206,6 @@ const App: React.FC = () => {
                     <ValidateDeploymentTab />
                   </TabErrorBoundary>
                 } />
-                <Route path="/undeploy" element={
-                  <TabErrorBoundary tabName="Undeploy">
-                    <UndeployTab />
-                  </TabErrorBoundary>
-                } />
                 <Route path="/create-tenant" element={
                   <TabErrorBoundary tabName="Create Tenant">
                     <CreateTenantTab />
@@ -240,15 +236,20 @@ const App: React.FC = () => {
                     <ConfigTab />
                   </TabErrorBoundary>
                 } />
+                <Route path="/auth" element={
+                  <TabErrorBoundary tabName="Authentication">
+                    <AuthTab />
+                  </TabErrorBoundary>
+                } />
               </Routes>
             </Suspense>
           </ErrorBoundary>
         </Container>
       </Box>
-
       <StatusBar connectionStatus={connectionStatus} />
     </Box>
     </WebSocketProvider>
+    </AuthProvider>
   );
 };
 

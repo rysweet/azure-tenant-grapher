@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow, safeStorage } from 'electron';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
@@ -243,5 +243,41 @@ export function setupIPCHandlers(processManager: ProcessManager) {
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
+  });
+
+  // Token encryption handlers (for Azure authentication)
+  // Uses Electron's safeStorage API for OS-level encryption
+  ipcMain.handle('auth:encryptToken', async (event, tokenData: string) => {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('Encryption not available on this system');
+      }
+
+      const buffer = safeStorage.encryptString(tokenData);
+      const encrypted = buffer.toString('base64');
+
+      return { success: true, data: encrypted };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('auth:decryptToken', async (event, encryptedData: string) => {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('Encryption not available on this system');
+      }
+
+      const buffer = Buffer.from(encryptedData, 'base64');
+      const decrypted = safeStorage.decryptString(buffer);
+
+      return { success: true, data: decrypted };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('auth:isEncryptionAvailable', async () => {
+    return safeStorage.isEncryptionAvailable();
   });
 }

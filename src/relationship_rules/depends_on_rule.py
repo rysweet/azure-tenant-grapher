@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .relationship_rule import RelationshipRule
 
@@ -24,3 +24,16 @@ class DependsOnRule(RelationshipRule):
                 self.create_dual_graph_relationship(
                     db_ops, str(rid), "DEPENDS_ON", str(dep_id)
                 )
+
+    def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:
+        """
+        Extract ARM dependsOn resource IDs.
+
+        Returns all resource IDs from the dependsOn array.
+        """
+        target_ids: Set[str] = set()
+        depends_on = resource.get("dependsOn", [])
+        for dep_id in depends_on:
+            if isinstance(dep_id, str):
+                target_ids.add(dep_id)
+        return target_ids

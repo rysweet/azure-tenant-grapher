@@ -12,7 +12,7 @@
 
 **RECOMMENDATION**: ✅ **APPROVE PR for Development/Integration Environments**
 
-Ahoy! This PR implements a solid foundation fer secure remote deployment with proper authentication, input validation, and reasonable security posture. The CORS fix be verified, and security documentation clearly identifies deployment-time requirements fer production hardening.
+This PR implements a solid foundation for secure remote deployment with proper authentication, input validation, and reasonable security posture. The CORS fix is verified, and security documentation clearly identifies deployment-time requirements for production hardening.
 
 **Key Improvements Since Last Review:**
 - ✅ CORS configuration **FIXED** - No more wildcard origins
@@ -81,7 +81,7 @@ az network dns record-set a add-record ...
 
 **Mitigation Options**:
 
-**Option A: Application-Level Enforcement (Recommended fer production)**
+**Option A: Application-Level Enforcement (Recommended for production)**
 ```python
 # Add HTTPS redirect middleware
 @app.middleware("http")
@@ -147,7 +147,7 @@ async def trigger_scan(...):
 
 **Recommendation**:
 1. **For this PR**: Create follow-up issue for rate limiting implementation
-2. **Add to deployment docs**: Rate limiting requirement fer production
+2. **Add to deployment docs**: Rate limiting requirement for production
 3. **Suggested limits**:
    - Authentication: 20 attempts/minute/IP (prevent brute force)
    - Scan operations: 10/hour/client (prevent resource exhaustion)
@@ -212,9 +212,9 @@ def load_secrets_from_keyvault(vault_url: str) -> dict:
 ```
 
 **Recommendation**:
-1. **For this PR**: Accept current implementation (documented fer deployment)
-2. **Add follow-up issue**: "Implement Azure Key Vault integration fer production"
-3. **Update deployment docs**: Mark Key Vault as REQUIRED fer production (not optional)
+1. **For this PR**: Accept current implementation (documented for deployment)
+2. **Add follow-up issue**: "Implement Azure Key Vault integration for production"
+3. **Update deployment docs**: Mark Key Vault as REQUIRED for production (not optional)
 
 **Status**: 🟡 **REQUIRED FOR PRODUCTION** | ✅ **ACCEPTABLE FOR DEV/INTEGRATION** (documented)
 
@@ -431,7 +431,7 @@ def _redact_tenant_id(tenant_id: str) -> str:
 
 ---
 
-## Recommendations fer PR Approval
+## Recommendations for PR Approval
 
 ### ✅ APPROVE with Conditions:
 
@@ -459,7 +459,7 @@ def _redact_tenant_id(tenant_id: str) -> str:
    - Add "Security Status" badge showing dev/integration/production readiness
    - Link to security documentation
 
-### 📝 Comment fer PR #578:
+### 📝 Comment for PR #578:
 
 ```markdown
 ## Security Review - APPROVED ✅
@@ -473,12 +473,12 @@ def _redact_tenant_id(tenant_id: str) -> str:
 
 ### Production Readiness: 🚧 NOT YET PRODUCTION-READY
 
-**Blockers fer Production**:
+**Blockers for Production**:
 1. 🔴 TLS/HTTPS enforcement (application or deployment level)
 2. 🟡 Rate limiting implementation
 3. 🟡 Azure Key Vault integration fer secrets
 
-**Current Status**: ✅ **Safe fer Dev/Integration environments**
+**Current Status**: ✅ **Safe for Dev/Integration environments**
 
 ### Action Items
 - [ ] Create follow-up issues fer production blockers
@@ -500,7 +500,7 @@ See [SECURITY_REVIEW_FINAL.md](./SECURITY_REVIEW_FINAL.md) fer complete analysis
 - ✅ Neo4j connection tests (`tests/remote/unit/test_neo4j_connection.py`)
 - ✅ E2E workflow tests (`tests/remote/e2e/test_remote_scan_workflow.py`)
 
-**Missing Tests** (fer follow-up):
+**Missing Tests** (for follow-up):
 - ⚠️ Rate limiting tests (when implemented)
 - ⚠️ HTTPS enforcement tests (when implemented)
 - ⚠️ Key Vault integration tests (when implemented)
@@ -510,9 +510,9 @@ See [SECURITY_REVIEW_FINAL.md](./SECURITY_REVIEW_FINAL.md) fer complete analysis
 
 ## Conclusion
 
-**Final Verdict**: ✅ **APPROVE PR #578 fer Dev/Integration Deployment**
+**Final Verdict**: ✅ **APPROVE PR #578 for Dev/Integration Deployment**
 
-This PR delivers a solid foundation fer secure remote deployment with:
+This PR delivers a solid foundation for secure remote deployment with:
 - Strong authentication (cryptographic keys, constant-time comparison)
 - Proper input validation and error handling
 - Environment-based configuration
@@ -526,5 +526,3 @@ The CORS vulnerability has been **FIXED**, and remaining security gaps (TLS, rat
 2. Create follow-up issues fer production blockers
 3. Update deployment docs with security checklist
 4. Implement remaining security features before production deployment
-
-**Arrr! This ship be seaworthy fer dev waters, but needs a bit more armor before sailin' into production seas!** ⚓

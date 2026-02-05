@@ -8,8 +8,10 @@ proper error handling and dependency injection patterns.
 
 import asyncio
 import logging
+import os
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
+from azure.core.credentials import AccessToken  # type: ignore[import-untyped]
 from azure.core.exceptions import AzureError  # type: ignore[import-untyped]
 from azure.identity import (  # type: ignore[import-untyped]
     AzureCliCredential,
@@ -30,6 +32,52 @@ from ..exceptions import (
 from ..models.filter_config import FilterConfig
 
 logger = logging.getLogger(__name__)
+
+
+class StaticTokenCredential:
+    """
+    Custom credential that uses a static access token.
+    Used for SPA-provided authentication tokens.
+
+    SECURITY: This credential does NOT log the token value.
+    """
+
+    def __init__(self, access_token: str):
+        """
+        Initialize with a static access token.
+
+        Args:
+            access_token: Azure access token from device code flow
+
+        Raises:
+            ValueError: If token is invalid (empty or too short)
+        """
+        if not access_token or not access_token.strip():
+            raise ValueError("Invalid access token: Token cannot be empty")
+
+        if len(access_token) < 50:
+            raise ValueError("Token too short: Token appears to be invalid")
+
+        self._token = access_token
+        # NOTE: We do NOT log the token value (security requirement)
+        logger.info("Using static token credential (token value not logged)")
+
+    def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
+        """
+        Get the static access token.
+
+        Args:
+            *scopes: Token scopes (ignored for static token)
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            AccessToken with the static token (expires in 1 hour as placeholder)
+        """
+        # Return token with a far-future expiry (we don't know actual expiry)
+        # The token will be validated by Azure API calls
+        import time
+        expiry = int(time.time()) + 3600  # 1 hour from now
+        return AccessToken(self._token, expiry)
 
 
 class AzureDiscoveryService:
@@ -62,7 +110,23 @@ class AzureDiscoveryService:
             change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
-        self.credential = credential or DefaultAzureCredential()
+
+        # Check for environment token (from SPA device code flow)
+        # SECURITY: Token is cleared from environment after use
+        access_token = os.environ.get('AZURE_ACCESS_TOKEN')
+        if access_token and not credential:
+            # Use static token credential with environment token
+            logger.info("Using access token from environment (AZURE_ACCESS_TOKEN)")
+            self.credential = StaticTokenCredential(access_token)
+
+            # SECURITY CRITICAL: Clear token from environment immediately
+            # This prevents token leakage through logs, child processes, etc.
+            del os.environ['AZURE_ACCESS_TOKEN']
+            logger.info("Token cleared from environment for security")
+        else:
+            # Fall back to provided credential or DefaultAzureCredential
+            self.credential = credential or DefaultAzureCredential()
+
         self.subscription_client_factory = (
             subscription_client_factory or SubscriptionClient
         )
@@ -1666,6 +1730,139 @@ class AzureDiscoveryService:
             return True
         except Exception:
             return False
+
+    async def fetch_resource_by_id(
+        self, resource_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fetch a single resource by its full Azure resource ID.
+
+        This method is used by RelationshipDependencyCollector to fetch
+        cross-RG dependencies that weren't included in the initial filtered scan.
+
+        Args:
+            resource_id: Full Azure resource ID (e.g., /subscriptions/.../resourceGroups/.../providers/...)
+
+        Returns:
+            Resource dictionary with full properties, or None if fetch fails
+
+        Example:
+            >>> resource_id = "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+            >>> resource = await service.fetch_resource_by_id(resource_id)
+            >>> print(resource["name"])  # "nic1"
+        """
+        try:
+            # Parse resource ID to extract subscription and resource group
+            parsed = self._parse_resource_id(resource_id)
+            subscription_id = parsed.get("subscription_id")
+            resource_group = parsed.get("resource_group")
+
+            if not subscription_id or not resource_group:
+                logger.warning(
+                    f"Could not parse subscription/RG from resource ID: {resource_id}"
+                )
+                return None
+
+            # Create resource client for this subscription
+            resource_client = self.resource_client_factory(
+                self.credential, subscription_id
+            )
+
+            # Get API version for this resource type
+            api_version = self._get_api_version_for_resource_id(
+                resource_client, resource_id
+            )
+
+            if not api_version:
+                logger.warning(
+                    f"Could not determine API version for resource: {resource_id}"
+                )
+                return None
+
+            # Fetch the resource using generic GET
+            resource = resource_client.resources.get_by_id(
+                resource_id, api_version=api_version
+            )
+
+            # Convert to dictionary format consistent with discovery
+            resource_dict: Dict[str, Any] = {
+                "id": resource_id,
+                "name": getattr(resource, "name", None),
+                "type": getattr(resource, "type", None),
+                "location": getattr(resource, "location", None),
+                "tags": dict(getattr(resource, "tags", {}) or {}),
+                "properties": getattr(resource, "properties", {}) or {},
+                "subscription_id": subscription_id,
+                "resource_group": resource_group,
+            }
+
+            logger.debug(f"Successfully fetched resource: {resource_id}")
+            return resource_dict
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch resource by ID {resource_id}: {e}"
+            )
+            return None
+
+    def _get_api_version_for_resource_id(
+        self, resource_client: Any, resource_id: str
+    ) -> Optional[str]:
+        """
+        Get the appropriate API version for a resource ID.
+
+        Uses caching to avoid repeated provider API calls.
+
+        Args:
+            resource_client: ResourceManagementClient instance
+            resource_id: Full Azure resource ID
+
+        Returns:
+            API version string, or None if not found
+        """
+        # Parse resource type from ID
+        # Format: /subscriptions/.../providers/{provider}/{resourceType}/...
+        parts = resource_id.split("/")
+        try:
+            provider_index = parts.index("providers")
+            if provider_index + 2 < len(parts):
+                provider_namespace = parts[provider_index + 1]
+                resource_type = parts[provider_index + 2]
+                full_type = f"{provider_namespace}/{resource_type}"
+
+                # Check cache first
+                if full_type in self._api_version_cache:
+                    return self._api_version_cache[full_type]
+
+                # Fetch from Azure Resource Provider
+                try:
+                    provider = resource_client.providers.get(provider_namespace)
+                    for resource_type_info in provider.resource_types:
+                        if resource_type_info.resource_type == resource_type:
+                            # Get latest non-preview API version
+                            api_versions = [
+                                v
+                                for v in resource_type_info.api_versions
+                                if "preview" not in v.lower()
+                            ]
+                            if api_versions:
+                                api_version = api_versions[0]
+                                self._api_version_cache[full_type] = api_version
+                                return api_version
+                            # Fall back to first API version (even if preview)
+                            if resource_type_info.api_versions:
+                                api_version = resource_type_info.api_versions[0]
+                                self._api_version_cache[full_type] = api_version
+                                return api_version
+                except Exception as e:
+                    logger.debug(
+                        f"Failed to get API version for {full_type} from provider: {e}"
+                    )
+
+        except (ValueError, IndexError) as e:
+            logger.debug(f"Failed to parse resource type from ID {resource_id}: {e}")
+
+        return None
 
     async def ingest_delta_for_subscription(
         self, subscription_id: str, since_timestamp: Optional[str] = None

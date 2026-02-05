@@ -72,6 +72,7 @@ const ALLOWED_ARGS = new Set([
   '--skip-name-validation',
   '--skip-validation',
   '--no-auto-import-existing',
+  '--agent',
   '-h',
   '-v'
 ]);
