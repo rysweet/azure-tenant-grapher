@@ -72,20 +72,8 @@ class ConfigurationCoherenceAnalyzer:
             score += weights["sku_tier"]
         
         # Tag overlap (Jaccard similarity)
-        tags1_data = fingerprint1.get("tags", {})
-        tags2_data = fingerprint2.get("tags", {})
-        
-        # Parse tags if they're JSON strings
-        if isinstance(tags1_data, str):
-            try:
-                tags1_data = json.loads(tags1_data)
-            except (json.JSONDecodeError, TypeError):
-                tags1_data = {}
-        if isinstance(tags2_data, str):
-            try:
-                tags2_data = json.loads(tags2_data)
-            except (json.JSONDecodeError, TypeError):
-                tags2_data = {}
+        tags1_data = self._parse_tags(fingerprint1.get("tags", {}))
+        tags2_data = self._parse_tags(fingerprint2.get("tags", {}))
         
         tags1 = set(tags1_data.keys() if isinstance(tags1_data, dict) else [])
         tags2 = set(tags2_data.keys() if isinstance(tags2_data, dict) else [])
@@ -96,6 +84,24 @@ class ConfigurationCoherenceAnalyzer:
             score += weights["tags"] * tag_similarity
         
         return score
+    
+    @staticmethod
+    def _parse_tags(tags_data):
+        """
+        Parse tags data which may be a JSON string or dict.
+        
+        Args:
+            tags_data: Tags as dict or JSON string
+            
+        Returns:
+            Dict of tags or empty dict if parsing fails
+        """
+        if isinstance(tags_data, str):
+            try:
+                return json.loads(tags_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return tags_data if isinstance(tags_data, dict) else {}
     
     @staticmethod
     def _extract_tier(sku: str) -> str:
