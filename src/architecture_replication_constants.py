@@ -29,10 +29,10 @@ DEFAULT_SPECTRAL_WEIGHT = 0.4
 - 1.0 = pure spectral distance
 """
 
-NODE_COVERAGE_WEIGHT_EXTREMES = [0.0, 1.0]
-"""Extreme values for node coverage weight when random selection is used
-- 0.0 = pure spectral distance (original behavior)
-- 1.0 = pure node coverage (greedy node selection)
+NODE_COVERAGE_WEIGHT_RANDOM_CHOICES = [0.0, 1.0]
+"""Choices for random node coverage weight selection when not specified
+- 0.0 = only spectral distance (original behavior)
+- 1.0 = only node coverage (greedy node selection)
 """
 
 SPECTRAL_PENALTY_HIGH = 1.0
@@ -60,15 +60,8 @@ PROGRESS_LOG_FREQUENCY = 10
 ORPHANED_PATTERN_NAME = "Orphaned Resources"
 """Name used for the synthetic pattern containing orphaned resources"""
 
-# Orphaned Resource Constants
 ORPHANED_PATTERN_BUDGET_FRACTION = 0.25
 """Fraction of instance budget allocated to orphaned resources (25%)"""
-
-STANDALONE_ORPHANED_BUDGET_FRACTION = 0.5
-"""Fraction of RG-based orphaned instances to allocate for standalone orphaned resources (50%)"""
-
-MAX_INSTANCES_PER_STANDALONE_TYPE = 2
-"""Maximum number of instances per standalone orphaned type"""
 
 
 @dataclass(frozen=True)
@@ -108,7 +101,7 @@ __all__ = [
     "DEFAULT_COHERENCE_THRESHOLD",
     "CONFIGURATION_SIMILARITY_WEIGHTS",
     "DEFAULT_SPECTRAL_WEIGHT",
-    "NODE_COVERAGE_WEIGHT_EXTREMES",
+    "NODE_COVERAGE_WEIGHT_RANDOM_CHOICES",
     "SPECTRAL_PENALTY_HIGH",
     "DISTRIBUTION_ADHERENCE_ZERO",
     "DEFAULT_MAX_CONFIG_SAMPLES",
@@ -117,7 +110,5 @@ __all__ = [
     "PROGRESS_LOG_FREQUENCY",
     "ORPHANED_PATTERN_NAME",
     "ORPHANED_PATTERN_BUDGET_FRACTION",
-    "STANDALONE_ORPHANED_BUDGET_FRACTION",
-    "MAX_INSTANCES_PER_STANDALONE_TYPE",
     "ReplicationDefaults",
 ]
