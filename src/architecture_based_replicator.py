@@ -703,10 +703,9 @@ class ArchitecturePatternReplicator:
         Multi-layer selection strategy:
         1. Architecture Distribution Analysis (optional): Compute distribution scores for patterns
         2. Proportional Pattern Sampling (optional): Allocate instances proportionally
-        3. Instance Selection (3 modes):
+        3. Instance Selection (2 modes):
            a. Hybrid Spectral-Guided: Distribution balance + spectral optimization (RECOMMENDED, default)
-           b. Configuration-Coherent: Select similar configurations within patterns
-           c. Random: Fast, no bias
+           b. Random: Fast, no bias (when spectral guidance disabled)
         4. Greedy Spectral Matching (fallback): Original spectral distance-based selection
 
         Args:
@@ -720,8 +719,9 @@ class ArchitecturePatternReplicator:
                                  Only used when use_architecture_distribution=False (fallback mode)
             use_architecture_distribution: If True, uses distribution-based proportional allocation
                                           (default: True, recommended)
-            use_configuration_coherence: If True, prioritizes instances with similar configurations
-                                        (default: True, recommended)
+            use_configuration_coherence: If True, clusters resources by configuration similarity during
+                                        instance fetching (location, SKU, tags). Does NOT affect selection.
+                                        (default: True, recommended for realistic instances)
             use_spectral_guidance: If True, uses hybrid scoring (distribution + spectral) for selection
                                   Improves node coverage by considering structural similarity.
                                   (default: True, recommended)
@@ -887,10 +887,7 @@ class ArchitecturePatternReplicator:
                     f"(spectral_weight={spectral_weight:.2f})"
                 )
             else:
-                logger.info(
-                    "LAYER 3: Configuration-coherent instance selection " +
-                    "(enabled)" if use_configuration_coherence else "(disabled)"
-                )
+                logger.info("LAYER 3: Random instance selection")
             selected_instances = self._select_instances_proportionally(
                 pattern_targets,
                 use_configuration_coherence,
@@ -1793,14 +1790,16 @@ class ArchitecturePatternReplicator:
         """
         Select instances proportionally from each pattern.
 
-        Supports three selection modes:
-        1. Random: Fast, no bias
-        2. Configuration-coherent: Prioritizes similar configurations
-        3. Spectral-guided: Uses hybrid score (distribution + spectral) for best structural match
+        Supports two selection modes:
+        1. Spectral-guided: Uses hybrid score (distribution + spectral) for best structural match
+        2. Random: Fast, no bias (default when spectral guidance disabled)
+
+        Note: use_configuration_coherence parameter is kept for backward compatibility but only
+        affects instance FETCHING (clustering during analyze phase), not selection here.
 
         Args:
             pattern_targets: Target count per pattern from proportional allocation
-            use_configuration_coherence: If True, select instances by configuration similarity
+            use_configuration_coherence: Unused in selection (kept for backward compatibility)
             use_spectral_guidance: If True, use hybrid scoring with spectral distance
             spectral_weight: Weight for spectral component in hybrid score (0.0-1.0)
                             distribution_weight = 1.0 - spectral_weight
@@ -1853,41 +1852,8 @@ class ArchitecturePatternReplicator:
                     sampling_strategy
                 )
 
-            elif use_configuration_coherence:
-                # Configuration-coherent selection: cluster by similarity and sample
-                logger.info(
-                    f"  Selecting {actual_count}/{len(available_instances)} instances "
-                    f"from {pattern_name} (configuration-coherent)"
-                )
-
-                # Simple configuration clustering: pick a random seed instance,
-                # then select instances most similar to it
-                if actual_count >= len(available_instances):
-                    # Take all
-                    chosen_instances = available_instances
-                else:
-                    # Pick seed randomly
-                    seed_instance = random.choice(available_instances)
-
-                    # Score other instances by configuration similarity to seed
-                    # (This is simplified - real implementation would compare location, SKU, tags)
-                    scored_instances = []
-                    for inst in available_instances:
-                        if inst == seed_instance:
-                            score = 1.0  # Perfect match
-                        else:
-                            # Simplified similarity: compare number of resources
-                            score = 1.0 / (1.0 + abs(len(inst) - len(seed_instance)))
-                        scored_instances.append((score, inst))
-
-                    # Sort by similarity and take top N
-                    scored_instances.sort(key=lambda x: x[0], reverse=True)
-                    chosen_instances = [
-                        inst for score, inst in scored_instances[:actual_count]
-                    ]
-
             else:
-                # Random selection (proportional sampling without coherence)
+                # Random selection
                 logger.info(
                     f"  Selecting {actual_count}/{len(available_instances)} instances "
                     f"from {pattern_name} (random)"
