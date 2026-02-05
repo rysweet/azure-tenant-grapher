@@ -134,7 +134,7 @@ class ConfigurationCoherenceAnalyzer:
             List of clusters, where each cluster is a list of resources
         """
         if len(resources) < MIN_CLUSTER_SIZE:
-            # Single resource, trivially coherent
+            # < 2 resources, no clustering needed
             return [resources] if resources else []
         
         # Compute pairwise similarities
@@ -334,7 +334,7 @@ class ConfigurationCoherenceAnalyzer:
         
         for rg_id, resources in rg_to_pattern_resources.items():
             if len(resources) < MIN_CLUSTER_SIZE:
-                # Single resource, trivially coherent
+                # < 2 resources, trivially coherent
                 all_instances.append(resources)
                 continue
             

@@ -31,6 +31,7 @@ from .architecture_replication_constants import (
     DEFAULT_COHERENCE_THRESHOLD,
     DEFAULT_MAX_CONFIG_SAMPLES,
     DEFAULT_SPECTRAL_WEIGHT,
+    NODE_COVERAGE_WEIGHT_EXTREMES,
     ORPHANED_PATTERN_BUDGET_FRACTION,
     ReplicationDefaults,
 )
@@ -533,7 +534,7 @@ class ArchitecturePatternReplicator:
         if node_coverage_weight is None:
             import random
 
-            node_coverage_weight = float(random.choice([0, 1]))
+            node_coverage_weight = float(random.choice(NODE_COVERAGE_WEIGHT_EXTREMES))
 
         logger.info("Generating replication plan to match source pattern graph...")
         logger.info(
