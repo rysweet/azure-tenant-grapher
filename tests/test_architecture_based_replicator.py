@@ -658,10 +658,12 @@ class TestOrphanedNodeHandling:
             "serverFarms": 2
         }
 
-        orphaned_instances = replicator._find_orphaned_node_instances()
+        # Mock the orphaned handler's response
+        with patch.object(replicator.orphaned_handler, 'find_orphaned_node_instances', return_value=[]):
+            orphaned_instances = replicator._find_orphaned_node_instances()
 
-        assert isinstance(orphaned_instances, list)
-        assert len(orphaned_instances) == 0  # No orphans since all types are in patterns
+            assert isinstance(orphaned_instances, list)
+            assert len(orphaned_instances) == 0  # No orphans since all types are in patterns
 
     def test_find_orphaned_node_instances_with_orphans(
         self,
@@ -686,32 +688,21 @@ class TestOrphanedNodeHandling:
             "Microsoft.Insights/actiongroups": 1  # Orphaned - not in any pattern
         }
 
-        # Mock Neo4j session
-        mock_session = mock_neo4j_driver.session.return_value.__enter__.return_value
-        mock_result = Mock()
-        mock_result.__iter__ = Mock(
-            return_value=iter(
+        # Mock the orphaned handler to return orphaned instances
+        mock_orphaned_result = [
+            (
+                "Orphaned: actiongroups",
                 [
                     {
-                        "rg_id": "rg-1",
-                        "resources": [
-                            {
-                                "id": "action1",
-                                "type": "Microsoft.Insights/actiongroups",
-                                "name": "action-1",
-                            }
-                        ],
+                        "id": "action1",
+                        "type": "actiongroups",
+                        "name": "action-1",
                     }
                 ]
             )
-        )
-        mock_session.run.return_value = mock_result
-
-        with patch(
-            "src.architecture_based_replicator.GraphDatabase.driver"
-        ) as mock_driver:
-            mock_driver.return_value = mock_neo4j_driver
-
+        ]
+        
+        with patch.object(replicator.orphaned_handler, 'find_orphaned_node_instances', return_value=mock_orphaned_result):
             orphaned_instances = replicator._find_orphaned_node_instances()
 
             assert isinstance(orphaned_instances, list)
