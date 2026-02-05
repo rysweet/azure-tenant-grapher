@@ -29,10 +29,10 @@ DEFAULT_SPECTRAL_WEIGHT = 0.4
 - 1.0 = pure spectral distance
 """
 
-NODE_COVERAGE_WEIGHT_RANDOM_CHOICES = [0.0, 1.0]
-"""Choices for random node coverage weight selection when not specified
-- 0.0 = only spectral distance (original behavior)
-- 1.0 = only node coverage (greedy node selection)
+NODE_COVERAGE_WEIGHT_EXTREMES = [0.0, 1.0]
+"""Extreme values for node coverage weight when random selection is used
+- 0.0 = pure spectral distance (original behavior)
+- 1.0 = pure node coverage (greedy node selection)
 """
 
 SPECTRAL_PENALTY_HIGH = 1.0
@@ -108,7 +108,7 @@ __all__ = [
     "DEFAULT_COHERENCE_THRESHOLD",
     "CONFIGURATION_SIMILARITY_WEIGHTS",
     "DEFAULT_SPECTRAL_WEIGHT",
-    "NODE_COVERAGE_WEIGHT_RANDOM_CHOICES",
+    "NODE_COVERAGE_WEIGHT_EXTREMES",
     "SPECTRAL_PENALTY_HIGH",
     "DISTRIBUTION_ADHERENCE_ZERO",
     "DEFAULT_MAX_CONFIG_SAMPLES",
