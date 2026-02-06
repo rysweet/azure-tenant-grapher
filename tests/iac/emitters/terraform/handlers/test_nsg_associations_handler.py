@@ -39,7 +39,6 @@ class TestNSGAssociationHandlerBasics:
 
     def test_nsg_association_handler_registered(self):
         """Test that NSGAssociationHandler is registered."""
-        HandlerRegistry.clear()
         ensure_handlers_registered()
 
         all_handlers = HandlerRegistry.get_all_handlers()
