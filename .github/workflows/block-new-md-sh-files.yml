@@ -20,7 +20,8 @@ jobs:
         id: check
         run: |
           git fetch origin ${{ github.base_ref }}
-          BLOCKED=$(git diff --diff-filter=A --name-only origin/${{ github.base_ref }}...HEAD | grep -iE '\.(md|sh)$' || true)
+          # Find all new .md/.sh files, exclude docs/ and tests/ subdirectories
+          BLOCKED=$(git diff --diff-filter=A --name-only origin/${{ github.base_ref }}...HEAD | grep -iE '\.(md|sh)$' | grep -vE '^(docs/|tests/)' || true)
 
           if [ -n "$BLOCKED" ]; then
             echo "found=true" >> $GITHUB_OUTPUT
@@ -42,12 +43,14 @@ jobs:
             const body = [
               '## ⛔ PR Blocked: New .md or .sh Files Detected',
               '',
-              'This PR adds new Markdown (.md) or Shell (.sh) files, which is not allowed.',
+              'This PR adds new Markdown (.md) or Shell (.sh) files outside docs/ and tests/ directories.',
               '',
               '**Blocked files:**',
               fileList,
               '',
-              '**Action Required:** Please remove these files.'
+              '**Action Required:** Please move these files to `docs/` or `tests/` subdirectories, or remove them.',
+              '',
+              '**Note:** Feature documentation belongs in `docs/` subdirectories (allowed by this check).'
             ].join('\n');
 
             const comments = await github.rest.issues.listComments({

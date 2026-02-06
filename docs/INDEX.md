@@ -91,6 +91,12 @@
 - **[Synthetic Node Visualization](SYNTHETIC_NODE_VISUALIZATION.md)** - Visualizing synthetic nodes
 - **[Synthetic Node Quick Reference](SYNTHETIC_NODE_QUICK_REFERENCE.md)** - Working with synthetic data
 
+### Fidelity Validation
+- **[Resource-Level Fidelity Validation](howto/RESOURCE_LEVEL_FIDELITY_VALIDATION.md)** ⭐ - Validate individual resource properties between source and target
+- **[Resource-Level Validation Examples](examples/RESOURCE_LEVEL_VALIDATION_EXAMPLES.md)** - Real-world validation scenarios and workflows
+- **[Fidelity Validation Integration](concepts/FIDELITY_VALIDATION_INTEGRATION.md)** - Integration with ATG workflows and best practices
+- **[Resource-Level Validation Security](reference/RESOURCE_LEVEL_VALIDATION_SECURITY.md)** 🔧 - Security best practices and redaction levels
+
 ### Scale Operations
 - **[Scale Operations](SCALE_OPERATIONS.md)** ⭐ - Layer operations and management
 - **[Scale Operations Diagrams](SCALE_OPERATIONS_DIAGRAMS.md)** - Visual diagrams
