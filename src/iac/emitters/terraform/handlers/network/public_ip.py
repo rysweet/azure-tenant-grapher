@@ -4,6 +4,7 @@ Handles: Microsoft.Network/publicIPAddresses
 Emits: azurerm_public_ip
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
@@ -69,10 +70,40 @@ class PublicIPHandler(ResourceHandler):
         if ip_version:
             config["ip_version"] = ip_version
 
-        # Domain name label
+        # Domain name label - Must be globally unique within region
+        # Fix #892: Add hash suffix to ensure uniqueness across deployments
         dns_settings = properties.get("dnsSettings", {})
         if dns_settings and "domainNameLabel" in dns_settings:
-            config["domain_name_label"] = dns_settings["domainNameLabel"]
+            original_label = dns_settings["domainNameLabel"]
+
+            # DNS labels must be globally unique within region
+            # Add hash-based suffix for uniqueness (similar to Storage Account pattern)
+            resource_id = resource.get("id", "")
+            if resource_id:
+                hash_val = hashlib.md5(
+                    resource_id.encode(), usedforsecurity=False
+                ).hexdigest()[:6]
+
+                # DNS label must be lowercase alphanumeric with hyphens, max 63 chars
+                # Truncate if needed to leave room for hash suffix (6 chars + hyphen)
+                sanitized_label = original_label.lower()
+                if len(sanitized_label) > 56:
+                    sanitized_label = sanitized_label[:56]
+
+                transformed_label = f"{sanitized_label}-{hash_val}"
+                config["domain_name_label"] = transformed_label
+
+                logger.info(
+                    f"DNS label transformed for global uniqueness: {original_label} → {transformed_label}"
+                )
+
+                # Preserve original label in tags for reference
+                if "tags" not in config:
+                    config["tags"] = {}
+                config["tags"]["original_dns_label"] = original_label
+            else:
+                # Fallback: use original label if no resource ID
+                config["domain_name_label"] = original_label.lower()
 
         logger.debug(
             f"Public IP '{resource_name}' emitted with allocation_method={allocation_method}"
