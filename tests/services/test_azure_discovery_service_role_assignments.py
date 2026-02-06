@@ -388,7 +388,8 @@ def test_extract_provider():
     # Arrange
     config = MagicMock(spec=AzureTenantGrapherConfig)
     config.tenant_id = "test-tenant-id"
-    service = AzureDiscoveryService(config)
+    credential = MagicMock()
+    service = AzureDiscoveryService(config, credential)
 
     # Act & Assert
     assert (
@@ -407,7 +408,8 @@ def test_extract_resource_type():
     # Arrange
     config = MagicMock(spec=AzureTenantGrapherConfig)
     config.tenant_id = "test-tenant-id"
-    service = AzureDiscoveryService(config)
+    credential = MagicMock()
+    service = AzureDiscoveryService(config, credential)
 
     # Act & Assert
     assert service._extract_resource_type("Microsoft.KeyVault/vaults") == "vaults"

@@ -1,9 +1,7 @@
 # Cross-Tenant Sub-Resource Replication
 
-> **⚠️ FUTURE IMPLEMENTATION**
-> This documentation describes the **planned architecture** for Issues #886 and #887.
-> **Current Status**: Design approved, implementation in progress.
-> **Target Version**: ATG 0.10.0
+> **✅ IMPLEMENTED**
+> This feature is now complete and available in ATG 0.10.0+.
 > **GitHub Issues**: [#886](https://github.com/rysweet/azure-tenant-grapher/issues/886), [#887](https://github.com/rysweet/azure-tenant-grapher/issues/887)
 
 Replicate Private Endpoints, Diagnostic Settings, and RBAC role assignments when replicating resources across Azure tenants.
