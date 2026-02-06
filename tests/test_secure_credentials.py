@@ -53,7 +53,7 @@ class TestNeo4jCredentials:
             Neo4jCredentials(
                 uri="http://localhost:7687",
                 username="neo4j",
-                password="test123",  # pragma: allowlist secret
+                password="test123",  # pragma: allowlist secret # ggignore
             )
         assert "Invalid Neo4j URI format" in str(exc_info.value)
 
