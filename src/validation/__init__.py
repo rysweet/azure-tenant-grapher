@@ -16,6 +16,13 @@ Public API:
     - NameConflictValidator: Validate Azure resource name conflicts (GAP-015)
     - NameConflict: Dataclass for name conflict information
     - NameValidationResult: Dataclass for name validation results
+    - ResourceFidelityCalculator: Resource-level fidelity validation (Issue #894)
+    - ResourceFidelityMetrics: Resource fidelity metrics dataclass
+    - ResourceClassification: Resource-level classification dataclass
+    - ResourceStatus: Resource status enum
+    - RedactionLevel: Security redaction levels enum
+    - PropertyComparison: Property-level comparison dataclass
+    - FidelityResult: Complete fidelity validation result
 """
 
 from .address_space_validator import (
@@ -31,14 +38,30 @@ from .name_conflict_validator import (
     NameValidationResult,
 )
 from .report import generate_json_report, generate_markdown_report
+from .resource_fidelity_calculator import (
+    FidelityResult,
+    PropertyComparison,
+    RedactionLevel,
+    ResourceClassification,
+    ResourceFidelityCalculator,
+    ResourceFidelityMetrics,
+    ResourceStatus,
+)
 
 __all__ = [
     "AddressSpaceConflict",
     "AddressSpaceValidator",
     "ComparisonResult",
+    "FidelityResult",
     "NameConflict",
     "NameConflictValidator",
     "NameValidationResult",
+    "PropertyComparison",
+    "RedactionLevel",
+    "ResourceClassification",
+    "ResourceFidelityCalculator",
+    "ResourceFidelityMetrics",
+    "ResourceStatus",
     "ValidationResult",
     "compare_filtered_graphs",
     "compare_graphs",
