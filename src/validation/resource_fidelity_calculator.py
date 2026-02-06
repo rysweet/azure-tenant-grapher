@@ -5,7 +5,8 @@ replicated Azure resources. It validates configurations at the property level
 and generates detailed fidelity reports with security redaction.
 
 Philosophy:
-- Ruthless simplicity: Reuse ResourceComparator for property comparison
+- Ruthless simplicity: Custom recursive comparison with security redaction
+  (ResourceComparator handles IaC workflow; this handles validation with redaction)
 - Zero-BS: No stubs, fully functional implementation
 - Modular design: Clean separation between calculator, security, and formatters
 - Regeneratable: Self-contained module with clear public API
@@ -363,6 +364,12 @@ class ResourceFidelityCalculator:
         prefix: str = "",
     ) -> List[PropertyComparison]:
         """Compare properties recursively.
+
+        Note: Uses custom recursive comparison instead of delegating to ResourceComparator because:
+        1. Need property-level granularity (not just resource-level classification)
+        2. Security redaction must happen during comparison (FULL/MINIMAL/NONE levels)
+        3. ResourceComparator designed for IaC generation workflow (different use case)
+        4. Requires nested object traversal with path tracking (property.subproperty.field)
 
         Args:
             source_props: Source resource properties
