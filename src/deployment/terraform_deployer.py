@@ -10,6 +10,7 @@ Philosophy:
 """
 
 import logging
+import os
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -29,6 +30,7 @@ def deploy_terraform(
     dry_run: bool = False,
     dashboard: Optional["DeploymentDashboard"] = None,
     subscription_id: Optional[str] = None,
+    verbose: bool = True,
 ) -> dict:
     """Deploy Terraform IaC.
 
@@ -42,6 +44,7 @@ def deploy_terraform(
         dry_run: If True, only run plan without apply
         dashboard: Optional deployment dashboard for real-time updates
         subscription_id: Optional Azure subscription ID to override Terraform variable
+        verbose: If True (default), enable TF_LOG=DEBUG for detailed Terraform logs
 
     Returns:
         Deployment result dictionary with:
@@ -65,6 +68,12 @@ def deploy_terraform(
     """
     logger.info(str(f"Deploying Terraform from {iac_dir}"))
 
+    # Set up Terraform environment
+    env = os.environ.copy()
+    if verbose:
+        env["TF_LOG"] = "DEBUG"
+        logger.info("Verbose logging enabled (TF_LOG=DEBUG)")
+
     # Initialize Terraform
     logger.debug("Running terraform init...")
     if dashboard is not None:
@@ -79,6 +88,7 @@ def deploy_terraform(
             text=True,
             check=False,
             timeout=Timeouts.TERRAFORM_INIT,
+            env=env,
         )
     except subprocess.TimeoutExpired as e:
         log_timeout_event(
@@ -126,6 +136,7 @@ def deploy_terraform(
                 text=True,
                 check=False,
                 timeout=Timeouts.TERRAFORM_PLAN,
+                env=env,
             )
         except subprocess.TimeoutExpired as e:
             log_timeout_event(
@@ -188,6 +199,7 @@ def deploy_terraform(
             text=True,
             check=False,
             timeout=Timeouts.TERRAFORM_APPLY,
+            env=env,
         )
     except subprocess.TimeoutExpired as e:
         log_timeout_event(

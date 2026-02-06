@@ -50,6 +50,7 @@ def deploy_iac(
     sp_client_id: Optional[str] = None,
     sp_client_secret: Optional[str] = None,
     sp_tenant_id: Optional[str] = None,
+    verbose: bool = True,
 ) -> dict:
     """Deploy IaC to target tenant.
 
@@ -65,6 +66,7 @@ def deploy_iac(
         sp_client_id: Optional service principal client ID for headless auth
         sp_client_secret: Optional service principal client secret
         sp_tenant_id: Optional tenant ID for SP auth (defaults to target_tenant_id)
+        verbose: If True (default), enable detailed logging (e.g., TF_LOG=DEBUG for Terraform)
 
     Returns:
         Deployment result dictionary with status and output
@@ -379,7 +381,7 @@ def deploy_iac(
     # Deploy based on format
     if iac_format == "terraform":
         return deploy_terraform(
-            iac_dir, resource_group, location, dry_run, dashboard, subscription_id
+            iac_dir, resource_group, location, dry_run, dashboard, subscription_id, verbose
         )
     elif iac_format == "bicep":
         return deploy_bicep(
