@@ -24,6 +24,7 @@
 - **[Autonomous Deployment FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Common questions and troubleshooting
 - **[Agent vs Manual Deployment](guides/AGENT_VS_MANUAL_DEPLOYMENT.md)** - Decision guide with scenarios
 - **[Layer Management Quickstart](guides/LAYER_MANAGEMENT_QUICKSTART.md)** - Working with graph layers
+- **[NSG Association & Diagnostic Settings Fix](guides/NSG_ASSOCIATION_DIAGNOSTIC_SETTINGS_FIX.md)** 🔧 - Handler-based architecture for relationship preservation (Issue #888)
 - **[Tenant Inventory Reports](guides/TENANT_INVENTORY_REPORTS.md)** - Generate comprehensive tenant reports
 - **[Terraform Import Troubleshooting](guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md)** - Debug missing or broken import blocks
 - **[SCAN_SOURCE_NODE Migration Guide](guides/scan-source-node-migration.md)** - Migrate legacy layers
@@ -261,6 +262,7 @@ category: <category>
 - **[Bug #68 Documentation](BUG_68_DOCUMENTATION.md)** - Provider case sensitivity fix
 - **[Bug #87 Documentation](BUG_87_DOCUMENTATION.md)** - Smart Detector location fix
 - **[Bug #88 Documentation](BUG_88_DOCUMENTATION.md)** - Action group resource ID fix
+- **[Bug #888 Documentation](guides/NSG_ASSOCIATION_DIAGNOSTIC_SETTINGS_FIX.md)** - NSG association & diagnostic settings preservation fix
 - **[Bug Association Import Fix](BUG_ASSOCIATION_IMPORT_FIX.md)** - Association import fixes
 - **[KeyVault Name Truncation Fix](KEYVAULT_NAME_TRUNCATION_FIX.md)** - Name truncation handling
 - **[KeyVault Plugin Implementation](KEYVAULT_PLUGIN_IMPLEMENTATION.md)** - Plugin details
