@@ -86,6 +86,11 @@ logger = logging.getLogger(__name__)
     default=6000,
     help="Timeout in seconds for agent mode deployment (default: 6000)",
 )
+@click.option(
+    "--verbose/--no-verbose",
+    default=True,
+    help="Enable verbose deployment logging (TF_LOG=DEBUG for Terraform). Default: enabled.",
+)
 def deploy_command(
     iac_dir: str,
     target_tenant_id: str | None,
@@ -100,6 +105,7 @@ def deploy_command(
     agent: bool,
     max_iterations: int,
     agent_timeout: int,
+    verbose: bool,
 ):
     """Deploy generated IaC to target tenant.
 
@@ -177,6 +183,8 @@ def deploy_command(
 
         # Normal (non-agent) deployment path
         click.echo(f"Starting deployment from {iac_dir}...")
+        if verbose:
+            click.echo("Verbose logging enabled (TF_LOG=DEBUG for Terraform)")
 
         # Deploy control plane (IaC)
         result = deploy_iac(
@@ -189,6 +197,7 @@ def deploy_command(
             dry_run=dry_run,
             sp_client_id=sp_client_id,
             sp_client_secret=sp_client_secret,
+            verbose=verbose,
         )
 
         # Deploy data plane if requested
