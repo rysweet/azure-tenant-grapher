@@ -1640,6 +1640,8 @@ class ArchitecturalPatternAnalyzer:
         self,
         distribution_scores: Dict[str, Dict[str, Any]],
         target_count: int,
+        pattern_resources: Optional[Dict[str, List[List[Dict[str, Any]]]]] = None,
+        source_type_counts: Optional[Dict[str, int]] = None,
     ) -> Dict[str, int]:
         """
         Calculate how many instances to select from each pattern.
@@ -1649,6 +1651,8 @@ class ArchitecturalPatternAnalyzer:
         Args:
             distribution_scores: Output from compute_architecture_distribution()
             target_count: Total number of instances to select
+            pattern_resources: Dict mapping pattern names to instances (unused, kept for compatibility)
+            source_type_counts: Source tenant type frequencies (unused, kept for compatibility)
 
         Returns:
             Dict mapping pattern_name to number of instances to select:
@@ -1678,7 +1682,7 @@ class ArchitecturalPatternAnalyzer:
         # Calculate target instance count per pattern
         pattern_targets = {}
         for pattern_name, score in scores.items():
-            proportion = score / total_score
+            proportion = score / total_score if total_score > 0 else 0.0
             pattern_targets[pattern_name] = int(target_count * proportion)
 
         # Adjust for rounding to ensure we hit target_count exactly
@@ -1709,6 +1713,42 @@ class ArchitecturalPatternAnalyzer:
             f"Computed pattern targets for {target_count} instances: {pattern_targets}"
         )
         return pattern_targets
+
+    def _compute_pattern_coverage_scores(
+        self,
+        pattern_resources: Dict[str, List[List[Dict[str, Any]]]],
+        source_type_counts: Dict[str, int],
+    ) -> Dict[str, float]:
+        """
+        Compute coverage score for each pattern based on how many source types it contains.
+
+        Args:
+            pattern_resources: Dict mapping pattern names to list of instances
+            source_type_counts: Source tenant type frequencies
+
+        Returns:
+            Dict mapping pattern name to coverage score (higher = more diverse types)
+        """
+        coverage_scores = {}
+
+        for pattern_name, instances in pattern_resources.items():
+            # Count unique resource types in this pattern
+            pattern_types = set()
+            for instance in instances:
+                for resource in instance:
+                    pattern_types.add(resource.get("type", "unknown"))
+
+            # Score = number of source types present in this pattern
+            # Patterns with more diverse types get higher scores
+            score = len(pattern_types & set(source_type_counts.keys()))
+            coverage_scores[pattern_name] = float(score)
+
+            logger.debug(
+                f"[COVERAGE_AWARE] Pattern '{pattern_name}': "
+                f"{len(pattern_types)} unique types, coverage score={score}"
+            )
+
+        return coverage_scores
 
     def validate_proportional_sampling(
         self,

@@ -141,7 +141,7 @@ class TestSourceTenantAnalysis:
                             use_configuration_coherence=True, coherence_threshold=0.7
                         )
 
-                        mock_fetch.assert_called_once_with(True, 0.7)
+                        mock_fetch.assert_called_once_with(True, 0.7, True)
                         assert summary["configuration_coherence_enabled"] is True
 
     def test_analyze_source_tenant_configuration_coherence_disabled(self, replicator):
@@ -161,7 +161,7 @@ class TestSourceTenantAnalysis:
                             use_configuration_coherence=False
                         )
 
-                        mock_fetch.assert_called_once_with(False, 0.5)
+                        mock_fetch.assert_called_once_with(False, 0.5, True)
                         assert summary["configuration_coherence_enabled"] is False
 
 
@@ -646,12 +646,24 @@ class TestOrphanedNodeHandling:
         replicator.source_pattern_graph = sample_pattern_graph
         replicator.detected_patterns = sample_detected_patterns
 
-        with patch.object(
-            replicator.analyzer, "identify_orphaned_nodes", return_value=[]
-        ):
+        # Set source_resource_type_counts with no orphaned types (all types are in patterns)
+        # Pattern types from sample_detected_patterns:
+        # - Virtual Machine Workload: virtualMachines, disks, networkInterfaces
+        # - Web Application: sites, serverFarms
+        replicator.source_resource_type_counts = {
+            "virtualMachines": 10,
+            "disks": 5,
+            "networkInterfaces": 8,
+            "sites": 4,
+            "serverFarms": 2
+        }
+
+        # Mock the orphaned handler's response
+        with patch.object(replicator.orphaned_handler, 'find_orphaned_node_instances', return_value=[]):
             orphaned_instances = replicator._find_orphaned_node_instances()
 
             assert isinstance(orphaned_instances, list)
+            assert len(orphaned_instances) == 0  # No orphans since all types are in patterns
 
     def test_find_orphaned_node_instances_with_orphans(
         self,
@@ -664,45 +676,37 @@ class TestOrphanedNodeHandling:
         replicator.source_pattern_graph = sample_pattern_graph
         replicator.detected_patterns = sample_detected_patterns
 
-        orphaned_nodes = [
-            {
-                "resource_type": "actiongroups",
-                "connection_count": 5,
-            }
-        ]
+        # Set source_resource_type_counts with orphaned types (not in patterns)
+        # Pattern types: virtualMachines, virtualNetworks, storageAccounts, sites, serverFarms
+        # Orphaned type: Microsoft.Insights/actiongroups
+        replicator.source_resource_type_counts = {
+            "virtualMachines": 10,
+            "virtualNetworks": 5,
+            "storageAccounts": 3,
+            "sites": 4,
+            "serverFarms": 2,
+            "Microsoft.Insights/actiongroups": 1  # Orphaned - not in any pattern
+        }
 
-        # Mock Neo4j session
-        mock_session = mock_neo4j_driver.session.return_value.__enter__.return_value
-        mock_result = Mock()
-        mock_result.__iter__ = Mock(
-            return_value=iter(
+        # Mock the orphaned handler to return orphaned instances
+        mock_orphaned_result = [
+            (
+                "Orphaned: actiongroups",
                 [
                     {
-                        "rg_id": "rg-1",
-                        "resources": [
-                            {
-                                "id": "action1",
-                                "type": "Microsoft.Insights/actiongroups",
-                                "name": "action-1",
-                            }
-                        ],
+                        "id": "action1",
+                        "type": "actiongroups",
+                        "name": "action-1",
                     }
                 ]
             )
-        )
-        mock_session.run.return_value = mock_result
+        ]
 
-        with patch.object(
-            replicator.analyzer, "identify_orphaned_nodes", return_value=orphaned_nodes
-        ):
-            with patch(
-                "src.architecture_based_replicator.GraphDatabase.driver"
-            ) as mock_driver:
-                mock_driver.return_value = mock_neo4j_driver
+        with patch.object(replicator.orphaned_handler, 'find_orphaned_node_instances', return_value=mock_orphaned_result):
+            orphaned_instances = replicator._find_orphaned_node_instances()
 
-                orphaned_instances = replicator._find_orphaned_node_instances()
-
-                assert isinstance(orphaned_instances, list)
+            assert isinstance(orphaned_instances, list)
+            assert len(orphaned_instances) > 0  # Should find orphaned instances
 
 
 class TestReplicationPlanGeneration:
@@ -734,6 +738,15 @@ class TestReplicationPlanGeneration:
         replicator.source_pattern_graph = sample_pattern_graph
         replicator.detected_patterns = sample_detected_patterns
         replicator.pattern_resources = sample_pattern_resources
+
+        # Set source_resource_type_counts (required by new _find_orphaned_node_instances implementation)
+        replicator.source_resource_type_counts = {
+            "virtualMachines": 10,
+            "disks": 5,
+            "networkInterfaces": 8,
+            "sites": 4,
+            "serverFarms": 2
+        }
 
         with patch.object(
             replicator.analyzer, "compute_architecture_distribution"
@@ -782,20 +795,26 @@ class TestReplicationPlanGeneration:
                                 "interpretation": "Close match",
                             }
 
-                            selected, history, metadata = (
-                                replicator.generate_replication_plan(
-                                    target_instance_count=3,
-                                    use_architecture_distribution=True,
-                                )
-                            )
+                            # Mock _find_orphaned_node_instances since default is now include_orphaned_node_patterns=True
+                            with patch.object(
+                                replicator, "_find_orphaned_node_instances"
+                            ) as mock_orphaned:
+                                mock_orphaned.return_value = []
 
-                            assert isinstance(selected, list)
-                            assert isinstance(history, list)
-                            assert metadata is not None
-                            assert metadata["selection_mode"] in [
-                                "proportional",
-                                "proportional_spectral",
-                            ]
+                                selected, history, metadata = (
+                                    replicator.generate_replication_plan(
+                                        target_instance_count=3,
+                                        use_architecture_distribution=True,
+                                    )
+                                )
+
+                                assert isinstance(selected, list)
+                                assert isinstance(history, list)
+                                assert metadata is not None
+                                assert metadata["selection_mode"] in [
+                                    "proportional",
+                                    "proportional_spectral",
+                                ]
 
     def test_generate_replication_plan_greedy_fallback(
         self,
@@ -809,28 +828,41 @@ class TestReplicationPlanGeneration:
         replicator.detected_patterns = sample_detected_patterns
         replicator.pattern_resources = sample_pattern_resources
 
-        with patch.object(replicator, "_select_instances_greedy") as mock_greedy:
-            mock_greedy.return_value = [
-                (
-                    "Virtual Machine Workload",
-                    sample_pattern_resources["Virtual Machine Workload"][0],
-                )
-            ]
+        # Set source_resource_type_counts (required by new _find_orphaned_node_instances implementation)
+        replicator.source_resource_type_counts = {
+            "virtualMachines": 10,
+            "disks": 5,
+            "networkInterfaces": 8,
+            "sites": 4,
+            "serverFarms": 2
+        }
 
-            with patch.object(
-                replicator, "_build_target_pattern_graph_from_instances"
-            ) as mock_build:
-                mock_build.return_value = sample_pattern_graph
+        # Mock _find_orphaned_node_instances since default is now include_orphaned_node_patterns=True
+        with patch.object(replicator, "_find_orphaned_node_instances") as mock_orphaned:
+            mock_orphaned.return_value = []
 
-                selected, history, metadata = replicator.generate_replication_plan(
-                    target_instance_count=1,
-                    use_architecture_distribution=False,
-                    node_coverage_weight=0.5,
-                )
+            with patch.object(replicator, "_select_instances_greedy") as mock_greedy:
+                mock_greedy.return_value = [
+                    (
+                        "Virtual Machine Workload",
+                        sample_pattern_resources["Virtual Machine Workload"][0],
+                    )
+                ]
 
-                assert isinstance(selected, list)
-                assert metadata["selection_mode"] == "greedy_spectral"
-                mock_greedy.assert_called_once()
+                with patch.object(
+                    replicator, "_build_target_pattern_graph_from_instances"
+                ) as mock_build:
+                    mock_build.return_value = sample_pattern_graph
+
+                    selected, history, metadata = replicator.generate_replication_plan(
+                        target_instance_count=1,
+                        use_architecture_distribution=False,
+                        node_coverage_weight=0.5,
+                    )
+
+                    assert isinstance(selected, list)
+                    assert metadata["selection_mode"] == "greedy_spectral"
+                    mock_greedy.assert_called_once()
 
 
 class TestConfigurationBasedPlan:
