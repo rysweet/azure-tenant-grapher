@@ -261,6 +261,44 @@ cd my-deployment
 ./deploy.sh
 ```
 
+#### Architecture-Based Deployment
+
+Deploy infrastructure using pattern-based replication that automatically analyzes your source tenant's architectural patterns:
+
+```bash
+# Deploy all patterns from source tenant to target tenant
+azure-tenant-grapher deploy \
+  --from-replication-plan \
+  --target-tenant-id <TARGET_TENANT_ID> \
+  --resource-group "replicated-infrastructure" \
+  --location "eastus"
+
+# Deploy specific architectural patterns only
+azure-tenant-grapher deploy \
+  --from-replication-plan \
+  --pattern-filter "Web Application" \
+  --pattern-filter "VM Workload" \
+  --target-tenant-id <TARGET_TENANT_ID> \
+  --resource-group "web-and-vm-infrastructure"
+
+# Deploy specific instances of a pattern
+azure-tenant-grapher deploy \
+  --from-replication-plan \
+  --pattern-filter "Web Application" \
+  --instance-filter "0,2" \
+  --target-tenant-id <TARGET_TENANT_ID> \
+  --resource-group "web-app-subset"
+
+# Preview deployment without creating resources
+azure-tenant-grapher deploy \
+  --from-replication-plan \
+  --target-tenant-id <TARGET_TENANT_ID> \
+  --resource-group "preview-deployment" \
+  --dry-run
+```
+
+📚 **Learn More**: [Deploy from Replication Plans Guide](docs/howto/deploy-replication-plan.md) | [Architecture-Based Deployment Concepts](docs/concepts/architecture-based-deployment.md)
+
 ### Threat Modeling agent example - example of using the MCP server in an agent.
 
 See [./src/threat_model_agent/](./src/threat_model_agent/)

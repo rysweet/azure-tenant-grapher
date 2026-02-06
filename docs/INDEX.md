@@ -20,6 +20,7 @@
 ## User Guides
 
 ### Deployment & Operations
+- **[Deploy from Replication Plans](howto/deploy-replication-plan.md)** 🚀 - Deploy architecture-based replication plans to target tenants
 - **[Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md)** ⭐ - Complete guide to AI-powered deployment
 - **[Autonomous Deployment FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Common questions and troubleshooting
 - **[Agent vs Manual Deployment](guides/AGENT_VS_MANUAL_DEPLOYMENT.md)** - Decision guide with scenarios
@@ -47,8 +48,10 @@
 - **[CLI Commands](architecture/CLI_COMMANDS.md)** - Command reference
 
 ### Key Concepts
+- **[Architecture-Based Deployment](concepts/architecture-based-deployment.md)** 🎯 - Pattern-based infrastructure replication explained
 - **[Terraform Import Blocks](concepts/TERRAFORM_IMPORT_BLOCKS.md)** ⭐ - How ATG generates import blocks
 - **[Import-First Strategy](patterns/IMPORT_FIRST_STRATEGY.md)** - Why import before create
+- **[Graph Version Tracking](concepts/GRAPH_VERSION_TRACKING.md)** - Track graph changes over time
 
 ## Design Documentation
 
