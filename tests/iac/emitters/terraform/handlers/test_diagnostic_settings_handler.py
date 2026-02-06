@@ -17,15 +17,13 @@ import pytest
 
 from src.iac.emitters.terraform.context import EmitterContext
 from src.iac.emitters.terraform.handlers import HandlerRegistry, ensure_handlers_registered
+from src.iac.emitters.terraform.handlers.monitoring.diagnostic_settings import (
+    DiagnosticSettingHandler,
+)
 
 
 class TestDiagnosticSettingsHandlerRegistration:
     """Unit tests for Diagnostic Settings handler registration (60% - Unit)."""
-
-    def setup_method(self):
-        """Setup test environment before each test."""
-        # Clear handler registry to start fresh
-        HandlerRegistry.clear()
 
     def test_diagnostic_settings_handler_exists(self):
         """Test that DiagnosticSettingHandler class exists and can be imported.
