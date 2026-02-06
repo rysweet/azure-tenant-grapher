@@ -101,11 +101,11 @@ class TestErrorMessageSanitization:
 
     def test_sanitize_removes_passwords(self):
         """Test sanitization removes password values."""
-        error = Exception("Connection failed: password=SecretPass123")
+        error = Exception("Connection failed: password=SecretPass123")  # ggignore
 
         sanitized = _sanitize_error_message(error, debug_mode=False)
 
-        assert "SecretPass123" not in sanitized
+        assert "SecretPass123" not in sanitized  # ggignore
         assert "password=[REDACTED]" in sanitized
 
     def test_sanitize_removes_keys(self):
@@ -166,24 +166,24 @@ class TestErrorMessageSanitization:
 
     def test_sanitize_debug_mode_preserves_details(self):
         """Test debug mode preserves full error details."""
-        error = Exception("password=secret123")
+        error = Exception("password=secret123")  # ggignore
 
         sanitized = _sanitize_error_message(error, debug_mode=True)
 
         # In debug mode, should preserve original error
-        assert "password=secret123" in sanitized
+        assert "password=secret123" in sanitized  # ggignore
 
     def test_sanitize_multiple_sensitive_values(self):
         """Test sanitization handles multiple sensitive values."""
         error = Exception(
-            "Error: password=pass123, key=key456, secret=secret789"
+            "Error: password=pass123, key=key456, secret=secret789"  # ggignore
         )
 
         sanitized = _sanitize_error_message(error, debug_mode=False)
 
-        assert "pass123" not in sanitized
-        assert "key456" not in sanitized
-        assert "secret789" not in sanitized
+        assert "pass123" not in sanitized  # ggignore
+        assert "key456" not in sanitized  # ggignore
+        assert "secret789" not in sanitized  # ggignore
         assert "password=[REDACTED]" in sanitized
         assert "key=[REDACTED]" in sanitized
         assert "secret=[REDACTED]" in sanitized
@@ -207,12 +207,12 @@ class TestNeo4jErrorHandling:
         """Test that Neo4j errors are sanitized before raising."""
         # Mock Neo4j query to fail with sensitive info
         calculator.session_manager.execute_read.side_effect = Exception(
-            "Neo4j auth failed: password=dbpassword123"
+            "Neo4j auth failed: password=dbpassword123"  # ggignore
         )
 
         with pytest.raises(RuntimeError) as exc_info:
             calculator.calculate_fidelity()
 
         # Should not contain sensitive password
-        assert "dbpassword123" not in str(exc_info.value)
+        assert "dbpassword123" not in str(exc_info.value)  # ggignore
         assert "password=[REDACTED]" in str(exc_info.value)
