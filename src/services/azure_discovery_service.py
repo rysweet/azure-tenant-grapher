@@ -21,6 +21,7 @@ from azure.identity import (  # type: ignore[import-untyped]
 from azure.mgmt.authorization import (
     AuthorizationManagementClient,  # type: ignore[import-untyped]
 )
+from azure.mgmt.monitor import MonitorManagementClient  # type: ignore[import-untyped]
 from azure.mgmt.resource import ResourceManagementClient  # type: ignore[import-untyped]
 from azure.mgmt.subscription import SubscriptionClient  # type: ignore[import-untyped]
 
@@ -76,6 +77,7 @@ class StaticTokenCredential:
         # Return token with a far-future expiry (we don't know actual expiry)
         # The token will be validated by Azure API calls
         import time
+
         expiry = int(time.time()) + 3600  # 1 hour from now
         return AccessToken(self._token, expiry)
 
@@ -96,6 +98,7 @@ class AzureDiscoveryService:
         subscription_client_factory: Optional[Callable[[Any], Any]] = None,
         resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
         authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
+        monitor_client_factory: Optional[Callable[[Any, str], Any]] = None,
         change_feed_ingestion_service: Optional[Any] = None,
     ) -> None:
         """
@@ -107,13 +110,14 @@ class AzureDiscoveryService:
             subscription_client_factory: Optional factory for SubscriptionClient (for testing)
             resource_client_factory: Optional factory for ResourceManagementClient (for testing)
             authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
+            monitor_client_factory: Optional factory for MonitorManagementClient (for testing)
             change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
 
         # Check for environment token (from SPA device code flow)
         # SECURITY: Token is cleared from environment after use
-        access_token = os.environ.get('AZURE_ACCESS_TOKEN')
+        access_token = os.environ.get("AZURE_ACCESS_TOKEN")
         if access_token and not credential:
             # Use static token credential with environment token
             logger.info("Using access token from environment (AZURE_ACCESS_TOKEN)")
@@ -121,7 +125,7 @@ class AzureDiscoveryService:
 
             # SECURITY CRITICAL: Clear token from environment immediately
             # This prevents token leakage through logs, child processes, etc.
-            del os.environ['AZURE_ACCESS_TOKEN']
+            del os.environ["AZURE_ACCESS_TOKEN"]
             logger.info("Token cleared from environment for security")
         else:
             # Fall back to provided credential or DefaultAzureCredential
@@ -136,6 +140,7 @@ class AzureDiscoveryService:
         self.authorization_client_factory = (
             authorization_client_factory or AuthorizationManagementClient
         )
+        self.monitor_client_factory = monitor_client_factory or MonitorManagementClient
         self.change_feed_ingestion_service = change_feed_ingestion_service
         # Maximum retry attempts for transient Azure errors (default 3)
         self._max_retries: int = (
@@ -356,6 +361,7 @@ class AzureDiscoveryService:
                 # resources.list() - they require a separate API call to the
                 # Authorization Management Client
                 logger.info("🔐 Phase 1.5: Discovering role assignments...")
+                all_role_assignments = []
                 try:
                     # Get subscription name from cached subscriptions
                     subscription_name = subscription_id
@@ -364,29 +370,48 @@ class AzureDiscoveryService:
                             subscription_name = sub.get("display_name", subscription_id)
                             break
 
+                    # Discover subscription-level role assignments
                     role_assignments = (
                         await self.discover_role_assignments_in_subscription(
                             subscription_id, subscription_name
                         )
                     )
+                    all_role_assignments.extend(role_assignments)
+
+                    # Discover resource-scoped role assignments (Phase 3)
+                    # These are scoped to individual resources, not subscription-wide
+                    logger.info(
+                        "🔐 Phase 1.5.1: Discovering resource-scoped role assignments..."
+                    )
+                    resource_scoped = (
+                        await self.discover_resource_scoped_role_assignments(
+                            subscription_id, resource_basics
+                        )
+                    )
+                    all_role_assignments.extend(resource_scoped)
+
+                    logger.info(
+                        f"✅ Total role assignments discovered: {len(all_role_assignments)} "
+                        f"({len(role_assignments)} subscription-level + {len(resource_scoped)} resource-scoped)"
+                    )
 
                     # Apply filter to role assignments if provided
-                    if filter_config and role_assignments:
+                    if filter_config and all_role_assignments:
                         filtered_assignments = []
-                        for assignment in role_assignments:
+                        for assignment in all_role_assignments:
                             if filter_config.should_include_resource(assignment):
                                 filtered_assignments.append(assignment)
                             else:
                                 logger.debug(
                                     f"🚫 Filtering out role assignment: {assignment.get('id')}"
                                 )
-                        role_assignments = filtered_assignments
+                        all_role_assignments = filtered_assignments
                         logger.info(
-                            f"✅ After filtering: {len(role_assignments)} role assignments included"
+                            f"✅ After filtering: {len(all_role_assignments)} role assignments included"
                         )
 
                     # Merge role assignments with resources
-                    resource_basics.extend(role_assignments)
+                    resource_basics.extend(all_role_assignments)
                     logger.info(
                         f"✅ Total resources including role assignments: {len(resource_basics)}"
                     )
@@ -412,16 +437,17 @@ class AzureDiscoveryService:
                 # Child resources (subnets, runbooks, etc.) are not returned by resources.list()
                 # They require explicit API calls to parent resource endpoints
                 logger.info("🔍 Phase 1.6: Discovering child resources...")
+                child_resources = []
                 try:
-                    child_resources = await self.discover_child_resources(
+                    discovered_children = await self.discover_child_resources(
                         subscription_id, resource_basics
                     )
 
-                    if child_resources:
+                    if discovered_children:
                         # Apply filter to child resources if provided
                         if filter_config:
                             filtered_children = []
-                            for child in child_resources:
+                            for child in discovered_children:
                                 if filter_config.should_include_resource(child):
                                     filtered_children.append(child)
                                 else:
@@ -432,6 +458,8 @@ class AzureDiscoveryService:
                             logger.info(
                                 f"✅ After filtering: {len(child_resources)} child resources included"
                             )
+                        else:
+                            child_resources = discovered_children
 
                         # Merge child resources with main resource list
                         resource_basics.extend(child_resources)
@@ -442,6 +470,43 @@ class AzureDiscoveryService:
                     # Log but don't fail - child resources are supplementary
                     logger.warning(
                         f"Failed to discover child resources (continuing): {child_error}"
+                    )
+
+                # Phase 1.7: Discover diagnostic settings
+                # Diagnostic settings are not returned by resources.list()
+                # They require Monitor Management Client API calls
+                logger.info("📊 Phase 1.7: Discovering diagnostic settings...")
+                try:
+                    diagnostic_settings = await self.discover_diagnostic_settings(
+                        subscription_id, resource_basics
+                    )
+
+                    if diagnostic_settings:
+                        # Apply filter to diagnostic settings if provided
+                        if filter_config:
+                            filtered_diagnostics = []
+                            for diagnostic in diagnostic_settings:
+                                if filter_config.should_include_resource(diagnostic):
+                                    filtered_diagnostics.append(diagnostic)
+                                else:
+                                    logger.debug(
+                                        f"🚫 Filtering out diagnostic setting: {diagnostic.get('id')}"
+                                    )
+                            diagnostic_settings = filtered_diagnostics
+                            logger.info(
+                                f"✅ After filtering: {len(diagnostic_settings)} diagnostic settings included"
+                            )
+
+                        # Merge diagnostic settings with main resource list
+                        child_resources.extend(diagnostic_settings)
+                        resource_basics.extend(diagnostic_settings)
+                        logger.info(
+                            f"✅ Total resources including diagnostic settings: {len(resource_basics)}"
+                        )
+                except Exception as diagnostic_error:
+                    # Log but don't fail - diagnostic settings are supplementary
+                    logger.warning(
+                        f"Failed to discover diagnostic settings (continuing): {diagnostic_error}"
                     )
 
                 # Phase 2: Fetch full properties in parallel if enabled
@@ -585,6 +650,9 @@ class AzureDiscoveryService:
         to roles at specific scopes. This method fetches all role assignments for a
         subscription and converts them to the resource format expected by the processor.
 
+        **Phase 3 Enhancement**: Now discovers both subscription-level and resource-scoped
+        role assignments using list_for_subscription() and list_for_resource() APIs.
+
         Args:
             subscription_id: Azure subscription ID
             subscription_name: Display name of the subscription
@@ -663,7 +731,7 @@ class AzureDiscoveryService:
                     )
 
                 logger.info(
-                    f"✅ Discovered {len(role_assignments)} role assignments in subscription {subscription_id}"
+                    f"✅ Discovered {len(role_assignments)} subscription-level role assignments in subscription {subscription_id}"
                 )
 
             except Exception as perm_error:
@@ -705,6 +773,198 @@ class AzureDiscoveryService:
                 f"Continuing discovery without role assignments for subscription {subscription_id}"
             )
             return []
+
+    async def discover_resource_scoped_role_assignments(
+        self,
+        subscription_id: str,
+        resources: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover resource-scoped role assignments for specific resources.
+
+        Resource-scoped role assignments grant permissions directly on individual
+        resources (e.g., Key Vault data plane roles, Storage blob access). These
+        are NOT returned by list_for_subscription() and require explicit calls
+        to list_for_resource() for each resource.
+
+        Args:
+            subscription_id: Azure subscription ID
+            resources: List of resources to check for resource-scoped role assignments
+
+        Returns:
+            List of resource-scoped role assignment dictionaries
+
+        Raises:
+            No exceptions - handles permission errors gracefully
+        """
+        logger.info(
+            f"🔐 Discovering resource-scoped role assignments for {len(resources)} resources..."
+        )
+
+        resource_scoped_assignments = []
+
+        try:
+            # Create authorization client for this subscription
+            authorization_client = self.authorization_client_factory(
+                self.credential, subscription_id
+            )
+
+            # Resource types that commonly have resource-scoped role assignments
+            # Focus on resources with data plane permissions
+            target_types = {
+                "Microsoft.KeyVault/vaults",
+                "Microsoft.Storage/storageAccounts",
+                "Microsoft.ContainerRegistry/registries",
+                "Microsoft.Sql/servers",
+                "Microsoft.DBforPostgreSQL/servers",
+                "Microsoft.DBforPostgreSQL/flexibleServers",
+                "Microsoft.Web/sites",
+                "Microsoft.EventHub/namespaces",
+                "Microsoft.ServiceBus/namespaces",
+            }
+
+            # Filter resources to those likely to have resource-scoped assignments
+            candidate_resources = [
+                r for r in resources if r.get("type") in target_types
+            ]
+
+            logger.info(
+                f"Checking {len(candidate_resources)} resources for resource-scoped role assignments"
+            )
+
+            for resource in candidate_resources:
+                try:
+                    resource_id = resource.get("id")
+                    if not resource_id:
+                        continue
+
+                    # Fetch role assignments scoped to this specific resource
+                    # Azure API: GET {resourceId}/providers/Microsoft.Authorization/roleAssignments
+                    pager = authorization_client.role_assignments.list_for_resource(
+                        resource_group_name=resource.get("resource_group", ""),
+                        resource_provider_namespace=self._extract_provider(
+                            resource.get("type", "")
+                        ),
+                        parent_resource_path="",
+                        resource_type=self._extract_resource_type(
+                            resource.get("type", "")
+                        ),
+                        resource_name=resource.get("name", ""),
+                    )
+
+                    for assignment in pager:
+                        assignment_id = getattr(assignment, "id", None)
+                        if not assignment_id:
+                            continue
+
+                        # Skip subscription-level assignments (already captured)
+                        scope = getattr(assignment, "scope", "")
+                        if not scope or scope == f"/subscriptions/{subscription_id}":
+                            continue
+
+                        # Only include if scoped exactly to this resource
+                        if scope != resource_id:
+                            continue
+
+                        # Extract assignment properties
+                        principal_id = getattr(assignment, "principal_id", None)
+                        principal_type = getattr(assignment, "principal_type", None)
+                        role_definition_id = getattr(
+                            assignment, "role_definition_id", None
+                        )
+
+                        # Convert to resource format
+                        assignment_dict = {
+                            "id": assignment_id,
+                            "name": assignment_id.split("/")[-1]
+                            if assignment_id
+                            else "unknown",
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "location": None,
+                            "tags": {},
+                            "properties": {
+                                "principalId": principal_id,
+                                "principalType": principal_type,
+                                "roleDefinitionId": role_definition_id,
+                                "scope": scope,
+                            },
+                            "subscription_id": subscription_id,
+                            "resource_group": resource.get("resource_group"),
+                            # Preserve scan metadata for relationships
+                            "scan_id": resource.get("scan_id"),
+                            "tenant_id": resource.get("tenant_id"),
+                        }
+
+                        resource_scoped_assignments.append(assignment_dict)
+
+                except Exception as e:
+                    # Handle permission errors and unsupported resources gracefully
+                    error_msg = str(e).lower()
+
+                    if any(
+                        keyword in error_msg
+                        for keyword in [
+                            "forbidden",
+                            "authorization",
+                            "access denied",
+                            "insufficient privileges",
+                        ]
+                    ):
+                        logger.debug(
+                            f"Insufficient permissions to read role assignments for {resource.get('id')}"
+                        )
+                    elif "not found" in error_msg or "does not exist" in error_msg:
+                        logger.debug(
+                            f"Resource {resource.get('id')} not found or has no role assignments"
+                        )
+                    else:
+                        # Unknown error - log but continue
+                        logger.warning(
+                            f"Failed to fetch resource-scoped role assignments for {resource.get('id')}: {e}"
+                        )
+
+            logger.info(
+                f"✅ Discovered {len(resource_scoped_assignments)} resource-scoped role assignments"
+            )
+
+        except Exception:
+            # Catch-all for unexpected errors
+            logger.exception(
+                f"Unexpected error discovering resource-scoped role assignments in subscription {subscription_id}"
+            )
+            logger.warning(
+                "Continuing discovery without resource-scoped role assignments for this subscription"
+            )
+
+        return resource_scoped_assignments
+
+    def _extract_provider(self, resource_type: str) -> str:
+        """
+        Extract provider namespace from resource type.
+
+        Args:
+            resource_type: Full resource type (e.g., "Microsoft.KeyVault/vaults")
+
+        Returns:
+            Provider namespace (e.g., "Microsoft.KeyVault")
+        """
+        if not resource_type or "/" not in resource_type:
+            return ""
+        return resource_type.split("/")[0]
+
+    def _extract_resource_type(self, resource_type: str) -> str:
+        """
+        Extract resource type name from full resource type.
+
+        Args:
+            resource_type: Full resource type (e.g., "Microsoft.KeyVault/vaults")
+
+        Returns:
+            Resource type name (e.g., "vaults")
+        """
+        if not resource_type or "/" not in resource_type:
+            return ""
+        return resource_type.split("/")[1]
 
     async def discover_child_resources(
         self,
@@ -1366,6 +1626,195 @@ class AzureDiscoveryService:
 
         return child_resources
 
+    async def discover_diagnostic_settings(
+        self,
+        subscription_id: str,
+        parent_resources: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover diagnostic settings for resources that support them.
+
+        Diagnostic settings send resource logs and metrics to destinations like
+        Log Analytics workspaces, Storage Accounts, and Event Hubs. Not all
+        resource types support diagnostic settings, so we handle unsupported
+        resources gracefully.
+
+        Args:
+            subscription_id: Azure subscription ID
+            parent_resources: List of resources to check for diagnostic settings
+
+        Returns:
+            List of diagnostic setting dictionaries in resource format
+
+        Raises:
+            No exceptions - handles permission and unsupported resource errors gracefully
+        """
+        logger.info(
+            f"📊 Discovering diagnostic settings for {len(parent_resources)} resources..."
+        )
+
+        diagnostic_settings = []
+
+        try:
+            # Create monitor client for diagnostic settings API
+            monitor_client = self.monitor_client_factory(
+                self.credential, subscription_id
+            )
+
+            # Resource types that commonly support diagnostic settings
+            # This is not exhaustive - Azure adds support for new types regularly
+            supported_types = {
+                "Microsoft.KeyVault/vaults",
+                "Microsoft.Storage/storageAccounts",
+                "Microsoft.Network/networkSecurityGroups",
+                "Microsoft.Network/applicationGateways",
+                "Microsoft.Network/loadBalancers",
+                "Microsoft.Network/virtualNetworkGateways",
+                "Microsoft.Network/publicIPAddresses",
+                "Microsoft.Sql/servers/databases",
+                "Microsoft.DBforPostgreSQL/servers",
+                "Microsoft.DBforPostgreSQL/flexibleServers",
+                "Microsoft.DBforMySQL/servers",
+                "Microsoft.DBforMariaDB/servers",
+                "Microsoft.Compute/virtualMachines",
+                "Microsoft.Web/sites",
+                "Microsoft.Logic/workflows",
+                "Microsoft.EventHub/namespaces",
+                "Microsoft.ServiceBus/namespaces",
+                "Microsoft.Automation/automationAccounts",
+                "Microsoft.ContainerRegistry/registries",
+                "Microsoft.Network/virtualNetworks",
+            }
+
+            # Filter to resources that likely support diagnostic settings
+            candidate_resources = [
+                r for r in parent_resources if r.get("type") in supported_types
+            ]
+
+            logger.info(
+                f"Found {len(candidate_resources)} resources with potential diagnostic settings support"
+            )
+
+            for resource in candidate_resources:
+                try:
+                    resource_id = resource.get("id")
+                    if not resource_id:
+                        continue
+
+                    # Fetch diagnostic settings for this resource
+                    # Azure API: GET /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}/providers/microsoft.insights/diagnosticSettings
+                    settings_pager = monitor_client.diagnostic_settings.list(
+                        resource_uri=resource_id
+                    )
+
+                    for setting in settings_pager:
+                        # Extract diagnostic setting properties
+                        setting_id = getattr(setting, "id", None)
+                        setting_name = getattr(setting, "name", None)
+
+                        if not setting_id or not setting_name:
+                            continue
+
+                        # Get diagnostic setting configuration
+                        logs = getattr(setting, "logs", []) or []
+                        metrics = getattr(setting, "metrics", []) or []
+                        workspace_id = getattr(setting, "workspace_id", None)
+                        storage_account_id = getattr(
+                            setting, "storage_account_id", None
+                        )
+                        event_hub_authorization_rule_id = getattr(
+                            setting, "event_hub_authorization_rule_id", None
+                        )
+                        event_hub_name = getattr(setting, "event_hub_name", None)
+
+                        # Convert to resource format
+                        diagnostic_dict = {
+                            "id": setting_id,
+                            "name": setting_name,
+                            "type": "Microsoft.Insights/diagnosticSettings",
+                            "location": None,  # Diagnostic settings are not location-specific
+                            "tags": {},
+                            "properties": {
+                                "logs": [
+                                    {
+                                        "category": getattr(log, "category", None),
+                                        "enabled": getattr(log, "enabled", False),
+                                    }
+                                    for log in logs
+                                ],
+                                "metrics": [
+                                    {
+                                        "category": getattr(metric, "category", None),
+                                        "enabled": getattr(metric, "enabled", False),
+                                    }
+                                    for metric in metrics
+                                ],
+                                "workspaceId": workspace_id,
+                                "storageAccountId": storage_account_id,
+                                "eventHubAuthorizationRuleId": event_hub_authorization_rule_id,
+                                "eventHubName": event_hub_name,
+                            },
+                            "subscription_id": subscription_id,
+                            "resource_group": resource.get("resource_group"),
+                            # Preserve scan metadata for relationships
+                            "scan_id": resource.get("scan_id"),
+                            "tenant_id": resource.get("tenant_id"),
+                        }
+
+                        diagnostic_settings.append(diagnostic_dict)
+
+                except Exception as e:
+                    # Handle unsupported resources and permission errors gracefully
+                    error_msg = str(e).lower()
+
+                    # Common error patterns
+                    if any(
+                        keyword in error_msg
+                        for keyword in [
+                            "does not support diagnostic settings",
+                            "not supported",
+                            "invalid resource type",
+                            "resource type is not supported",
+                        ]
+                    ):
+                        logger.debug(
+                            f"Resource {resource.get('type')} does not support diagnostic settings"
+                        )
+                    elif any(
+                        keyword in error_msg
+                        for keyword in [
+                            "forbidden",
+                            "authorization",
+                            "access denied",
+                            "insufficient privileges",
+                        ]
+                    ):
+                        logger.warning(
+                            f"Insufficient permissions to read diagnostic settings for {resource.get('id')}"
+                        )
+                    elif "not found" in error_msg or "does not exist" in error_msg:
+                        logger.debug(
+                            f"Resource {resource.get('id')} not found or has no diagnostic settings"
+                        )
+                    else:
+                        # Unknown error - log but continue
+                        logger.warning(
+                            f"Failed to fetch diagnostic settings for {resource.get('id')}: {e}"
+                        )
+
+            logger.info(f"✅ Discovered {len(diagnostic_settings)} diagnostic settings")
+
+        except Exception:
+            # Catch-all for unexpected errors
+            logger.exception(
+                f"Unexpected error discovering diagnostic settings in subscription {subscription_id}"
+            )
+            logger.warning(
+                "Continuing discovery without diagnostic settings for this subscription"
+            )
+
+        return diagnostic_settings
+
     def _extract_resource_group_from_scope(self, scope: Optional[str]) -> Optional[str]:
         """
         Extract resource group name from a role assignment scope.
@@ -1731,9 +2180,7 @@ class AzureDiscoveryService:
         except Exception:
             return False
 
-    async def fetch_resource_by_id(
-        self, resource_id: str
-    ) -> Optional[Dict[str, Any]]:
+    async def fetch_resource_by_id(self, resource_id: str) -> Optional[Dict[str, Any]]:
         """
         Fetch a single resource by its full Azure resource ID.
 
@@ -1800,9 +2247,7 @@ class AzureDiscoveryService:
             return resource_dict
 
         except Exception as e:
-            logger.warning(
-                f"Failed to fetch resource by ID {resource_id}: {e}"
-            )
+            logger.warning(f"Failed to fetch resource by ID {resource_id}: {e}")
             return None
 
     def _get_api_version_for_resource_id(
@@ -1890,6 +2335,7 @@ def create_azure_discovery_service(
     subscription_client_factory: Optional[Callable[[Any], Any]] = None,
     resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
     authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
+    monitor_client_factory: Optional[Callable[[Any, str], Any]] = None,
     change_feed_ingestion_service: Optional[Any] = None,
 ) -> AzureDiscoveryService:
     """
@@ -1901,6 +2347,7 @@ def create_azure_discovery_service(
         subscription_client_factory: Optional factory for SubscriptionClient (for testing)
         resource_client_factory: Optional factory for ResourceManagementClient (for testing)
         authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
+        monitor_client_factory: Optional factory for MonitorManagementClient (for testing)
         change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
 
     Returns:
@@ -1912,5 +2359,6 @@ def create_azure_discovery_service(
         subscription_client_factory=subscription_client_factory,
         resource_client_factory=resource_client_factory,
         authorization_client_factory=authorization_client_factory,
+        monitor_client_factory=monitor_client_factory,
         change_feed_ingestion_service=change_feed_ingestion_service,
     )

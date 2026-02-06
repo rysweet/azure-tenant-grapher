@@ -113,9 +113,7 @@ class RelationshipDependencyCollector:
 
         return missing_resources
 
-    def _extract_all_target_ids(
-        self, resources: List[Dict[str, Any]]
-    ) -> Set[str]:
+    def _extract_all_target_ids(self, resources: List[Dict[str, Any]]) -> Set[str]:
         """
         Extract all target resource IDs from relationship rules.
 
@@ -167,7 +165,10 @@ class RelationshipDependencyCollector:
             return existing_ids
 
         # Production mode: use session_manager
-        if not hasattr(self.db_ops, "session_manager") or self.db_ops.session_manager is None:
+        if (
+            not hasattr(self.db_ops, "session_manager")
+            or self.db_ops.session_manager is None
+        ):
             # No session manager and no check_resource_exists - assume nothing exists
             return set()
 

@@ -16,23 +16,20 @@ Test Coverage:
 Target: 100% coverage for all 10 security controls
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-import time
 import json
-import hashlib
-from pathlib import Path
+import time
+from unittest.mock import patch
+
+import pytest
+
+from src.services.audit_log import TamperProofAuditLog
+from src.services.reset_confirmation import ResetScope, SecurityError
 
 # Imports will fail until implementation exists
 from src.services.tenant_reset_service import (
-    TenantResetService,
-    TenantResetRateLimiter,
     SecureErrorHandler,
-    validate_config_integrity,
+    TenantResetRateLimiter,
 )
-from src.services.reset_confirmation import ResetScope
-from src.services.audit_log import TamperProofAuditLog
-from src.services.reset_confirmation import SecurityError
 
 
 class TestRateLimiting:
@@ -229,7 +226,6 @@ class TestInputValidation:
 
     def test_valid_tenant_id_guid_format(self):
         """Test that valid GUID tenant ID passes validation."""
-        from src.services.reset_confirmation import ResetScope
 
         tenant_id = "12345678-1234-1234-1234-123456789abc"
 
@@ -241,7 +237,6 @@ class TestInputValidation:
         """
         CRITICAL: Test that malformed tenant ID is rejected.
         """
-        from src.services.reset_confirmation import ResetScope
 
         # Cypher injection attempt
         malicious_tenant_id = "'; DROP ALL; --"
@@ -253,7 +248,6 @@ class TestInputValidation:
 
     def test_valid_subscription_id_guid_format(self):
         """Test that valid GUID subscription ID passes validation."""
-        from src.services.reset_confirmation import ResetScope
 
         subscription_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
@@ -266,7 +260,6 @@ class TestInputValidation:
 
     def test_invalid_subscription_id_rejected(self):
         """Test that malformed subscription ID is rejected."""
-        from src.services.reset_confirmation import ResetScope
 
         malicious_subscription_id = "../../../etc/passwd"
 
@@ -281,7 +274,6 @@ class TestInputValidation:
 
     def test_valid_resource_group_name(self):
         """Test that valid resource group name passes validation."""
-        from src.services.reset_confirmation import ResetScope
 
         resource_group = "my-test-rg_123"
 
@@ -297,7 +289,6 @@ class TestInputValidation:
         """
         CRITICAL: Test that malformed resource group name is rejected.
         """
-        from src.services.reset_confirmation import ResetScope
 
         # Path traversal attempt
         malicious_rg_name = "../../../etc/passwd"
@@ -314,7 +305,6 @@ class TestInputValidation:
 
     def test_resource_group_name_length_limit(self):
         """Test that resource group name > 90 chars is rejected."""
-        from src.services.reset_confirmation import ResetScope
 
         long_rg_name = "a" * 91  # Exceeds 90 char limit
 
@@ -330,7 +320,6 @@ class TestInputValidation:
 
     def test_valid_azure_resource_id(self):
         """Test that valid Azure resource ID passes validation."""
-        from src.services.reset_confirmation import ResetScope
 
         resource_id = (
             "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/"
@@ -347,7 +336,6 @@ class TestInputValidation:
 
     def test_invalid_resource_id_format_rejected(self):
         """Test that malformed resource ID is rejected."""
-        from src.services.reset_confirmation import ResetScope
 
         malicious_resource_id = "'; DELETE FROM resources; --"
 
@@ -587,6 +575,7 @@ class TestNoForceFlag:
     def test_cli_no_force_flag_tenant_command(self):
         """Test that tenant reset command has no --force flag."""
         from click.testing import CliRunner
+
         from src.commands.tenant_reset import reset_tenant_command
 
         runner = CliRunner()
@@ -599,12 +588,12 @@ class TestNoForceFlag:
         CRITICAL: Test that using --force flag fails.
         """
         from click.testing import CliRunner
+
         from src.commands.tenant_reset import reset_tenant_command
 
         runner = CliRunner()
         result = runner.invoke(
-            reset_tenant_command,
-            ["--tenant-id", "test-tenant", "--force"]
+            reset_tenant_command, ["--tenant-id", "test-tenant", "--force"]
         )
 
         assert result.exit_code != 0
@@ -615,12 +604,12 @@ class TestNoForceFlag:
         CRITICAL: Test that using --yes flag fails.
         """
         from click.testing import CliRunner
+
         from src.commands.tenant_reset import reset_tenant_command
 
         runner = CliRunner()
         result = runner.invoke(
-            reset_tenant_command,
-            ["--tenant-id", "test-tenant", "--yes"]
+            reset_tenant_command, ["--tenant-id", "test-tenant", "--yes"]
         )
 
         assert result.exit_code != 0

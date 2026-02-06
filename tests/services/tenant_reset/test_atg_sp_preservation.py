@@ -16,15 +16,15 @@ Test Coverage:
 Target: 100% coverage for ATG SP preservation logic
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import List, Dict
 import os
-from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
+from src.services.reset_confirmation import SecurityError
 
 # Imports will fail until implementation exists
 from src.services.tenant_reset_service import TenantResetService
-from src.services.reset_confirmation import ResetScope, SecurityError
 
 
 class TestATGSPIdentification:
@@ -48,10 +48,7 @@ class TestATGSPIdentification:
     @pytest.fixture
     def service(self, mock_credential, mock_tenant_id):
         """Create TenantResetService instance."""
-        return TenantResetService(
-            credential=mock_credential,
-            tenant_id=mock_tenant_id
-        )
+        return TenantResetService(credential=mock_credential, tenant_id=mock_tenant_id)
 
     @pytest.mark.asyncio
     async def test_identify_atg_sp_from_environment(self, service, mock_atg_sp_id):
@@ -109,8 +106,7 @@ class TestATGSPPreservationTenantScope:
     def service(self):
         """Create TenantResetService instance with mocked credential."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.fixture
@@ -119,9 +115,7 @@ class TestATGSPPreservationTenantScope:
         return "87654321-4321-4321-4321-210987654321"
 
     @pytest.mark.asyncio
-    async def test_atg_sp_excluded_from_tenant_deletion(
-        self, service, mock_atg_sp_id
-    ):
+    async def test_atg_sp_excluded_from_tenant_deletion(self, service, mock_atg_sp_id):
         """
         CRITICAL: Verify ATG SP is never included in tenant deletion scope.
         """
@@ -200,8 +194,7 @@ class TestATGSPPreservationSubscriptionScope:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -226,8 +219,7 @@ class TestATGSPPreservationResourceGroupScope:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -255,8 +247,7 @@ class TestATGSPPreservationResourceScope:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -336,8 +327,7 @@ class TestPreFlightValidation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -391,8 +381,7 @@ class TestPostDeletionVerification:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio

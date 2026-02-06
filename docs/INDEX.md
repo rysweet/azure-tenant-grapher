@@ -30,6 +30,9 @@
 - **[Tenant Reset Guide](guides/TENANT_RESET_GUIDE.md)** ⭐ - Safe Azure resource cleanup with ATG SP preservation
 - **[Tenant Reset Safety Guide](guides/TENANT_RESET_SAFETY.md)** - Detailed safety mechanisms and recovery procedures
 
+### Cross-Tenant Replication
+- **[Cross-Tenant Sub-Resource Replication](howto/cross-tenant-sub-resource-replication.md)** ⭐ - Replicate Private Endpoints, Diagnostic Settings, and RBAC
+
 ## Architecture & Concepts
 
 ### Core Architecture

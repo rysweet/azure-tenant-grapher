@@ -355,7 +355,9 @@ class DependencyAnalyzer:
         properties = resource.get("properties", {})
         # DEFENSIVE: Ensure properties is a dict (can be string if data corrupted)
         if not isinstance(properties, dict):
-            logger.warning(f"NIC properties is {type(properties).__name__}, expected dict")
+            logger.warning(
+                f"NIC properties is {type(properties).__name__}, expected dict"
+            )
             return []
         ip_configs = properties.get("ipConfigurations", [])
 
@@ -382,7 +384,9 @@ class DependencyAnalyzer:
         properties = resource.get("properties", {})
         # DEFENSIVE: Ensure properties is a dict
         if not isinstance(properties, dict):
-            logger.warning(f"VM properties is {type(properties).__name__}, expected dict")
+            logger.warning(
+                f"VM properties is {type(properties).__name__}, expected dict"
+            )
             return []
         network_profile = properties.get("networkProfile", {})
         nic_refs = network_profile.get("networkInterfaces", [])

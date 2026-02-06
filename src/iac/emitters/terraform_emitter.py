@@ -769,6 +769,7 @@ class TerraformEmitter(IaCEmitter):
             )
             # Graceful degradation: Create dependencies without tier ordering
             from ..dependency_analyzer import ResourceDependency
+
             resource_dependencies = [
                 ResourceDependency(resource=r, tier=0, depends_on=set())
                 for r in all_resources
@@ -1280,11 +1281,11 @@ class TerraformEmitter(IaCEmitter):
                     str(f"Translation report (JSON) saved to: {json_report_path}")
                 )
 
-                # Print summary to console
+                # Log summary to console
                 formatted_report = (
                     self._translation_coordinator.format_translation_report()
                 )
-                print(formatted_report)
+                logger.info(formatted_report)
 
                 # Log translation statistics
                 stats = self._translation_coordinator.get_translation_statistics()

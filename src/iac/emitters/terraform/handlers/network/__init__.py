@@ -8,6 +8,7 @@ from .network_watcher import NetworkWatcherHandler
 from .nic import NetworkInterfaceHandler
 from .nsg import NetworkSecurityGroupHandler
 from .nsg_associations import NSGAssociationHandler
+from .private_endpoint import PrivateEndpointHandler
 from .public_ip import PublicIPHandler
 from .route_table import RouteTableHandler
 from .subnet import SubnetHandler
@@ -22,6 +23,7 @@ __all__ = [
     "NetworkInterfaceHandler",
     "NetworkSecurityGroupHandler",
     "NetworkWatcherHandler",
+    "PrivateEndpointHandler",
     "PublicIPHandler",
     "RouteTableHandler",
     "SubnetHandler",

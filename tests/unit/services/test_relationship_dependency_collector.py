@@ -7,12 +7,14 @@ from relationship rules and fetches only the missing resources.
 Following TDD methodology - these tests will FAIL until implementation is complete.
 """
 
-import pytest
-from typing import Any, Dict, List, Set
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock
 
-from src.services.relationship_dependency_collector import RelationshipDependencyCollector
+import pytest
+
 from src.models.filter_config import FilterConfig
+from src.services.relationship_dependency_collector import (
+    RelationshipDependencyCollector,
+)
 
 
 class TestRelationshipDependencyCollectorInit:
@@ -259,7 +261,9 @@ class TestCollectMissingDependencies:
         )
 
         # Assert
-        assert len(missing_resources) == 0, "Should return empty list for resources with no dependencies"
+        assert len(missing_resources) == 0, (
+            "Should return empty list for resources with no dependencies"
+        )
         mock_discovery.fetch_resource_by_id.assert_not_called()
 
 
@@ -277,7 +281,9 @@ class TestCheckExistingNodes:
         # Mock db_ops with session manager
         mock_session = Mock()
         mock_session.run.return_value.data.return_value = [
-            {"id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"},
+            {
+                "id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+            },
             # nic2 and storage1 are missing
         ]
 
@@ -288,7 +294,7 @@ class TestCheckExistingNodes:
         mock_session_manager = Mock()
         mock_session_manager.session.return_value = mock_context_manager
 
-        mock_db_ops = Mock(spec=['session_manager'])
+        mock_db_ops = Mock(spec=["session_manager"])
         mock_db_ops.session_manager = mock_session_manager
 
         collector = RelationshipDependencyCollector(
@@ -302,13 +308,18 @@ class TestCheckExistingNodes:
 
         # Assert
         assert len(existing_ids) == 1, "Should find 1 existing resource"
-        assert "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1" in existing_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+            in existing_ids
+        )
 
         # Verify query was executed with all IDs
         mock_session.run.assert_called_once()
         call_args = mock_session.run.call_args
         assert "UNWIND" in call_args[0][0], "Should use UNWIND for batch query"
-        assert call_args[1]["target_ids"] == list(target_ids), "Should pass all target IDs"
+        assert call_args[1]["target_ids"] == list(target_ids), (
+            "Should pass all target IDs"
+        )
 
 
 class TestFetchResourcesByIds:
@@ -327,11 +338,23 @@ class TestFetchResourcesByIds:
         async def mock_fetch(resource_id):
             # Simulate different resources
             if "nic1" in resource_id:
-                return {"id": resource_id, "name": "nic1", "type": "Microsoft.Network/networkInterfaces"}
+                return {
+                    "id": resource_id,
+                    "name": "nic1",
+                    "type": "Microsoft.Network/networkInterfaces",
+                }
             elif "nic2" in resource_id:
-                return {"id": resource_id, "name": "nic2", "type": "Microsoft.Network/networkInterfaces"}
+                return {
+                    "id": resource_id,
+                    "name": "nic2",
+                    "type": "Microsoft.Network/networkInterfaces",
+                }
             elif "storage1" in resource_id:
-                return {"id": resource_id, "name": "storage1", "type": "Microsoft.Storage/storageAccounts"}
+                return {
+                    "id": resource_id,
+                    "name": "storage1",
+                    "type": "Microsoft.Storage/storageAccounts",
+                }
             return None
 
         mock_discovery = Mock()

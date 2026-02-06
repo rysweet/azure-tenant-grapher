@@ -7,9 +7,9 @@ for cross-RG dependency collection.
 Following TDD methodology - these tests will FAIL until implementation is complete.
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
-from typing import Any, Dict
 
 from src.services.azure_discovery_service import AzureDiscoveryService
 
@@ -57,7 +57,12 @@ class TestFetchResourceByIdSuccess:
         assert resource["name"] == "nic1"
         assert resource["type"] == "Microsoft.Network/networkInterfaces"
         assert "properties" in resource
-        assert resource["properties"]["ipConfigurations"][0]["properties"]["privateIPAddress"] == "10.0.0.4"
+        assert (
+            resource["properties"]["ipConfigurations"][0]["properties"][
+                "privateIPAddress"
+            ]
+            == "10.0.0.4"
+        )
 
         # Verify correct API call
         mock_client.resources.get_by_id.assert_called_once()
@@ -73,7 +78,9 @@ class TestFetchResourceByIdFailures:
         mock_client = Mock()
         mock_client.resources = Mock()
         mock_client.resources.get_by_id = Mock(
-            side_effect=Exception("ResourceNotFoundError: The Resource 'nic1' was not found.")
+            side_effect=Exception(
+                "ResourceNotFoundError: The Resource 'nic1' was not found."
+            )
         )
 
         discovery_service = AzureDiscoveryService(client=mock_client)
@@ -94,7 +101,9 @@ class TestFetchResourceByIdFailures:
         discovery_service = AzureDiscoveryService(client=mock_client)
 
         # Malformed resource ID (missing providers segment)
-        invalid_resource_id = "/subscriptions/sub1/resourceGroups/rg-network/networkInterfaces/nic1"
+        invalid_resource_id = (
+            "/subscriptions/sub1/resourceGroups/rg-network/networkInterfaces/nic1"
+        )
 
         # Act
         resource = await discovery_service.fetch_resource_by_id(invalid_resource_id)
@@ -238,7 +247,9 @@ class TestFetchResourceByIdResourceTypes:
 
         assert resource is not None
         assert resource["type"] == "Microsoft.ManagedIdentity/userAssignedIdentities"
-        assert resource["properties"]["clientId"] == "11111111-1111-1111-1111-111111111111"
+        assert (
+            resource["properties"]["clientId"] == "11111111-1111-1111-1111-111111111111"
+        )
 
     @pytest.mark.asyncio
     async def test_fetch_subnet_by_id(self):
@@ -343,7 +354,9 @@ class TestFetchResourceByIdPerformance:
         )
 
         # Start with empty cache
-        discovery_service = AzureDiscoveryService(client=mock_client, api_version_cache={})
+        discovery_service = AzureDiscoveryService(
+            client=mock_client, api_version_cache={}
+        )
 
         # Fetch same resource type twice
         await discovery_service.fetch_resource_by_id(
@@ -356,7 +369,9 @@ class TestFetchResourceByIdPerformance:
         # Assert: API version should be cached after first fetch
         # Second fetch should not require API version lookup
         # (This would be verified through instrumentation/logging)
-        assert "Microsoft.Compute/virtualMachines" in discovery_service.api_version_cache
+        assert (
+            "Microsoft.Compute/virtualMachines" in discovery_service.api_version_cache
+        )
 
 
 class TestFetchResourceByIdErrorRecovery:
@@ -375,7 +390,9 @@ class TestFetchResourceByIdErrorRecovery:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                raise Exception("ServiceUnavailable: The service is temporarily unavailable")
+                raise Exception(
+                    "ServiceUnavailable: The service is temporarily unavailable"
+                )
             return {
                 "id": resource_id,
                 "name": "nic1",
@@ -406,7 +423,9 @@ class TestFetchResourceByIdErrorRecovery:
         mock_client = Mock()
         mock_client.resources = Mock()
         mock_client.resources.get_by_id = Mock(
-            side_effect=Exception("ServiceUnavailable: The service is temporarily unavailable")
+            side_effect=Exception(
+                "ServiceUnavailable: The service is temporarily unavailable"
+            )
         )
 
         discovery_service = AzureDiscoveryService(
@@ -422,4 +441,6 @@ class TestFetchResourceByIdErrorRecovery:
 
         # Assert
         assert resource is None, "Should return None after exhausting retries"
-        assert mock_client.resources.get_by_id.call_count <= 3, "Should not exceed max retries"
+        assert mock_client.resources.get_by_id.call_count <= 3, (
+            "Should not exceed max retries"
+        )
