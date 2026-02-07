@@ -350,8 +350,8 @@ class TestResourceFidelityCalculator:
         """Test that MINIMAL redaction preserves connection strings but redacts passwords."""
         comparison = PropertyComparison(
             property_path="properties.connectionStrings[0].connectionString",
-            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",
-            target_value="Server=tcp:myserver.database.windows.net;Password=Secret456;",
+            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",  # #ggignore
+            target_value="Server=tcp:myserver.database.windows.net;Password=Secret456;",  # #ggignore
             match=False,
             redacted=False,
         )
