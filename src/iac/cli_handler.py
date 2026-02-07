@@ -318,18 +318,23 @@ async def generate_iac_command_handler(  # type: ignore[misc]
         filter_params = {}  # Issue #524: Query parameters for Cypher injection prevention
 
         # Handle node_ids filter (Issue #524: Use parameterized query to prevent Cypher injection)
+        # Issue #893: Fix node ID query to use integer IDs (id() function) not string property
         if node_ids:
-            # Validate node_ids are non-empty strings
+            # Validate and convert node_ids to integers
             validated_node_ids = []
             for nid in node_ids:
-                if not isinstance(nid, str) or not nid.strip():
-                    raise ValueError(f"Invalid node ID: {nid}")
-                validated_node_ids.append(nid.strip())
+                try:
+                    # Convert to integer (Neo4j node IDs are integers)
+                    node_id_int = int(nid) if isinstance(nid, str) else nid
+                    validated_node_ids.append(node_id_int)
+                    logger.debug(f"Validated node ID: {node_id_int} (from input: {nid})")
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid node ID '{nid}': must be an integer") from e
 
-            # Use parameterized query with $node_ids parameter
+            # Use parameterized query with id() function for Neo4j integer node IDs
             filter_cypher = """
             MATCH (n)
-            WHERE n.id IN $node_ids
+            WHERE id(n) IN $node_ids
             OPTIONAL MATCH (n)-[rel]-(connected)
             WITH n, collect(DISTINCT {
                 type: type(rel),
@@ -341,6 +346,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
             """
             # Store parameters for GraphTraverser
             filter_params = {"node_ids": validated_node_ids}
+            logger.info(f"Filtering by {len(validated_node_ids)} Neo4j node IDs: {validated_node_ids}")
         elif resource_filters:
             # Parse resource_filters to support both type-based and property-based filtering
             # Format examples:
