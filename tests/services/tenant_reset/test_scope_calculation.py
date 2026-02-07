@@ -14,13 +14,14 @@ Test Coverage:
 Target: 100% coverage for scope calculation logic
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+
+from src.services.reset_confirmation import SecurityError
 
 # Imports will fail until implementation exists
 from src.services.tenant_reset_service import TenantResetService
-from src.services.reset_confirmation import ResetScope
-from src.services.reset_confirmation import SecurityError
 
 
 class TestTenantScopeCalculation:
@@ -30,8 +31,7 @@ class TestTenantScopeCalculation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -47,7 +47,8 @@ class TestTenantScopeCalculation:
             service, "_list_all_subscriptions", return_value=mock_subscriptions
         ):
             with patch.object(
-                service, "_list_resources_in_subscription",
+                service,
+                "_list_resources_in_subscription",
                 side_effect=[
                     ["resource-sub1-1", "resource-sub1-2"],
                     ["resource-sub2-1"],
@@ -141,8 +142,7 @@ class TestSubscriptionScopeCalculation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -160,7 +160,9 @@ class TestSubscriptionScopeCalculation:
                 "identify_atg_service_principal",
                 return_value="atg-sp-id",
             ):
-                scope_data = await service.calculate_scope_subscription([subscription_id])
+                scope_data = await service.calculate_scope_subscription(
+                    [subscription_id]
+                )
 
                 assert len(scope_data["to_delete"]) == 3
                 assert "resource-1" in scope_data["to_delete"]
@@ -170,7 +172,10 @@ class TestSubscriptionScopeCalculation:
     @pytest.mark.asyncio
     async def test_subscription_scope_multiple_subscriptions(self, service):
         """Test subscription scope for multiple subscriptions."""
-        subscription_ids = ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]
+        subscription_ids = [
+            "11111111-1111-1111-1111-111111111111",
+            "22222222-2222-2222-2222-222222222222",
+        ]
 
         with patch.object(
             service,
@@ -185,7 +190,9 @@ class TestSubscriptionScopeCalculation:
                 "identify_atg_service_principal",
                 return_value="atg-sp-id",
             ):
-                scope_data = await service.calculate_scope_subscription(subscription_ids)
+                scope_data = await service.calculate_scope_subscription(
+                    subscription_ids
+                )
 
                 assert len(scope_data["to_delete"]) == 3
                 assert "resource-sub1-1" in scope_data["to_delete"]
@@ -197,15 +204,15 @@ class TestSubscriptionScopeCalculation:
         """Test subscription scope for empty subscription."""
         subscription_id = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
 
-        with patch.object(
-            service, "_list_resources_in_subscription", return_value=[]
-        ):
+        with patch.object(service, "_list_resources_in_subscription", return_value=[]):
             with patch.object(
                 service,
                 "identify_atg_service_principal",
                 return_value="atg-sp-id",
             ):
-                scope_data = await service.calculate_scope_subscription([subscription_id])
+                scope_data = await service.calculate_scope_subscription(
+                    [subscription_id]
+                )
 
                 assert len(scope_data["to_delete"]) == 0
 
@@ -232,8 +239,7 @@ class TestResourceGroupScopeCalculation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -340,8 +346,7 @@ class TestResourceScopeCalculation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -402,8 +407,7 @@ class TestScopeBoundaryValidation:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -477,8 +481,7 @@ class TestScopeDataStructure:
     def service(self):
         """Create TenantResetService instance."""
         return TenantResetService(
-            credential=Mock(),
-            tenant_id="12345678-1234-1234-1234-123456789abc"
+            credential=Mock(), tenant_id="12345678-1234-1234-1234-123456789abc"
         )
 
     @pytest.mark.asyncio
@@ -496,7 +499,9 @@ class TestScopeDataStructure:
                 "identify_atg_service_principal",
                 return_value="atg-sp-id",
             ):
-                scope_data = await service.calculate_scope_subscription([subscription_id])
+                scope_data = await service.calculate_scope_subscription(
+                    [subscription_id]
+                )
 
                 assert "to_delete" in scope_data
                 assert "to_preserve" in scope_data
@@ -506,7 +511,10 @@ class TestScopeDataStructure:
     @pytest.mark.asyncio
     async def test_scope_data_no_duplicates(self, service):
         """Test that scope data contains no duplicate resource IDs."""
-        subscription_ids = ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]
+        subscription_ids = [
+            "11111111-1111-1111-1111-111111111111",
+            "22222222-2222-2222-2222-222222222222",
+        ]
 
         # Simulate overlapping resources (should be deduplicated)
         with patch.object(
@@ -522,7 +530,9 @@ class TestScopeDataStructure:
                 "identify_atg_service_principal",
                 return_value="atg-sp-id",
             ):
-                scope_data = await service.calculate_scope_subscription(subscription_ids)
+                scope_data = await service.calculate_scope_subscription(
+                    subscription_ids
+                )
 
                 # Should have 3 unique resources, not 4
                 assert len(scope_data["to_delete"]) == 3

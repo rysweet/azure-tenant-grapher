@@ -366,13 +366,16 @@ class TestBastionVNetLimitEnforcement:
 
         result = handler.emit(resource, context)
         assert result is not None
-        terraform_type, safe_name, config = result
+        terraform_type, safe_name, _config = result
 
         assert terraform_type == "azurerm_bastion_host"
         assert safe_name == "bastion1"
         # Verify VNet is tracked
         assert len(context.vnets_with_bastions) == 1
-        assert "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1" in context.vnets_with_bastions
+        assert (
+            "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1"
+            in context.vnets_with_bastions
+        )
 
     def test_second_bastion_on_same_vnet_is_skipped(self):
         """Test that second Bastion on same VNet is skipped with warning."""
@@ -583,13 +586,18 @@ class TestBastionVNetLimitEnforcement:
         # Valid subnet ID
         subnet_id = "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/AzureBastionSubnet"
         vnet_id = handler._extract_vnet_id_from_subnet(subnet_id)
-        assert vnet_id == "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1"
+        assert (
+            vnet_id
+            == "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/vnet1"
+        )
 
         # Empty subnet ID
         vnet_id = handler._extract_vnet_id_from_subnet("")
         assert vnet_id is None
 
         # Invalid subnet ID (missing virtualNetworks)
-        invalid_subnet_id = "/subscriptions/test-sub/resourceGroups/test-rg/subnets/subnet1"
+        invalid_subnet_id = (
+            "/subscriptions/test-sub/resourceGroups/test-rg/subnets/subnet1"
+        )
         vnet_id = handler._extract_vnet_id_from_subnet(invalid_subnet_id)
         assert vnet_id is None

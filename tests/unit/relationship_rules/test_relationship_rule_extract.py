@@ -7,7 +7,6 @@ from resource properties for cross-RG dependency collection.
 Following TDD methodology - these tests will FAIL until implementation is complete.
 """
 
-import pytest
 from typing import Any, Dict, Set
 
 from src.relationship_rules.relationship_rule import RelationshipRule
@@ -58,7 +57,9 @@ class DiagnosticRule(RelationshipRule):
 
     def applies(self, resource: Dict[str, Any]) -> bool:
         """Check if resource has diagnostic dependencies."""
-        return "properties" in resource and "diagnosticSettings" in resource.get("properties", {})
+        return "properties" in resource and "diagnosticSettings" in resource.get(
+            "properties", {}
+        )
 
     def emit(self, resource: Dict[str, Any], db_ops: Any) -> None:
         """Emit diagnostic relationships."""
@@ -99,8 +100,14 @@ class TestNetworkRuleExtract:
         target_ids = rule.extract_target_ids(vm_resource)
 
         assert len(target_ids) == 2, "Should extract both NIC IDs"
-        assert "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1" in target_ids
-        assert "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic2" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+            in target_ids
+        )
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic2"
+            in target_ids
+        )
 
     def test_network_rule_extract_nsg_ids(self):
         """Test extracting NSG IDs from subnet with network security group."""
@@ -121,7 +128,10 @@ class TestNetworkRuleExtract:
         target_ids = rule.extract_target_ids(subnet_resource)
 
         assert len(target_ids) == 1, "Should extract NSG ID"
-        assert "/subscriptions/sub1/resourceGroups/rg-security/providers/Microsoft.Network/networkSecurityGroups/nsg1" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-security/providers/Microsoft.Network/networkSecurityGroups/nsg1"
+            in target_ids
+        )
 
     def test_network_rule_extract_private_endpoint_ids(self):
         """Test extracting private endpoint IDs from subnet."""
@@ -147,8 +157,14 @@ class TestNetworkRuleExtract:
         target_ids = rule.extract_target_ids(subnet_resource)
 
         assert len(target_ids) == 2, "Should extract both private endpoint IDs"
-        assert "/subscriptions/sub1/resourceGroups/rg-data/providers/Microsoft.Network/privateEndpoints/pe-storage" in target_ids
-        assert "/subscriptions/sub1/resourceGroups/rg-data/providers/Microsoft.Network/privateEndpoints/pe-sql" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-data/providers/Microsoft.Network/privateEndpoints/pe-storage"
+            in target_ids
+        )
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-data/providers/Microsoft.Network/privateEndpoints/pe-sql"
+            in target_ids
+        )
 
 
 class TestIdentityRuleExtract:
@@ -176,8 +192,14 @@ class TestIdentityRuleExtract:
         target_ids = rule.extract_target_ids(webapp_resource)
 
         assert len(target_ids) == 2, "Should extract both user-assigned identity IDs"
-        assert "/subscriptions/sub1/resourceGroups/rg-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity1" in target_ids
-        assert "/subscriptions/sub1/resourceGroups/rg-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity2" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity1"
+            in target_ids
+        )
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity2"
+            in target_ids
+        )
 
 
 class TestDiagnosticRuleExtract:
@@ -204,7 +226,10 @@ class TestDiagnosticRuleExtract:
         target_ids = rule.extract_target_ids(storage_resource)
 
         assert len(target_ids) == 1, "Should extract workspace ID"
-        assert "/subscriptions/sub1/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/workspace1" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/workspace1"
+            in target_ids
+        )
 
 
 class TestTagRuleExtract:
@@ -231,7 +256,9 @@ class TestTagRuleExtract:
 
         target_ids = rule.extract_target_ids(resource)
 
-        assert len(target_ids) == 0, "Tag rule should return empty set - tags are shared nodes"
+        assert len(target_ids) == 0, (
+            "Tag rule should return empty set - tags are shared nodes"
+        )
 
 
 class TestRegionRuleExtract:
@@ -255,7 +282,9 @@ class TestRegionRuleExtract:
 
         target_ids = rule.extract_target_ids(resource)
 
-        assert len(target_ids) == 0, "Region rule should return empty set - regions are shared nodes"
+        assert len(target_ids) == 0, (
+            "Region rule should return empty set - regions are shared nodes"
+        )
 
 
 class TestCreatorRuleExtract:
@@ -279,7 +308,9 @@ class TestCreatorRuleExtract:
 
         target_ids = rule.extract_target_ids(resource)
 
-        assert len(target_ids) == 0, "Creator rule should return empty set - creator is metadata"
+        assert len(target_ids) == 0, (
+            "Creator rule should return empty set - creator is metadata"
+        )
 
 
 class TestMonitoringRuleExtract:
@@ -307,8 +338,14 @@ class TestMonitoringRuleExtract:
         target_ids = rule.extract_target_ids(alert_resource)
 
         assert len(target_ids) == 2, "Should extract both monitored resource IDs"
-        assert "/subscriptions/sub1/resourceGroups/rg-compute/providers/Microsoft.Compute/virtualMachines/vm1" in target_ids
-        assert "/subscriptions/sub1/resourceGroups/rg-apps/providers/Microsoft.Web/sites/webapp1" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-compute/providers/Microsoft.Compute/virtualMachines/vm1"
+            in target_ids
+        )
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-apps/providers/Microsoft.Web/sites/webapp1"
+            in target_ids
+        )
 
 
 class TestSecretRuleExtract:
@@ -372,8 +409,14 @@ class TestDependsOnRuleExtract:
         target_ids = rule.extract_target_ids(vm_resource)
 
         assert len(target_ids) == 2, "Should extract both dependency IDs"
-        assert "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1" in target_ids
-        assert "/subscriptions/sub1/resourceGroups/rg-storage/providers/Microsoft.Storage/storageAccounts/storage1" in target_ids
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+            in target_ids
+        )
+        assert (
+            "/subscriptions/sub1/resourceGroups/rg-storage/providers/Microsoft.Storage/storageAccounts/storage1"
+            in target_ids
+        )
 
 
 class TestExtractConsistencyWithEmit:

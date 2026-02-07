@@ -8,16 +8,18 @@ resource fetching.
 Following TDD methodology - these tests will FAIL until implementation is complete.
 """
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, Mock, patch
 
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.models.filter_config import FilterConfig
-from src.services.relationship_dependency_collector import RelationshipDependencyCollector
-from src.services.azure_discovery_service import AzureDiscoveryService
-from src.relationship_rules.network_rule import NetworkRule
 from src.relationship_rules.identity_rule import IdentityRule
+from src.relationship_rules.network_rule import NetworkRule
+from src.services.azure_discovery_service import AzureDiscoveryService
+from src.services.relationship_dependency_collector import (
+    RelationshipDependencyCollector,
+)
 
 
 class TestHubSpokeTopologyDependencies:
@@ -90,11 +92,7 @@ class TestHubSpokeTopologyDependencies:
             "resource_group": "rg-spoke-prod",
             "location": "eastus",
             "properties": {
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {"id": hub_nic["id"]}
-                    ]
-                },
+                "networkProfile": {"networkInterfaces": [{"id": hub_nic["id"]}]},
             },
         }
 
@@ -126,7 +124,9 @@ class TestHubSpokeTopologyDependencies:
 
         # Mock db_ops
         mock_db_ops = Mock()
-        mock_db_ops.check_resource_exists = Mock(return_value=False)  # Nothing exists yet
+        mock_db_ops.check_resource_exists = Mock(
+            return_value=False
+        )  # Nothing exists yet
         mock_db_ops.create_resource_node = Mock(return_value=True)
 
         # Mock relationship rules
@@ -157,7 +157,9 @@ class TestHubSpokeTopologyDependencies:
 
         # Assert: Verify hub dependencies were collected
         # Check that fetch_resource_by_id was called for hub resources
-        fetch_calls = [call[0][0] for call in mock_discovery.fetch_resource_by_id.call_args_list]
+        fetch_calls = [
+            call[0][0] for call in mock_discovery.fetch_resource_by_id.call_args_list
+        ]
 
         assert any("hub-nic1" in call for call in fetch_calls), (
             "Should fetch hub NIC as cross-RG dependency"
@@ -212,8 +214,12 @@ class TestRelationshipCreation:
 
         # Mock discovery service
         mock_discovery = Mock(spec=AzureDiscoveryService)
-        mock_discovery.discover_subscriptions = AsyncMock(return_value=[{"subscription_id": "sub1"}])
-        mock_discovery.discover_resources_across_subscriptions = AsyncMock(return_value=[webapp])
+        mock_discovery.discover_subscriptions = AsyncMock(
+            return_value=[{"subscription_id": "sub1"}]
+        )
+        mock_discovery.discover_resources_across_subscriptions = AsyncMock(
+            return_value=[webapp]
+        )
         mock_discovery.fetch_resource_by_id = AsyncMock(return_value=identity)
 
         # Mock db_ops that tracks relationship creation
@@ -247,7 +253,8 @@ class TestRelationshipCreation:
         # Assert: Verify USES_IDENTITY relationship was created
         relationship_calls = mock_db_ops.create_relationship.call_args_list
         uses_identity_rels = [
-            call for call in relationship_calls
+            call
+            for call in relationship_calls
             if len(call[0]) >= 2 and call[0][1] == "USES_IDENTITY"
         ]
 
@@ -299,8 +306,12 @@ class TestPhase26Integration:
 
         # Mock discovery service
         mock_discovery = Mock(spec=AzureDiscoveryService)
-        mock_discovery.discover_subscriptions = AsyncMock(return_value=[{"subscription_id": "sub1"}])
-        mock_discovery.discover_resources_across_subscriptions = AsyncMock(return_value=[vm])
+        mock_discovery.discover_subscriptions = AsyncMock(
+            return_value=[{"subscription_id": "sub1"}]
+        )
+        mock_discovery.discover_resources_across_subscriptions = AsyncMock(
+            return_value=[vm]
+        )
         mock_discovery.fetch_resource_by_id = AsyncMock(return_value=nic)
 
         # Mock db_ops
@@ -368,7 +379,9 @@ class TestMultiPassDependencyCollection:
             "properties": {
                 "networkProfile": {
                     "networkInterfaces": [
-                        {"id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"}
+                        {
+                            "id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+                        }
                     ]
                 },
             },
@@ -422,8 +435,12 @@ class TestMultiPassDependencyCollection:
             return None
 
         mock_discovery = Mock(spec=AzureDiscoveryService)
-        mock_discovery.discover_subscriptions = AsyncMock(return_value=[{"subscription_id": "sub1"}])
-        mock_discovery.discover_resources_across_subscriptions = AsyncMock(return_value=[vm])
+        mock_discovery.discover_subscriptions = AsyncMock(
+            return_value=[{"subscription_id": "sub1"}]
+        )
+        mock_discovery.discover_resources_across_subscriptions = AsyncMock(
+            return_value=[vm]
+        )
         mock_discovery.fetch_resource_by_id = AsyncMock(side_effect=mock_fetch)
 
         # Mock db_ops
@@ -483,7 +500,9 @@ class TestDisabledDependencyCollection:
             "properties": {
                 "networkProfile": {
                     "networkInterfaces": [
-                        {"id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"}
+                        {
+                            "id": "/subscriptions/sub1/resourceGroups/rg-network/providers/Microsoft.Network/networkInterfaces/nic1"
+                        }
                     ]
                 },
             },
@@ -491,8 +510,12 @@ class TestDisabledDependencyCollection:
 
         # Mock discovery service
         mock_discovery = Mock(spec=AzureDiscoveryService)
-        mock_discovery.discover_subscriptions = AsyncMock(return_value=[{"subscription_id": "sub1"}])
-        mock_discovery.discover_resources_across_subscriptions = AsyncMock(return_value=[vm])
+        mock_discovery.discover_subscriptions = AsyncMock(
+            return_value=[{"subscription_id": "sub1"}]
+        )
+        mock_discovery.discover_resources_across_subscriptions = AsyncMock(
+            return_value=[vm]
+        )
         mock_discovery.fetch_resource_by_id = AsyncMock()
 
         # Mock db_ops

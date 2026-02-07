@@ -238,9 +238,9 @@ class TestVMImageHandler:
         base_vm_image_resource["properties"]["storageProfile"]["osDisk"].pop(
             "managedDisk", None
         )
-        base_vm_image_resource["properties"]["storageProfile"]["osDisk"][
-            "blobUri"
-        ] = "https://storage.blob.core.windows.net/vhds/os-disk.vhd"
+        base_vm_image_resource["properties"]["storageProfile"]["osDisk"]["blobUri"] = (
+            "https://storage.blob.core.windows.net/vhds/os-disk.vhd"
+        )
 
         tf_type, _safe_name, config = handler.emit(
             base_vm_image_resource, context_different_subscription
