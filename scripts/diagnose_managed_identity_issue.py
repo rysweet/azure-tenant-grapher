@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
 """
-Diagnostic script for Issue #889: Managed Identity RBAC & Resource Bindings
+Permanent diagnostic tool for Managed Identity RBAC & Resource Bindings (Issue #889)
 
-This script helps diagnose why RBAC role assignments and resource bindings
+This is a permanent diagnostic tool (not temporary) for troubleshooting common
+Managed Identity configuration and permission issues during Azure tenant replication.
+
+PURPOSE:
+This tool helps diagnose why RBAC role assignments and resource bindings
 are lost during Managed Identity replication.
 
-Root causes to check:
+WHEN TO USE:
+- After Azure tenant scans to verify data capture
+- Before IaC generation to confirm identity data presence
+- When troubleshooting missing role assignments
+- During initial setup to validate permissions
+
+Root causes detected:
 1. Scan permissions (User Access Administrator role required)
 2. Role assignments discovered in Neo4j
 3. Cross-tenant identity mapping configuration
 4. Neo4j data integrity for identity properties
+
+See scripts/README_MANAGED_IDENTITY_DIAGNOSTICS.md for complete documentation.
 """
 
 import sys
