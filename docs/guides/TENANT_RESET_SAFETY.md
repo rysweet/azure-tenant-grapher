@@ -492,7 +492,7 @@ az ad sp create-for-rbac --name azure-tenant-grapher --role Reader --scopes /sub
 # Output:
 # {
 #   "appId": "12345678-1234-1234-1234-123456789abc",
-#   "password": "new-generated-password",
+#   "password": "new-generated-password",  # pragma: allowlist secret
 #   "tenant": "87654321-4321-4321-4321-210987654321"
 # }
 

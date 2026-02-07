@@ -24,7 +24,7 @@ class TestServicePrincipalAuthentication:
             with patch("src.deployment.orchestrator.deploy_terraform") as mock_deploy:
                 mock_deploy.return_value = {"status": "planned"}
 
-                result = deploy_iac(
+                deploy_iac(
                     iac_dir=Path("/tmp/test"),
                     target_tenant_id="test-tenant",
                     resource_group="test-rg",
@@ -33,7 +33,7 @@ class TestServicePrincipalAuthentication:
                     iac_format="terraform",
                     dry_run=True,
                     sp_client_id="test-client-id",
-                    sp_client_secret="test-secret",
+                    sp_client_secret="test-secret",  # pragma: allowlist secret
                 )
 
                 # Verify SP auth was attempted (not interactive az login)
@@ -42,7 +42,9 @@ class TestServicePrincipalAuthentication:
                     for call in mock_run.call_args_list
                     if "--service-principal" in str(call)
                 ]
-                assert len(sp_login_calls) > 0, "Service principal login should be attempted"
+                assert len(sp_login_calls) > 0, (
+                    "Service principal login should be attempted"
+                )
 
     def test_subscription_id_passed_to_terraform(self):
         """Verify subscription_id is passed to Terraform deployer."""
@@ -72,11 +74,15 @@ class TestServicePrincipalAuthentication:
                 call_args = mock_deploy.call_args
                 assert call_args is not None
                 # Check that subscription_id was passed (robust: check both kwargs and positional)
-                subscription_passed = (
-                    call_args.kwargs.get("subscription_id") == "test-subscription-id"
-                    or (len(call_args.args) > 5 and call_args.args[5] == "test-subscription-id")
+                subscription_passed = call_args.kwargs.get(
+                    "subscription_id"
+                ) == "test-subscription-id" or (
+                    len(call_args.args) > 5
+                    and call_args.args[5] == "test-subscription-id"
                 )
-                assert subscription_passed, "subscription_id should be passed to deploy_terraform"
+                assert subscription_passed, (
+                    "subscription_id should be passed to deploy_terraform"
+                )
 
 
 class TestTerraformSubscriptionOverride:
@@ -171,4 +177,6 @@ class TestTerraformSubscriptionOverride:
             plan_cmd = plan_calls[0][0][0]
 
             # Verify -var flag is NOT present when subscription_id is None
-            assert "-var" not in plan_cmd, "Should not include -var when subscription_id is None"
+            assert "-var" not in plan_cmd, (
+                "Should not include -var when subscription_id is None"
+            )

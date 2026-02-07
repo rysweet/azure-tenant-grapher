@@ -5,21 +5,22 @@ This module provides reusable fixtures for mocking Azure SDK,
 Graph API, Neo4j, and Redis interactions.
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
-from typing import Dict, List
 
 
 @pytest.fixture(autouse=True)
 def mock_environment_vars():
     """Auto-set environment variables for all tests."""
     import os
+
     original_env = os.environ.copy()
 
     # Set required environment variables with proper GUID formats
     os.environ["AZURE_CLIENT_ID"] = "87654321-4321-4321-4321-210987654321"
     os.environ["AZURE_TENANT_ID"] = "12345678-1234-1234-1234-123456789abc"
-    os.environ["AZURE_CLIENT_SECRET"] = "mock-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "mock-secret"  # pragma: allowlist secret
 
     yield
 
@@ -31,12 +32,13 @@ def mock_environment_vars():
 @pytest.fixture(autouse=True)
 def mock_azure_clients():
     """Auto-mock all Azure SDK clients globally for all tests."""
-    from azure.core.exceptions import ResourceNotFoundError, HttpResponseError
+    from azure.core.exceptions import HttpResponseError
 
-    with patch("azure.identity.DefaultAzureCredential") as mock_cred, \
-         patch("src.services.tenant_reset_service.SubscriptionClient") as mock_sub_client, \
-         patch("src.services.tenant_reset_service.ResourceManagementClient") as mock_rmc:
-
+    with patch("azure.identity.DefaultAzureCredential") as mock_cred, patch(
+        "src.services.tenant_reset_service.SubscriptionClient"
+    ) as mock_sub_client, patch(
+        "src.services.tenant_reset_service.ResourceManagementClient"
+    ) as mock_rmc:
         # Mock credential
         mock_cred_instance = Mock()
         mock_cred_instance.get_token = Mock(return_value=Mock(token="mock-token"))
@@ -50,12 +52,12 @@ def mock_azure_clients():
             Mock(
                 subscription_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                 display_name="Mock Subscription 1",
-                tenant_id="12345678-1234-1234-1234-123456789abc"
+                tenant_id="12345678-1234-1234-1234-123456789abc",
             ),
             Mock(
                 subscription_id="ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb",
                 display_name="Mock Subscription 2",
-                tenant_id="12345678-1234-1234-1234-123456789abc"
+                tenant_id="12345678-1234-1234-1234-123456789abc",
             ),
         ]
         mock_sub_instance.subscriptions.list.return_value = iter(mock_subscriptions)
@@ -64,20 +66,28 @@ def mock_azure_clients():
         def mock_get_subscription(sub_id):
             # Check if it looks like a GUID
             import re
-            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', sub_id, re.IGNORECASE):
+
+            if not re.match(
+                r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                sub_id,
+                re.IGNORECASE,
+            ):
                 # Non-GUID IDs get an error response
                 error = HttpResponseError(
                     message=f"The provided subscription identifier '{sub_id}' is malformed or invalid."
                 )
                 error.status_code = 400
-                error.error = Mock(code="InvalidSubscriptionId", message=f"The provided subscription identifier '{sub_id}' is malformed or invalid.")
+                error.error = Mock(
+                    code="InvalidSubscriptionId",
+                    message=f"The provided subscription identifier '{sub_id}' is malformed or invalid.",
+                )
                 raise error
 
             # Return subscription if GUID format
             return Mock(
                 subscription_id=sub_id,
                 display_name=f"Mock Subscription {sub_id}",
-                tenant_id="12345678-1234-1234-1234-123456789abc"
+                tenant_id="12345678-1234-1234-1234-123456789abc",
             )
 
         mock_sub_instance.subscriptions.get = Mock(side_effect=mock_get_subscription)
@@ -96,16 +106,19 @@ def mock_azure_clients():
             ),
         ]
         mock_rmc_instance.resources.list.return_value = iter(mock_resources)
-        mock_rmc_instance.resources.list_by_resource_group.return_value = iter(mock_resources)
+        mock_rmc_instance.resources.list_by_resource_group.return_value = iter(
+            mock_resources
+        )
 
         # Mock get_by_id to return resource details
         def mock_get_by_id(resource_id, api_version=None):
             return Mock(
                 id=resource_id,
-                name=resource_id.split('/')[-1],
+                name=resource_id.split("/")[-1],
                 type="Microsoft.Compute/virtualMachines",
                 location="eastus",
             )
+
         mock_rmc_instance.resources.get_by_id = Mock(side_effect=mock_get_by_id)
 
         # Mock resource group listing
@@ -117,7 +130,9 @@ def mock_azure_clients():
             ),
         ]
         mock_rmc_instance.resource_groups.list.return_value = iter(mock_resource_groups)
-        mock_rmc_instance.resource_groups.get = Mock(return_value=mock_resource_groups[0])
+        mock_rmc_instance.resource_groups.get = Mock(
+            return_value=mock_resource_groups[0]
+        )
 
         # Mock deletion operations with poller that has wait() and result()
         mock_delete_poller = Mock()
@@ -125,8 +140,12 @@ def mock_azure_clients():
         mock_delete_poller.result = Mock(return_value=None)
 
         mock_rmc_instance.resources.begin_delete = Mock(return_value=mock_delete_poller)
-        mock_rmc_instance.resources.begin_delete_by_id = Mock(return_value=mock_delete_poller)
-        mock_rmc_instance.resource_groups.begin_delete = Mock(return_value=mock_delete_poller)
+        mock_rmc_instance.resources.begin_delete_by_id = Mock(
+            return_value=mock_delete_poller
+        )
+        mock_rmc_instance.resource_groups.begin_delete = Mock(
+            return_value=mock_delete_poller
+        )
 
         mock_rmc.return_value = mock_rmc_instance
 
@@ -140,9 +159,9 @@ def mock_azure_clients():
 @pytest.fixture(autouse=True)
 def mock_graph_api():
     """Auto-mock Microsoft Graph API globally for all tests."""
-    with patch("src.services.tenant_reset_service.MSGRAPH_AVAILABLE", True), \
-         patch("src.services.tenant_reset_service.GraphServiceClient") as mock_graph:
-
+    with patch("src.services.tenant_reset_service.MSGRAPH_AVAILABLE", True), patch(
+        "src.services.tenant_reset_service.GraphServiceClient"
+    ) as mock_graph:
         mock_graph_instance = Mock()
 
         # Create mock accessor objects for chaining
@@ -197,8 +216,12 @@ def mock_neo4j():
                 mock_result.data = AsyncMock(return_value=[{"deleted_count": 2}])
             elif "atg_sp_id" in query:
                 # ATG SP ID query
-                mock_result.single = AsyncMock(return_value={"atg_sp_id": "87654321-4321-4321-4321-210987654321"})
-                mock_result.data = AsyncMock(return_value=[{"atg_sp_id": "87654321-4321-4321-4321-210987654321"}])
+                mock_result.single = AsyncMock(
+                    return_value={"atg_sp_id": "87654321-4321-4321-4321-210987654321"}
+                )
+                mock_result.data = AsyncMock(
+                    return_value=[{"atg_sp_id": "87654321-4321-4321-4321-210987654321"}]
+                )
             else:
                 # Default empty result
                 mock_result.single = AsyncMock(return_value=None)
@@ -316,14 +339,20 @@ def mock_graph_client(mock_atg_sp_id):
         Mock(id="sp-3", app_id="app-3", display_name="SP 3"),
     ]
 
-    mock_client.service_principals.list = AsyncMock(return_value=mock_service_principals)
+    mock_client.service_principals.list = AsyncMock(
+        return_value=mock_service_principals
+    )
     mock_client.service_principals.get = AsyncMock()
     mock_client.service_principals.delete = AsyncMock()
 
     # Mock users
     mock_users = [
-        Mock(id="user-1", user_principal_name="user1@example.com", display_name="User 1"),
-        Mock(id="user-2", user_principal_name="user2@example.com", display_name="User 2"),
+        Mock(
+            id="user-1", user_principal_name="user1@example.com", display_name="User 1"
+        ),
+        Mock(
+            id="user-2", user_principal_name="user2@example.com", display_name="User 2"
+        ),
     ]
 
     mock_client.users.list = AsyncMock(return_value=mock_users)
@@ -385,13 +414,11 @@ def mock_scope_data(mock_atg_sp_id):
             f"resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-{i}"
             for i in range(1, 11)
         ]
-        + [
-            f"user-{i}" for i in range(1, 6)
-        ],
+        + [f"user-{i}" for i in range(1, 6)],
         "to_preserve": [
             mock_atg_sp_id,
-            f"/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/"
-            f"providers/Microsoft.Authorization/roleAssignments/atg-role-assignment",
+            "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/"
+            "providers/Microsoft.Authorization/roleAssignments/atg-role-assignment",
         ],
     }
 
@@ -443,7 +470,7 @@ def mock_environment_variables(mock_atg_sp_id, mock_tenant_id):
 
     os.environ["AZURE_CLIENT_ID"] = mock_atg_sp_id
     os.environ["AZURE_TENANT_ID"] = mock_tenant_id
-    os.environ["AZURE_CLIENT_SECRET"] = "mock-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "mock-secret"  # pragma: allowlist secret
 
     yield
 
@@ -455,12 +482,14 @@ def mock_environment_variables(mock_atg_sp_id, mock_tenant_id):
 # Export exceptions for tests
 class SecurityError(Exception):
     """Mock SecurityError exception."""
+
     pass
 
 
 class RateLimitError(Exception):
     """Mock RateLimitError exception."""
+
     pass
 
 
-__all__ = ["SecurityError", "RateLimitError"]
+__all__ = ["RateLimitError", "SecurityError"]

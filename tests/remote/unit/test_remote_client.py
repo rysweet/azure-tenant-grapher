@@ -396,7 +396,9 @@ async def test_stream_progress_converts_http_to_ws_url(remote_client):
     mock_ws.__aexit__ = AsyncMock(return_value=None)
     mock_ws.recv = AsyncMock(side_effect=[json.dumps({"type": "complete"})])
 
-    with patch("src.remote.client.remote_client.connect", return_value=mock_ws) as mock_connect:  # type: ignore[attr-defined]  # patch() returns regular context manager
+    with patch(
+        "src.remote.client.remote_client.connect", return_value=mock_ws
+    ) as mock_connect:  # type: ignore[attr-defined]  # patch() returns regular context manager
         async for _ in remote_client._stream_progress(job_id):
             pass
 

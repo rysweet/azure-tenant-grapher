@@ -541,9 +541,9 @@ class TestScheduledQueryRulesHandler:
         # Should have debug log with alert name
         assert any("alert" in msg for msg in log_messages)
         # Newline should be sanitized (removed) from all log messages
-        assert not any(
-            "\n" in msg for msg in log_messages
-        ), "Newline should be removed by sanitization"
+        assert not any("\n" in msg for msg in log_messages), (
+            "Newline should be removed by sanitization"
+        )
 
     def test_query_length_validation_oversized(
         self, handler, context, base_alert_resource
@@ -552,12 +552,14 @@ class TestScheduledQueryRulesHandler:
         # Create a query that exceeds MAX_QUERY_LENGTH (10000 chars)
         oversized_query = "A" * 15000
 
-        base_alert_resource["properties"]["criteria"]["allOf"][0][
-            "query"
-        ] = oversized_query
+        base_alert_resource["properties"]["criteria"]["allOf"][0]["query"] = (
+            oversized_query
+        )
 
         result = handler.emit(base_alert_resource, context)
 
         # Should skip emission when all criteria are filtered out due to oversized queries
         # This tests the DoS protection correctly skips invalid alert rules
-        assert result is None, "Handler should skip alert when all criteria exceed size limit"
+        assert result is None, (
+            "Handler should skip alert when all criteria exceed size limit"
+        )

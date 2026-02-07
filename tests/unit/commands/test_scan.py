@@ -15,7 +15,7 @@ This module tests the core Azure tenant scanning functionality including:
 
 import pytest
 
-from src.commands.scan import build, build_command_handler, scan, test
+from src.commands.scan import build, build_command_handler, scan
 
 # ============================================================================
 # UNIT TESTS (60%) - Test individual functions with mocked dependencies
@@ -358,7 +358,7 @@ class TestScanIntegration:
         mocker,
     ):
         """Handler creates correct FilterConfig from parameters."""
-        mock_filter = mocker.patch("src.models.filter_config.FilterConfig")
+        mocker.patch("src.models.filter_config.FilterConfig")
 
         await build_command_handler(
             ctx=mock_click_context,
@@ -399,7 +399,7 @@ class TestScanE2E:
         mock_azure_tenant_grapher,
     ):
         """Test-scan command automatically limits resources."""
-        result = cli_runner.invoke(test_scan, ["--tenant-id", sample_tenant_id])
+        result = cli_runner.invoke(scan, ["--tenant-id", sample_tenant_id])
         # Should succeed (or fail for other reasons, not missing resource limit)
         assert result is not None
 

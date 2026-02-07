@@ -27,19 +27,16 @@ from .mcp_operations import (
 )
 
 __all__ = [
-    # Config management
-    "read_config",
-    "write_config",
-    "backup_config",
-    "restore_config",
-    # MCP operations
     "MCPServer",
-    "list_servers",
-    "enable_server",
+    "backup_config",
     "disable_server",
-    "validate_config",
-    # CLI entry point
+    "enable_server",
+    "list_servers",
     "main",
+    "read_config",
+    "restore_config",
+    "validate_config",
+    "write_config",
 ]
 
 __version__ = "1.0.0"
