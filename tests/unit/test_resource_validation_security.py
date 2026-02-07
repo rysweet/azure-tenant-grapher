@@ -137,7 +137,7 @@ class TestErrorMessageSanitization:
 
     def test_sanitize_removes_connection_strings(self):
         """Test sanitization removes connection string values."""
-        error = Exception("DB error: connection_string=Server=myserver;Password=pass123")
+        error = Exception("DB error: connection_string=Server=myserver;Password=pass123")  # #ggignore
 
         sanitized = _sanitize_error_message(error, debug_mode=False)
 
