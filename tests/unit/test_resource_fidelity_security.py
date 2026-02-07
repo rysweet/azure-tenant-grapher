@@ -138,8 +138,8 @@ class TestRedactionLevelFull:
         """Test FULL redaction completely hides passwords."""
         comparison = PropertyComparison(
             property_path="properties.adminPassword",
-            source_value="MySecretPassword123!",
-            target_value="MySecretPassword456!",
+            source_value="MySecretPassword123!",  # #ggignore
+            target_value="MySecretPassword456!",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -155,8 +155,8 @@ class TestRedactionLevelFull:
         """Test FULL redaction completely hides connection strings."""
         comparison = PropertyComparison(
             property_path="properties.connectionStrings[0].connectionString",
-            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",
-            target_value="Server=tcp:myserver-dr.database.windows.net;Password=Secret456;",
+            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",  # #ggignore
+            target_value="Server=tcp:myserver-dr.database.windows.net;Password=Secret456;",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -218,8 +218,8 @@ class TestRedactionLevelMinimal:
         """Test MINIMAL redaction keeps server information visible."""
         comparison = PropertyComparison(
             property_path="properties.connectionStrings[0].connectionString",
-            source_value="Server=tcp:myserver.database.windows.net,1433;Initial Catalog=mydb;User ID=admin;Password=Secret123;",
-            target_value="Server=tcp:myserver-dr.database.windows.net,1433;Initial Catalog=mydb;User ID=admin;Password=Secret456;",
+            source_value="Server=tcp:myserver.database.windows.net,1433;Initial Catalog=mydb;User ID=admin;Password=Secret123;",  # #ggignore
+            target_value="Server=tcp:myserver-dr.database.windows.net,1433;Initial Catalog=mydb;User ID=admin;Password=Secret456;",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -230,15 +230,15 @@ class TestRedactionLevelMinimal:
         assert "myserver.database.windows.net" in redacted.source_value
         assert "myserver-dr.database.windows.net" in redacted.target_value
         # But redact password
-        assert "Secret123" not in redacted.source_value
-        assert "Secret456" not in redacted.target_value
+        assert "Secret123" not in redacted.source_value  # #ggignore
+        assert "Secret456" not in redacted.target_value  # #ggignore
 
     def test_minimal_redaction_redacts_passwords(self, calculator):
         """Test MINIMAL redaction still redacts password values."""
         comparison = PropertyComparison(
             property_path="properties.adminPassword",
-            source_value="MySecretPassword123!",
-            target_value="MySecretPassword456!",
+            source_value="MySecretPassword123!",  # #ggignore
+            target_value="MySecretPassword456!",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -284,8 +284,8 @@ class TestRedactionLevelNone:
         """Test NONE redaction shows passwords (dangerous!)."""
         comparison = PropertyComparison(
             property_path="properties.adminPassword",
-            source_value="MySecretPassword123!",
-            target_value="MySecretPassword456!",
+            source_value="MySecretPassword123!",  # #ggignore
+            target_value="MySecretPassword456!",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -293,15 +293,15 @@ class TestRedactionLevelNone:
         redacted = calculator._redact_if_sensitive(comparison, RedactionLevel.NONE)
 
         assert redacted.redacted is False
-        assert redacted.source_value == "MySecretPassword123!"
-        assert redacted.target_value == "MySecretPassword456!"
+        assert redacted.source_value == "MySecretPassword123!"  # #ggignore
+        assert redacted.target_value == "MySecretPassword456!"  # #ggignore
 
     def test_none_redaction_preserves_connection_strings(self, calculator):
         """Test NONE redaction shows full connection strings."""
         comparison = PropertyComparison(
             property_path="properties.connectionStrings[0].connectionString",
-            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",
-            target_value="Server=tcp:myserver-dr.database.windows.net;Password=Secret456;",
+            source_value="Server=tcp:myserver.database.windows.net;Password=Secret123;",  # #ggignore
+            target_value="Server=tcp:myserver-dr.database.windows.net;Password=Secret456;",  # #ggignore
             match=False,
             redacted=False,
         )
@@ -309,8 +309,8 @@ class TestRedactionLevelNone:
         redacted = calculator._redact_if_sensitive(comparison, RedactionLevel.NONE)
 
         assert redacted.redacted is False
-        assert "Password=Secret123" in redacted.source_value
-        assert "Password=Secret456" in redacted.target_value
+        assert "Password=Secret123" in redacted.source_value  # #ggignore
+        assert "Password=Secret456" in redacted.target_value  # #ggignore
 
 
 class TestSecurityWarnings:
@@ -369,11 +369,11 @@ class TestRedactionInPropertyComparisons:
     def test_compare_properties_applies_redaction(self, calculator):
         """Test that property comparison automatically applies redaction."""
         source_props = {
-            "adminPassword": "SecretPass123!",
+            "adminPassword": "SecretPass123!",  # #ggignore
             "sku": {"name": "Standard_LRS"},
         }
         target_props = {
-            "adminPassword": "SecretPass456!",
+            "adminPassword": "SecretPass456!",  # #ggignore
             "sku": {"name": "Premium_LRS"},
         }
 
