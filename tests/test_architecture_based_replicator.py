@@ -19,67 +19,6 @@ from src.architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
 
 
 class TestInitialization:
-    def sample_pattern_graph(self):
-        """Sample pattern graph for testing."""
-        graph = nx.MultiDiGraph()
-        graph.add_node("virtualMachines", count=10)
-        graph.add_node("disks", count=15)
-        graph.add_node("networkInterfaces", count=10)
-        graph.add_edge(
-            "virtualMachines", "disks", relationship="DEPENDS_ON", frequency=10
-        )
-        graph.add_edge(
-            "virtualMachines",
-            "networkInterfaces",
-            relationship="DEPENDS_ON",
-            frequency=10,
-        )
-        return graph
-
-    @pytest.fixture
-    def sample_detected_patterns(self):
-        """Sample detected patterns for testing."""
-        return {
-            "Virtual Machine Workload": {
-                "matched_resources": ["virtualMachines", "disks", "networkInterfaces"],
-                "missing_resources": ["networkSecurityGroups"],
-                "completeness": 75.0,
-                "connection_count": 20,
-            },
-            "Web Application": {
-                "matched_resources": ["sites", "serverFarms"],
-                "missing_resources": ["storageAccounts"],
-                "completeness": 66.7,
-                "connection_count": 5,
-            },
-        }
-
-    @pytest.fixture
-    def sample_pattern_resources(self):
-        """Sample pattern resources (instances) for testing."""
-        return {
-            "Virtual Machine Workload": [
-                [
-                    {"id": "vm1", "type": "virtualMachines", "name": "vm-1"},
-                    {"id": "disk1", "type": "disks", "name": "disk-1"},
-                    {"id": "nic1", "type": "networkInterfaces", "name": "nic-1"},
-                ],
-                [
-                    {"id": "vm2", "type": "virtualMachines", "name": "vm-2"},
-                    {"id": "disk2", "type": "disks", "name": "disk-2"},
-                    {"id": "nic2", "type": "networkInterfaces", "name": "nic-2"},
-                ],
-            ],
-            "Web Application": [
-                [
-                    {"id": "site1", "type": "sites", "name": "site-1"},
-                    {"id": "farm1", "type": "serverFarms", "name": "farm-1"},
-                ]
-            ],
-        }
-
-
-class TestInitialization:
     """Test replicator initialization."""
 
     def test_init_basic(self, replicator):
@@ -640,7 +579,11 @@ class TestOrphanedNodeHandling:
     """Test orphaned node detection and handling."""
 
     def test_find_orphaned_node_instances_basic(
-        self, replicator, sample_pattern_graph, sample_detected_patterns
+        self,
+        replicator,
+        sample_pattern_graph,
+        sample_detected_patterns,
+        mock_neo4j_driver,
     ):
         """Test finding instances with orphaned resource types."""
         replicator.source_pattern_graph = sample_pattern_graph
@@ -655,14 +598,20 @@ class TestOrphanedNodeHandling:
             "disks": 5,
             "networkInterfaces": 8,
             "sites": 4,
-            "serverFarms": 2
+            "serverFarms": 2,
         }
 
-        # Call the private method directly (no longer using separate handler)
-        orphaned_instances = replicator._find_orphaned_node_instances()
+        # Mock Neo4j session
+        mock_session = Mock()
+        mock_session.run.return_value = iter([])  # No orphaned types in Neo4j
+
+        # Call the private method with mock session
+        orphaned_instances = replicator._find_orphaned_node_instances(
+            session=mock_session
+        )
 
         assert isinstance(orphaned_instances, list)
-        # Note: This will query Neo4j, so result depends on test data
+        assert len(orphaned_instances) == 0  # No orphaned types expected
 
     def test_find_orphaned_node_instances_with_orphans(
         self,
@@ -676,38 +625,69 @@ class TestOrphanedNodeHandling:
         replicator.detected_patterns = sample_detected_patterns
 
         # Set source_resource_type_counts with orphaned types (not in patterns)
-        # Pattern types: virtualMachines, virtualNetworks, storageAccounts, sites, serverFarms
-        # Orphaned type: Microsoft.Insights/actiongroups
+        # Pattern types: virtualMachines, disks, networkInterfaces, sites, serverFarms, storageAccounts
+        # Orphaned type: actiongroups
         replicator.source_resource_type_counts = {
             "virtualMachines": 10,
-            "virtualNetworks": 5,
-            "storageAccounts": 3,
+            "disks": 5,
+            "networkInterfaces": 8,
             "sites": 4,
             "serverFarms": 2,
-            "Microsoft.Insights/actiongroups": 1  # Orphaned - not in any pattern
+            "storageAccounts": 3,
+            "actiongroups": 1,  # Orphaned - not in any pattern
         }
 
-        # Mock Neo4j query to return orphaned instances
-        mock_orphaned_result = [
-            (
-                "Orphaned: actiongroups",
-                [
-                    {
-                        "id": "action1",
-                        "type": "actiongroups",
-                        "name": "action-1",
-                    }
-                ]
-            )
+        # Mock Neo4j session
+        mock_session = Mock()
+
+        # Mock the type query (returns all resource types in Neo4j)
+        type_query_result = [
+            {"full_type": "Microsoft.Compute/virtualMachines"},
+            {"full_type": "Microsoft.Compute/disks"},
+            {"full_type": "Microsoft.Network/networkInterfaces"},
+            {"full_type": "Microsoft.Web/sites"},
+            {"full_type": "Microsoft.Web/serverFarms"},
+            {"full_type": "Microsoft.Storage/storageAccounts"},
+            {"full_type": "Microsoft.Insights/actiongroups"},  # Orphaned type
         ]
 
-        # Mock the Neo4j driver to return orphaned data
-        with patch.object(mock_neo4j_driver, 'session') as mock_session:
-            mock_session.return_value.__enter__.return_value.run.return_value = mock_orphaned_result
-            orphaned_instances = replicator._find_orphaned_node_instances()
+        # Mock the orphaned resources query (returns orphaned instances)
+        orphaned_query_result = [
+            {
+                "rg_id": "rg-1",
+                "resources": [
+                    {
+                        "id": "action1",
+                        "type": "Microsoft.Insights/actiongroups",
+                        "name": "action-1",
+                    }
+                ],
+            }
+        ]
 
-            assert isinstance(orphaned_instances, list)
-            # Note: Result depends on Neo4j mock data
+        # Setup mock to return different results for different queries
+        def mock_run(query, **kwargs):
+            if "RETURN DISTINCT r.type as full_type" in query:
+                return iter(type_query_result)
+            elif "MATCH (rg:ResourceGroup)" in query:
+                return iter(orphaned_query_result)
+            elif "NOT (r)<-[:CONTAINS]-(:ResourceGroup)" in query:
+                return iter([])  # No standalone resources
+            else:
+                return iter([])
+
+        mock_session.run.side_effect = mock_run
+
+        # Call the private method with mock session
+        orphaned_instances = replicator._find_orphaned_node_instances(
+            session=mock_session
+        )
+
+        assert isinstance(orphaned_instances, list)
+        assert len(orphaned_instances) == 1
+        assert orphaned_instances[0][0] == "Orphaned: actiongroups"
+        assert len(orphaned_instances[0][1]) == 1
+        assert orphaned_instances[0][1][0]["type"] == "actiongroups"
 
 
 class TestReplicationPlanGeneration:
@@ -746,7 +726,7 @@ class TestReplicationPlanGeneration:
             "disks": 5,
             "networkInterfaces": 8,
             "sites": 4,
-            "serverFarms": 2
+            "serverFarms": 2,
         }
 
         with patch.object(
@@ -835,7 +815,7 @@ class TestReplicationPlanGeneration:
             "disks": 5,
             "networkInterfaces": 8,
             "sites": 4,
-            "serverFarms": 2
+            "serverFarms": 2,
         }
 
         # Mock _find_orphaned_node_instances since default is now include_orphaned_node_patterns=True
