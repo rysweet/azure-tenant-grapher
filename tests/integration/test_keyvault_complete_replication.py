@@ -18,14 +18,13 @@ Test coverage:
 
 import json
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
 from src.config_manager import AzureTenantGrapherConfig
 from src.iac.emitters.terraform.context import EmitterContext
 from src.iac.emitters.terraform.handlers import ensure_handlers_registered
-from src.services.azure_discovery_service import AzureDiscoveryService
 
 
 class TestKeyVaultCompleteReplication:
@@ -283,7 +282,9 @@ class TestKeyVaultCompleteReplication:
 
         # Verify private_connection_resource_id references Key Vault
         psc = config["private_service_connection"]
-        assert "${azurerm_key_vault.test_kv.id}" in psc["private_connection_resource_id"]
+        assert (
+            "${azurerm_key_vault.test_kv.id}" in psc["private_connection_resource_id"]
+        )
 
     @pytest.mark.asyncio
     async def test_neo4j_relationships_preserved_in_terraform(

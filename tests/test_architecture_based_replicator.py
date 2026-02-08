@@ -120,7 +120,7 @@ class TestConfigurationSimilarity:
             "tags": {"env": "prod", "app": "web"},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         assert similarity == 1.0
 
@@ -137,7 +137,7 @@ class TestConfigurationSimilarity:
             "tags": {"env": "prod"},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Location mismatch should reduce similarity by 0.5 (location weight)
         assert similarity < 1.0
@@ -156,7 +156,7 @@ class TestConfigurationSimilarity:
             "tags": {},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Same location (0.5) + same tier (0.3) = 0.8
         assert similarity >= 0.7
@@ -174,7 +174,7 @@ class TestConfigurationSimilarity:
             "tags": {},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Only location match (0.5)
         assert 0.4 <= similarity <= 0.6
@@ -192,7 +192,7 @@ class TestConfigurationSimilarity:
             "tags": {"env": "prod", "app": "api"},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Location + SKU + partial tags should give high similarity
         assert similarity > 0.8
@@ -210,7 +210,7 @@ class TestConfigurationSimilarity:
             "tags": {},
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Location + SKU = 0.8 (no tag contribution when both empty)
         assert similarity == 0.8
@@ -228,7 +228,7 @@ class TestConfigurationSimilarity:
             "tags": '{"env": "prod"}',
         }
 
-        similarity = replicator._compute_configuration_similarity(fp1, fp2)
+        similarity = replicator.config_similarity.compute_similarity(fp1, fp2)
 
         # Should parse JSON strings and compute tag overlap
         assert similarity > 0.8
@@ -249,7 +249,7 @@ class TestSpectralDistance:
         graph2.add_node("B", count=1)
         graph2.add_edge("A", "B", relationship="DEPENDS_ON", frequency=1)
 
-        distance = replicator._compute_spectral_distance(graph1, graph2)
+        distance = replicator.graph_analyzer.compute_spectral_distance(graph1, graph2)
 
         assert distance < 0.1  # Very similar
 
@@ -267,7 +267,7 @@ class TestSpectralDistance:
         graph2.add_edge("A", "B", relationship="DEPENDS_ON", frequency=1)
         graph2.add_edge("B", "C", relationship="DEPENDS_ON", frequency=1)
 
-        distance = replicator._compute_spectral_distance(graph1, graph2)
+        distance = replicator.graph_analyzer.compute_spectral_distance(graph1, graph2)
 
         assert distance > 0.1  # Noticeably different
 
@@ -277,7 +277,7 @@ class TestSpectralDistance:
         graph2 = nx.MultiDiGraph()
         graph2.add_node("A", count=1)
 
-        distance = replicator._compute_spectral_distance(graph1, graph2)
+        distance = replicator.graph_analyzer.compute_spectral_distance(graph1, graph2)
 
         assert distance == 1.0  # Maximum distance
 
@@ -289,7 +289,7 @@ class TestSpectralDistance:
             graph2 = nx.MultiDiGraph()
             graph2.add_node("A", count=1)
 
-            distance = replicator._compute_spectral_distance(graph1, graph2)
+            distance = replicator.graph_analyzer.compute_spectral_distance(graph1, graph2)
 
             assert distance == 1.0  # Falls back to max distance on error
 
@@ -307,7 +307,7 @@ class TestWeightedScore:
 
         source_nodes = set(sample_pattern_graph.nodes())
 
-        score = replicator._compute_weighted_score(
+        score = replicator.graph_analyzer.compute_weighted_score(
             sample_pattern_graph, target_graph, source_nodes, node_coverage_weight=0.0
         )
 
@@ -328,7 +328,7 @@ class TestWeightedScore:
 
         source_nodes = set(sample_pattern_graph.nodes())
 
-        score = replicator._compute_weighted_score(
+        score = replicator.graph_analyzer.compute_weighted_score(
             sample_pattern_graph, target_graph, source_nodes, node_coverage_weight=1.0
         )
 
@@ -345,7 +345,7 @@ class TestWeightedScore:
 
         source_nodes = set(sample_pattern_graph.nodes())
 
-        score = replicator._compute_weighted_score(
+        score = replicator.graph_analyzer.compute_weighted_score(
             sample_pattern_graph, target_graph, source_nodes, node_coverage_weight=0.5
         )
 
