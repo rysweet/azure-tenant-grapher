@@ -28,16 +28,16 @@ from neo4j import GraphDatabase
 
 from .architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
 from .architecture_replication_constants import (
+    CONFIGURATION_SIMILARITY_WEIGHTS,
     DEFAULT_COHERENCE_THRESHOLD,
     DEFAULT_MAX_CONFIG_SAMPLES,
     DEFAULT_SPECTRAL_WEIGHT,
+    MAX_INSTANCES_PER_STANDALONE_TYPE,
+    MIN_CLUSTER_SIZE,
     NODE_COVERAGE_WEIGHT_EXTREMES,
     ORPHANED_PATTERN_BUDGET_FRACTION,
-    ReplicationDefaults,
+    STANDALONE_ORPHANED_BUDGET_FRACTION,
 )
-from .configuration_coherence_analyzer import ConfigurationCoherenceAnalyzer
-from .orphaned_resource_handler import OrphanedResourceHandler
-from .spectral_distance_calculator import SpectralDistanceCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -73,13 +73,6 @@ class ArchitecturePatternReplicator:
         # Pattern analyzer for building generalized graphs
         self.analyzer = ArchitecturalPatternAnalyzer(
             neo4j_uri, neo4j_user, neo4j_password
-        )
-
-        # Helper classes for modular operations
-        self.config_analyzer = ConfigurationCoherenceAnalyzer(analyzer=self.analyzer)
-        self.spectral_calculator = SpectralDistanceCalculator()
-        self.orphaned_handler = OrphanedResourceHandler(
-            neo4j_uri, neo4j_user, neo4j_password, analyzer=self.analyzer
         )
 
         # Graphs
@@ -357,7 +350,10 @@ class ArchitecturePatternReplicator:
                 instance = list(pattern_resources)
 
                 # Include co-located orphaned resources if enabled
-                if include_colocated_orphaned_resources and rg_id in rg_to_all_resources:
+                if (
+                    include_colocated_orphaned_resources
+                    and rg_id in rg_to_all_resources
+                ):
                     orphaned_count = 0
                     for resource_type, resource in rg_to_all_resources[rg_id]:
                         # Check if this resource type is NOT in any pattern (orphaned)
@@ -396,6 +392,10 @@ class ArchitecturePatternReplicator:
 
         return instances
 
+    # ============================================================================
+    # CONFIGURATION COHERENCE - Internal helpers for clustering by config similarity
+    # ============================================================================
+
     def _compute_configuration_similarity(
         self,
         fingerprint1: Dict[str, Any],
@@ -416,7 +416,147 @@ class ArchitecturePatternReplicator:
         Returns:
             Similarity score (0.0 to 1.0, where 1.0 = identical)
         """
-        return self.config_analyzer.compute_similarity(fingerprint1, fingerprint2)
+        score = 0.0
+        weights = CONFIGURATION_SIMILARITY_WEIGHTS
+
+        # Location match (exact)
+        loc1 = fingerprint1.get("location", "")
+        loc2 = fingerprint2.get("location", "")
+        if loc1 and loc2 and loc1 == loc2:
+            score += weights["location"]
+
+        # SKU tier similarity (extract tier from SKU)
+        sku1 = fingerprint1.get("sku", "")
+        sku2 = fingerprint2.get("sku", "")
+
+        tier1 = self._extract_sku_tier(sku1)
+        tier2 = self._extract_sku_tier(sku2)
+        if tier1 and tier2 and tier1 == tier2:
+            score += weights["sku_tier"]
+
+        # Tag overlap (Jaccard similarity)
+        tags1_data = self._parse_tags(fingerprint1.get("tags", {}))
+        tags2_data = self._parse_tags(fingerprint2.get("tags", {}))
+
+        tags1 = set(tags1_data.keys() if isinstance(tags1_data, dict) else [])
+        tags2 = set(tags2_data.keys() if isinstance(tags2_data, dict) else [])
+        if tags1 or tags2:
+            intersection = len(tags1 & tags2)
+            union = len(tags1 | tags2)
+            tag_similarity = intersection / union if union > 0 else 0
+            score += weights["tags"] * tag_similarity
+
+        return score
+
+    @staticmethod
+    def _parse_tags(tags_data):
+        """
+        Parse tags data which may be a JSON string or dict.
+
+        Args:
+            tags_data: Tags as dict or JSON string
+
+        Returns:
+            Dict of tags or empty dict if parsing fails
+        """
+        if isinstance(tags_data, str):
+            try:
+                return json.loads(tags_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return tags_data if isinstance(tags_data, dict) else {}
+
+    @staticmethod
+    def _extract_sku_tier(sku: str) -> str:
+        """
+        Extract tier from SKU string.
+
+        Args:
+            sku: SKU string (e.g., "Standard_D2s_v3", "Premium_LRS")
+
+        Returns:
+            Tier string (e.g., "standard", "premium")
+        """
+        if not sku or sku == "UnknownSKU":
+            return ""
+        parts = sku.split("_")
+        if parts:
+            # Common patterns: "Standard_D2s_v3", "Premium_LRS"
+            return parts[0].lower()
+        return ""
+
+    def _cluster_by_coherence(
+        self,
+        resources: List[Dict[str, Any]],
+        resource_fingerprints: Dict[str, Dict[str, Any]],
+        coherence_threshold: float = DEFAULT_COHERENCE_THRESHOLD,
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Cluster resources by configuration coherence using agglomerative clustering.
+
+        Args:
+            resources: List of resources to cluster
+            resource_fingerprints: Map of resource ID to configuration fingerprint
+            coherence_threshold: Minimum similarity for resources to be in same cluster
+
+        Returns:
+            List of clusters, where each cluster is a list of resources
+        """
+        if len(resources) < MIN_CLUSTER_SIZE:
+            # < 2 resources, no clustering needed
+            return [resources] if resources else []
+
+        # Compute pairwise similarities
+        similarity_matrix = {}
+        for i, res1 in enumerate(resources):
+            for j, res2 in enumerate(resources):
+                if i < j:
+                    fp1 = resource_fingerprints[res1["id"]]
+                    fp2 = resource_fingerprints[res2["id"]]
+                    sim = self._compute_configuration_similarity(fp1, fp2)
+                    similarity_matrix[(i, j)] = sim
+
+        # Start with each resource in its own cluster
+        clusters = [[res] for res in resources]
+
+        # Iteratively merge most similar clusters above threshold
+        merged = True
+        while merged and len(clusters) > 1:
+            merged = False
+            best_sim = coherence_threshold
+            best_pair = None
+
+            # Find best cluster pair to merge
+            for i in range(len(clusters)):
+                for j in range(i + 1, len(clusters)):
+                    # Compute average similarity between clusters
+                    similarities = []
+                    for res1 in clusters[i]:
+                        for res2 in clusters[j]:
+                            idx1 = resources.index(res1)
+                            idx2 = resources.index(res2)
+                            key = (min(idx1, idx2), max(idx1, idx2))
+                            if key in similarity_matrix:
+                                similarities.append(similarity_matrix[key])
+
+                    if similarities:
+                        avg_sim = sum(similarities) / len(similarities)
+                        if avg_sim > best_sim:
+                            best_sim = avg_sim
+                            best_pair = (i, j)
+
+            # Merge best pair if found
+            if best_pair:
+                i, j = best_pair
+                merged_cluster = clusters[i] + clusters[j]
+                # Remove old clusters (remove j first to preserve i index)
+                clusters.pop(j)
+                clusters.pop(i)
+                clusters.append(merged_cluster)
+                merged = True
+
+        # Only return clusters with minimum size
+        return [c for c in clusters if len(c) >= MIN_CLUSTER_SIZE]
 
     def _find_configuration_coherent_instances(
         self,
@@ -447,14 +587,159 @@ class ArchitecturePatternReplicator:
         Returns:
             List of configuration-coherent instances
         """
-        return self.config_analyzer.find_configuration_coherent_instances(
-            pattern_name=pattern_name,
-            matched_types=matched_types,
-            session=session,
-            detected_patterns=self.detected_patterns,
-            coherence_threshold=coherence_threshold,
-            include_colocated_orphaned_resources=include_colocated_orphaned_resources,
+        # Compute all pattern types across all detected patterns (for orphan detection)
+        all_pattern_types = set()
+        for pattern_info in self.detected_patterns.values():
+            all_pattern_types.update(pattern_info["matched_resources"])
+
+        # Query for resources
+        if include_colocated_orphaned_resources:
+            # Get ALL resources to identify orphans
+            query = """
+            MATCH (rg:ResourceGroup)-[:CONTAINS]->(r:Resource:Original)
+            RETURN rg.id as resource_group_id,
+                   r.id as id,
+                   r.type as type,
+                   r.name as name,
+                   r.location as location,
+                   r.tags as tags,
+                   r.properties as properties
+            ORDER BY rg.id
+            """
+            result = session.run(query)
+        else:
+            # Original behavior: only get pattern type resources
+            query = """
+            MATCH (rg:ResourceGroup)-[:CONTAINS]->(r:Resource:Original)
+            WHERE r.type IN $types
+            RETURN rg.id as resource_group_id,
+                   r.id as id,
+                   r.type as type,
+                   r.name as name,
+                   r.location as location,
+                   r.tags as tags,
+                   r.properties as properties
+            ORDER BY rg.id
+            """
+
+            # Convert simplified types to full Azure types
+            full_types = []
+            for simplified in matched_types:
+                # Common namespace patterns
+                for namespace in [
+                    "Microsoft.Compute",
+                    "Microsoft.Network",
+                    "Microsoft.Storage",
+                    "Microsoft.Web",
+                    "Microsoft.Insights",
+                    "Microsoft.Sql",
+                    "Microsoft.KeyVault",
+                    "Microsoft.ContainerRegistry",
+                    "Microsoft.ContainerService",
+                ]:
+                    full_types.append(f"{namespace}/{simplified}")
+
+            result = session.run(query, types=full_types)
+
+        # Group by ResourceGroup first
+        rg_to_pattern_resources = {}  # Only pattern types
+        rg_to_all_resources = {}  # All resources (for orphan inclusion)
+        resource_fingerprints = {}
+
+        for record in result:
+            simplified_type = self.analyzer._get_resource_type_name(
+                ["Resource"], record["type"]
+            )
+
+            resource_id = record["id"]
+            rg_id = record["resource_group_id"]
+
+            # Parse properties if JSON string
+            properties = record["properties"]
+            if isinstance(properties, str):
+                try:
+                    properties = json.loads(properties)
+                except json.JSONDecodeError:
+                    properties = None
+
+            # Create configuration fingerprint
+            fingerprint = self.analyzer.create_configuration_fingerprint(
+                resource_id,
+                record["type"],
+                record["location"],
+                record["tags"],
+                properties,
+            )
+
+            resource = {
+                "id": resource_id,
+                "type": simplified_type,
+                "name": record["name"],
+            }
+
+            # Track all resources if including orphaned
+            if include_colocated_orphaned_resources:
+                if rg_id not in rg_to_all_resources:
+                    rg_to_all_resources[rg_id] = []
+                rg_to_all_resources[rg_id].append((simplified_type, resource))
+
+            # Only include pattern-matching resources in clustering
+            if simplified_type not in matched_types:
+                continue
+
+            # This resource matches the pattern - add to pattern tracking
+            if rg_id not in rg_to_pattern_resources:
+                rg_to_pattern_resources[rg_id] = []
+
+            rg_to_pattern_resources[rg_id].append(resource)
+            resource_fingerprints[resource_id] = fingerprint
+
+        if not rg_to_pattern_resources:
+            return []
+
+        # Now split each ResourceGroup into configuration-coherent clusters
+        all_instances = []
+
+        for rg_id, resources in rg_to_pattern_resources.items():
+            if len(resources) < MIN_CLUSTER_SIZE:
+                # < 2 resources, trivially coherent
+                all_instances.append(resources)
+                continue
+
+            # Cluster resources by configuration coherence
+            clusters = self._cluster_by_coherence(
+                resources, resource_fingerprints, coherence_threshold
+            )
+
+            # Add orphaned resources if enabled
+            for cluster in clusters:
+                if (
+                    include_colocated_orphaned_resources
+                    and rg_id in rg_to_all_resources
+                ):
+                    orphaned_count = 0
+                    for resource_type, resource in rg_to_all_resources[rg_id]:
+                        # Check if this resource type is NOT in any pattern (orphaned)
+                        if resource_type not in all_pattern_types:
+                            # Check if not already in cluster (avoid duplicates)
+                            if not any(r["id"] == resource["id"] for r in cluster):
+                                cluster.append(resource)
+                                orphaned_count += 1
+
+                    if orphaned_count > 0:
+                        logger.debug(
+                            f"  Added {orphaned_count} co-located orphaned resources "
+                            f"to cluster in RG {rg_id}"
+                        )
+
+                all_instances.append(cluster)
+
+        logger.debug(
+            f"  Found {len(all_instances)} configuration-coherent instances "
+            f"(threshold: {coherence_threshold})"
         )
+
+        return all_instances
 
     def generate_replication_plan(
         self,
@@ -623,11 +908,12 @@ class ArchitecturePatternReplicator:
 
             # Include orphaned instances in pattern targets for selection
             if include_orphaned_node_patterns and orphaned_instances:
-
                 # NEW (2026-02-02): Only set orphaned target if not already computed by coverage-aware allocation
                 if "Orphaned Resources" not in pattern_targets:
                     # Reserve budget for orphaned resources (25% of total by default)
-                    orphaned_target_count = max(1, int(target_instance_count * ORPHANED_PATTERN_BUDGET_FRACTION))
+                    orphaned_target_count = max(
+                        1, int(target_instance_count * ORPHANED_PATTERN_BUDGET_FRACTION)
+                    )
                     pattern_targets["Orphaned Resources"] = orphaned_target_count
                     logger.info(
                         f"Added 'Orphaned Resources' pattern with {len(orphaned_instances)} instances "
@@ -669,7 +955,7 @@ class ArchitecturePatternReplicator:
                 use_spectral_guidance,
                 spectral_weight,
                 max_config_samples,
-                sampling_strategy
+                sampling_strategy,
             )
         else:
             logger.info("LAYER 3: Greedy spectral matching (fallback mode)")
@@ -782,6 +1068,10 @@ class ArchitecturePatternReplicator:
 
         return list(pattern_instances.items()), spectral_history, distribution_metadata
 
+    # ============================================================================
+    # ORPHANED RESOURCE HANDLING - Internal helpers for detecting orphaned resources
+    # ============================================================================
+
     def _find_orphaned_node_instances(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Find instances that contain orphaned node resource types.
@@ -792,10 +1082,235 @@ class ArchitecturePatternReplicator:
         Returns:
             List of (pseudo_pattern_name, instance) tuples for orphaned resources
         """
-        return self.orphaned_handler.find_orphaned_node_instances(
-            detected_patterns=self.detected_patterns,
-            source_resource_type_counts=self.source_resource_type_counts,
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
         )
+
+        orphaned_instances = []
+
+        try:
+            with driver.session() as session:
+                # Step 1: Query Neo4j for ALL resource types (full names)
+                type_query = """
+                MATCH (r:Resource:Original)
+                RETURN DISTINCT r.type as full_type
+                """
+                type_result = session.run(type_query)
+                all_full_types = [record["full_type"] for record in type_result]
+
+                logger.info(
+                    f"[DEBUG] Found {len(all_full_types)} distinct resource types in Neo4j"
+                )
+                logger.info(
+                    f"[DEBUG] First 10 full types from Neo4j: {sorted(all_full_types)[:10]}"
+                )
+
+                # Step 2: Build mapping from simplified to full names
+                simplified_to_full = {}
+                for full_type in all_full_types:
+                    simplified = self.analyzer._get_resource_type_name(
+                        ["Resource"], full_type
+                    )
+                    if simplified not in simplified_to_full:
+                        simplified_to_full[simplified] = []
+                    simplified_to_full[simplified].append(full_type)
+
+                logger.info(
+                    f"[DEBUG] Built mapping for {len(simplified_to_full)} simplified types"
+                )
+
+                # Step 3: Get pattern types (simplified names)
+                pattern_types_simplified = set()
+                for pattern_info in self.detected_patterns.values():
+                    pattern_types_simplified.update(pattern_info["matched_resources"])
+
+                logger.info(
+                    f"[DEBUG] Pattern types (simplified): {len(pattern_types_simplified)}"
+                )
+                logger.info(
+                    f"[DEBUG] First 10 pattern types: {sorted(list(pattern_types_simplified))[:10]}"
+                )
+
+                # Step 4: Compute orphaned types (simplified)
+                orphaned_types_simplified = (
+                    set(self.source_resource_type_counts.keys())
+                    - pattern_types_simplified
+                )
+
+                if not orphaned_types_simplified:
+                    logger.info("No orphaned resource types found in source graph")
+                    return []
+
+                logger.info(
+                    f"[DEBUG] Orphaned types (simplified): {len(orphaned_types_simplified)}"
+                )
+                logger.info(
+                    f"[DEBUG] First 10 orphaned types: {sorted(list(orphaned_types_simplified))[:10]}"
+                )
+
+                # Step 5: Map orphaned simplified types to full names
+                full_orphaned_types = []
+                unmapped_types = []
+                for simplified in orphaned_types_simplified:
+                    if simplified in simplified_to_full:
+                        full_orphaned_types.extend(simplified_to_full[simplified])
+                    else:
+                        unmapped_types.append(simplified)
+
+                if unmapped_types:
+                    logger.info(
+                        f"[DEBUG] {len(unmapped_types)} orphaned types not in Neo4j (organizational/identity types): {sorted(unmapped_types)[:10]}"
+                    )
+
+                if not full_orphaned_types:
+                    logger.info(
+                        "No orphaned types found in Neo4j (all simplified names unmapped)"
+                    )
+                    return []
+
+                logger.info(
+                    f"[DEBUG] Mapped to {len(full_orphaned_types)} full orphaned types"
+                )
+                logger.info(
+                    f"[DEBUG] First 10 full orphaned types: {sorted(full_orphaned_types)[:10]}"
+                )
+
+                # Step 6: Query Neo4j with CORRECT full names
+                query = """
+                MATCH (rg:ResourceGroup)-[:CONTAINS]->(r:Resource:Original)
+                WHERE r.type IN $orphaned_types
+                RETURN rg.id as rg_id,
+                       collect({id: r.id, type: r.type, name: r.name}) as resources
+                """
+
+                result = session.run(query, orphaned_types=full_orphaned_types)
+                result_list = list(result)
+                logger.info(f"[DEBUG] Query returned {len(result_list)} ResourceGroups")
+
+                for record in result_list:
+                    resources = record["resources"]
+                    if resources:
+                        # Simplify resource types
+                        all_resources_simplified = []
+                        for r in resources:
+                            simplified_type = self.analyzer._get_resource_type_name(
+                                ["Resource"], r["type"]
+                            )
+                            all_resources_simplified.append(
+                                {
+                                    "id": r["id"],
+                                    "type": simplified_type,
+                                    "name": r["name"],
+                                }
+                            )
+
+                        # Extract ONLY orphaned type resources
+                        orphaned_only_resources = [
+                            r
+                            for r in all_resources_simplified
+                            if r["type"] in orphaned_types_simplified
+                        ]
+
+                        if orphaned_only_resources:
+                            # Create a pseudo-pattern name for these orphaned instances
+                            orphaned_in_instance = {
+                                r["type"] for r in orphaned_only_resources
+                            }
+                            pseudo_pattern_name = f"Orphaned: {', '.join(sorted(list(orphaned_in_instance)[:3]))}"
+
+                            orphaned_instances.append(
+                                (pseudo_pattern_name, orphaned_only_resources)
+                            )
+
+                # Also search for standalone orphaned resources NOT in any ResourceGroup
+                rg_instance_count = len(orphaned_instances)
+                max_standalone = int(
+                    rg_instance_count * STANDALONE_ORPHANED_BUDGET_FRACTION
+                )
+
+                logger.info("=" * 80)
+                logger.info("[STANDALONE] Searching for standalone orphaned resources")
+                logger.info(
+                    f"[STANDALONE] Found {rg_instance_count} RG-based orphaned instances, "
+                    f"budget for standalone: {max_standalone}"
+                )
+
+                if max_standalone > 0:
+                    # Find standalone resources not in any ResourceGroup
+                    query_standalone = """
+                    MATCH (r:Resource:Original)
+                    WHERE r.type IN $orphaned_types
+                    AND NOT (r)<-[:CONTAINS]-(:ResourceGroup)
+                    RETURN r.id as id,
+                           r.type as type,
+                           r.name as name
+                    ORDER BY r.type
+                    """
+
+                    standalone_result = session.run(
+                        query_standalone, orphaned_types=list(full_orphaned_types)
+                    )
+
+                    # Track coverage to prioritize diverse types
+                    standalone_type_counts = {}
+                    standalone_added = 0
+
+                    for record in standalone_result:
+                        if standalone_added >= max_standalone:
+                            break
+
+                        simplified_type = self.analyzer._get_resource_type_name(
+                            ["Resource"], record["type"]
+                        )
+
+                        if simplified_type not in orphaned_types_simplified:
+                            continue
+
+                        # Prioritize types we haven't seen yet
+                        type_count = standalone_type_counts.get(simplified_type, 0)
+
+                        if type_count < MAX_INSTANCES_PER_STANDALONE_TYPE:
+                            singleton_instance = [
+                                {
+                                    "id": record["id"],
+                                    "type": simplified_type,
+                                    "name": record["name"],
+                                }
+                            ]
+
+                            pseudo_pattern_name = (
+                                f"Orphaned (standalone): {simplified_type}"
+                            )
+                            orphaned_instances.append(
+                                (pseudo_pattern_name, singleton_instance)
+                            )
+
+                            standalone_type_counts[simplified_type] = type_count + 1
+                            standalone_added += 1
+
+                    logger.info(
+                        f"[STANDALONE] Added {standalone_added} standalone instances covering "
+                        f"{len(standalone_type_counts)} unique types"
+                    )
+
+                    if standalone_added > 0:
+                        logger.info(
+                            f"[STANDALONE] Standalone types: {', '.join(sorted(standalone_type_counts.keys()))}"
+                        )
+                else:
+                    logger.info(
+                        "[STANDALONE] Skipping standalone search (no RG-based instances found)"
+                    )
+
+        finally:
+            driver.close()
+
+        logger.info(
+            f"Found {len(orphaned_instances)} total orphaned instances "
+            f"({len([i for i in orphaned_instances if 'standalone' in i[0]])} standalone)"
+        )
+
+        return orphaned_instances
 
     def _build_target_pattern_graph_from_instances(
         self, selected_instances: List[Tuple[str, List[Dict[str, Any]]]]
@@ -1025,6 +1540,57 @@ class ArchitecturePatternReplicator:
         logger.info(f"Generated {len(suggestions)} improvement recommendations")
         return suggestions
 
+    # ============================================================================
+    # SPECTRAL DISTANCE - Internal helpers for graph structural similarity
+    # ============================================================================
+
+    def _compute_spectral_distance(
+        self, graph1: nx.DiGraph, graph2: nx.DiGraph
+    ) -> float:
+        """
+        Compute normalized spectral distance using Laplacian eigenvalues.
+
+        Args:
+            graph1: First graph
+            graph2: Second graph
+
+        Returns:
+            Normalized spectral distance (0.0 = identical, 1.0 = maximally different)
+        """
+        if len(graph1.nodes()) == 0 or len(graph2.nodes()) == 0:
+            return 1.0
+
+        try:
+            # Get Laplacian matrices
+            L1 = nx.laplacian_matrix(graph1.to_undirected()).toarray()
+            L2 = nx.laplacian_matrix(graph2.to_undirected()).toarray()
+
+            # Pad matrices to same size
+            max_size = max(L1.shape[0], L2.shape[0])
+            L1_padded = np.zeros((max_size, max_size))
+            L2_padded = np.zeros((max_size, max_size))
+            L1_padded[: L1.shape[0], : L1.shape[1]] = L1
+            L2_padded[: L2.shape[0], : L2.shape[1]] = L2
+
+            # Compute eigenvalues
+            eigenvals1 = np.sort(np.linalg.eigvalsh(L1_padded))
+            eigenvals2 = np.sort(np.linalg.eigvalsh(L2_padded))
+
+            # Compute normalized distance
+            diff = eigenvals1 - eigenvals2
+            max_eigenval = max(
+                np.max(np.abs(eigenvals1)), np.max(np.abs(eigenvals2)), 1.0
+            )
+
+            # Use normalized L2 distance
+            distance = np.linalg.norm(diff) / (max_eigenval * np.sqrt(max_size))
+
+            return distance
+
+        except Exception as e:
+            logger.warning(f"Failed to compute spectral distance: {e}")
+            return 1.0
+
     def _compute_weighted_score(
         self,
         source_graph: nx.DiGraph,
@@ -1051,7 +1617,7 @@ class ArchitecturePatternReplicator:
             Weighted score (lower is better)
         """
         # Compute spectral distance (structural similarity)
-        spectral_distance = self.spectral_calculator.compute_distance(source_graph, target_graph)
+        spectral_distance = self._compute_spectral_distance(source_graph, target_graph)
 
         # Compute node coverage penalty (missing types)
         # This is the fraction of source nodes NOT yet in target
@@ -1061,27 +1627,15 @@ class ArchitecturePatternReplicator:
             len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
         )
 
-        # Use the calculator's weighted score method
-        return self.spectral_calculator.compute_weighted_score(
-            spectral_distance=spectral_distance,
-            node_coverage_penalty=node_coverage_penalty,
-            node_coverage_weight=node_coverage_weight,
-        )
+        # Weighted average
+        # node_coverage_weight = 0.0: score = spectral_distance (original behavior)
+        # node_coverage_weight = 1.0: score = node_coverage_penalty (pure greedy)
+        # node_coverage_weight = 0.5: score = balanced average
+        score = (
+            1.0 - node_coverage_weight
+        ) * spectral_distance + node_coverage_weight * node_coverage_penalty
 
-    def _compute_spectral_distance(
-        self, graph1: nx.DiGraph, graph2: nx.DiGraph
-    ) -> float:
-        """
-        Compute normalized spectral distance using Laplacian eigenvalues.
-
-        Args:
-            graph1: First graph
-            graph2: Second graph
-
-        Returns:
-            Normalized spectral distance
-        """
-        return self.spectral_calculator.compute_distance(graph1, graph2)
+        return score
 
     def generate_configuration_based_plan(
         self,
@@ -1317,7 +1871,7 @@ class ArchitecturePatternReplicator:
         use_spectral_guidance: bool = False,
         spectral_weight: float = DEFAULT_SPECTRAL_WEIGHT,
         max_config_samples: int = DEFAULT_MAX_CONFIG_SAMPLES,
-        sampling_strategy: str = "coverage"
+        sampling_strategy: str = "coverage",
     ) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
         Select instances proportionally from each pattern.
@@ -1344,7 +1898,7 @@ class ArchitecturePatternReplicator:
         import random
 
         selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
-        current_counts: Dict[str, int] = {p: 0 for p in pattern_targets}
+        current_counts: Dict[str, int] = dict.fromkeys(pattern_targets, 0)
         total_target = sum(pattern_targets.values())
 
         for pattern_name, target_count in pattern_targets.items():
@@ -1381,7 +1935,7 @@ class ArchitecturePatternReplicator:
                     total_target,
                     spectral_weight,
                     max_config_samples,
-                    sampling_strategy
+                    sampling_strategy,
                 )
 
             else:
@@ -1413,7 +1967,7 @@ class ArchitecturePatternReplicator:
         total_target: int,
         spectral_weight: float,
         max_config_samples: int = DEFAULT_MAX_CONFIG_SAMPLES,
-        sampling_strategy: str = "coverage"
+        sampling_strategy: str = "coverage",
     ) -> List[List[Dict[str, Any]]]:
         """
         Select instances using hybrid scoring: distribution adherence + spectral improvement.
@@ -1458,8 +2012,7 @@ class ArchitecturePatternReplicator:
 
         if sampling_strategy == "coverage":
             sampled_instances, instance_metadata = self._sample_for_coverage(
-                available_instances,
-                max_samples=actual_max_samples
+                available_instances, max_samples=actual_max_samples
             )
         else:  # "diversity" or default
             sampled_instances = self._sample_representative_configs(
@@ -1468,7 +2021,9 @@ class ArchitecturePatternReplicator:
             instance_metadata = {}  # No metadata for diversity sampling
 
         # Build current target graph once (for comparing edge additions)
-        current_target = self._build_target_pattern_graph_from_instances(selected_so_far)
+        current_target = self._build_target_pattern_graph_from_instances(
+            selected_so_far
+        )
         current_edges = set(current_target.edges())
 
         # Score each sampled instance using hybrid function
@@ -1503,8 +2058,7 @@ class ArchitecturePatternReplicator:
 
                 # Compare local structure of newly connected nodes
                 spectral_contribution = self._compute_spectral_distance(
-                    source_subgraph,
-                    target_subgraph
+                    source_subgraph, target_subgraph
                 )
             else:
                 # No new edges - instance doesn't add structural information
@@ -1522,7 +2076,9 @@ class ArchitecturePatternReplicator:
             else:
                 distribution_adherence = 0.0
 
-            scored_instances.append((hybrid_score, distribution_adherence, spectral_contribution, instance))
+            scored_instances.append(
+                (hybrid_score, distribution_adherence, spectral_contribution, instance)
+            )
 
         # Log score statistics for debugging spectral_weight behavior
         if scored_instances:
@@ -1533,20 +2089,18 @@ class ArchitecturePatternReplicator:
             logger.debug(
                 f"    Score statistics for {pattern_name} (n={len(scored_instances)}, spectral_weight={spectral_weight}):"
             )
-            logger.debug(
-                f"      Current edges: {len(current_edges)}"
-            )
+            logger.debug(f"      Current edges: {len(current_edges)}")
             logger.debug(
                 f"      Distribution: min={min(dist_scores):.4f}, max={max(dist_scores):.4f}, "
-                f"range={max(dist_scores)-min(dist_scores):.4f}"
+                f"range={max(dist_scores) - min(dist_scores):.4f}"
             )
             logger.debug(
                 f"      Spectral:     min={min(spec_scores):.4f}, max={max(spec_scores):.4f}, "
-                f"range={max(spec_scores)-min(spec_scores):.4f}"
+                f"range={max(spec_scores) - min(spec_scores):.4f}"
             )
             logger.debug(
                 f"      Hybrid:       min={min(hybrid_scores):.4f}, max={max(hybrid_scores):.4f}, "
-                f"range={max(hybrid_scores)-min(hybrid_scores):.4f}"
+                f"range={max(hybrid_scores) - min(hybrid_scores):.4f}"
             )
 
         # Sort by hybrid score (lower is better) and take top instances
@@ -1560,32 +2114,32 @@ class ArchitecturePatternReplicator:
         # Select best instances up to target_count
         # If we sampled < target_count, need to fill remaining slots
         chosen = []
-        for hybrid_score, dist_score, spec_score, instance in scored_instances[:target_count]:
+        for hybrid_score, dist_score, spec_score, instance in scored_instances[
+            :target_count
+        ]:
             chosen.append(instance)
 
         # If we need more instances (sampled < target), fill with remaining
         if len(chosen) < target_count:
             import random
+
             remaining = [inst for inst in available_instances if inst not in chosen]
             additional_needed = target_count - len(chosen)
             if remaining:
-                chosen.extend(random.sample(
-                    remaining,
-                    min(additional_needed, len(remaining))
-                ))
+                chosen.extend(
+                    random.sample(remaining, min(additional_needed, len(remaining)))
+                )
 
         logger.debug(
             f"    Hybrid scoring: sampled {len(sampled_instances)} configs, "
-            f"selected {len(chosen)} instances (dist_weight={1.0-spectral_weight:.2f}, "
+            f"selected {len(chosen)} instances (dist_weight={1.0 - spectral_weight:.2f}, "
             f"spec_weight={spectral_weight:.2f})"
         )
 
         return chosen
 
     def _sample_representative_configs(
-        self,
-        instances: List[List[Dict[str, Any]]],
-        max_samples: int = 10
+        self, instances: List[List[Dict[str, Any]]], max_samples: int = 10
     ) -> List[List[Dict[str, Any]]]:
         """
         Sample representative instances using maximin diversity.
@@ -1622,8 +2176,7 @@ class ArchitecturePatternReplicator:
                 # Compute minimum similarity to already sampled instances
                 # Use simplified diversity metric: resource type overlap
                 min_similarity = min(
-                    self._instance_similarity(candidate, s)
-                    for s in sampled
+                    self._instance_similarity(candidate, s) for s in sampled
                 )
 
                 # Pick instance most different from existing samples
@@ -1640,7 +2193,7 @@ class ArchitecturePatternReplicator:
     def _sample_for_coverage(
         self,
         instances: List[List[Dict[str, Any]]],
-        max_samples: int = DEFAULT_MAX_CONFIG_SAMPLES
+        max_samples: int = DEFAULT_MAX_CONFIG_SAMPLES,
     ) -> Tuple[List[List[Dict[str, Any]]], Dict[int, Dict[str, Any]]]:
         """
         Sample instances using greedy set cover to maximize unique resource types.
@@ -1705,6 +2258,7 @@ class ArchitecturePatternReplicator:
             if best_idx is None:
                 # No more new types to cover, sample randomly from remaining
                 import random
+
                 best_idx = random.choice(remaining_indices)
 
             sampled.append(instances[best_idx])
@@ -1714,9 +2268,7 @@ class ArchitecturePatternReplicator:
         # Build metadata dict
         metadata = {}
         for idx, instance in enumerate(sampled):
-            metadata[idx] = {
-                'types': instance_types[instances.index(instance)]
-            }
+            metadata[idx] = {"types": instance_types[instances.index(instance)]}
 
         logger.info(
             f"Coverage sampling complete: {len(sampled)} instances "
@@ -1731,9 +2283,7 @@ class ArchitecturePatternReplicator:
         return sampled, metadata
 
     def _instance_similarity(
-        self,
-        instance1: List[Dict[str, Any]],
-        instance2: List[Dict[str, Any]]
+        self, instance1: List[Dict[str, Any]], instance2: List[Dict[str, Any]]
     ) -> float:
         """
         Compute similarity between two instances based on resource types.
