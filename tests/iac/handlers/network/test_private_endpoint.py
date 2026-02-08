@@ -14,6 +14,8 @@ Test coverage:
 
 import json
 
+import pytest
+
 from src.iac.emitters.terraform.context import EmitterContext
 from src.iac.emitters.terraform.handlers import (
     HandlerRegistry,
@@ -131,7 +133,8 @@ class TestPrivateEndpointConversion:
         psc = config["private_service_connection"]
         assert psc["name"] == "keyvault-connection"
         assert (
-            "Microsoft.KeyVault/vaults/test-kv" in psc["private_connection_resource_id"]
+            "Microsoft.KeyVault/vaults/test-kv"
+            in psc["private_connection_resource_id"]
         )
         assert psc["subresource_names"] == ["vault"]
         assert "request_message" in psc
