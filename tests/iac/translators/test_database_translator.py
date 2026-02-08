@@ -376,7 +376,7 @@ class TestDatabaseTranslatorConnectionStrings:
         resource = {
             "type": "azurerm_mssql_database",
             "name": "db1",
-            "connection_string": "Server=tcp:sqlserver1.database.windows.net,1433;Database=db1;User ID=admin;Password=xxx;",
+            "connection_string": "Server=tcp:sqlserver1.database.windows.net,1433;Database=db1;User ID=admin;Password=xxx;",  # #ggignore
         }
 
         translated = translator.translate(resource)
@@ -399,7 +399,7 @@ class TestDatabaseTranslatorConnectionStrings:
         resource = {
             "type": "azurerm_mssql_database",
             "name": "db1",
-            "connection_string": "Server=tcp:missing-server.database.windows.net,1433;Database=db1;User ID=admin;Password=xxx;",
+            "connection_string": "Server=tcp:missing-server.database.windows.net,1433;Database=db1;User ID=admin;Password=xxx;",  # #ggignore
         }
 
         translator.translate(resource)

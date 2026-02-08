@@ -22,7 +22,7 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           # Get all new .md and .sh files
           NEW_FILES=$(git diff --diff-filter=A --name-only origin/${{ github.base_ref }}...HEAD | grep -iE '\.(md|sh)$' || true)
-          
+
           # Filter out allowed directories (docs/, tests/, scripts/)
           BLOCKED=$(echo "$NEW_FILES" | grep -vE '^(docs/|tests/|scripts/)' || true)
 

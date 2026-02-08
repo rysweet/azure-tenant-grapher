@@ -305,7 +305,7 @@ class TestAppServiceTranslator:
             "type": "azurerm_linux_web_app",
             "name": "app1",
             "app_settings": {
-                "SQL_CONN": "Server=tcp:myserver.database.windows.net,1433;Database=mydb;User Id=user;Password=pass;"
+                "SQL_CONN": "Server=tcp:myserver.database.windows.net,1433;Database=mydb;User Id=user;Password=pass;"  # #ggignore
             },
         }
 
