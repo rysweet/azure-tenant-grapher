@@ -9,8 +9,6 @@ Tests cover:
 - Edge cases (missing properties, malformed IDs, multiple references)
 """
 
-import pytest
-
 from src.iac.dependency_analyzer import DependencyAnalyzer
 
 
@@ -625,7 +623,9 @@ class TestHelperMethods:
 
         # Empty storage URI
         resource = {
-            "properties": {"diagnosticsProfile": {"bootDiagnostics": {"storageUri": ""}}}
+            "properties": {
+                "diagnosticsProfile": {"bootDiagnostics": {"storageUri": ""}}
+            }
         }
         storage = analyzer._extract_storage_from_diagnostics(resource)
         assert storage == ""

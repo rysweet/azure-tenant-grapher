@@ -113,8 +113,10 @@ class HandlerRegistry:
 
         Primarily for testing.
         """
+        global _handlers_registered
         cls._handlers = []
         cls._type_cache = {}
+        _handlers_registered = False  # Reset registration flag for tests
 
 
 def handler(cls: Type[ResourceHandler]) -> Type[ResourceHandler]:
@@ -239,11 +241,12 @@ def _register_all_handlers() -> None:
         action_group,
         app_insights,
         dcr,
+        diagnostic_settings,
         log_analytics,
         metric_alert,
     )
 
-    _ = (action_group, app_insights, dcr, log_analytics, metric_alert)
+    _ = (action_group, app_insights, dcr, diagnostic_settings, log_analytics, metric_alert)
 
     # Network handlers
     from .network import (
@@ -251,9 +254,11 @@ def _register_all_handlers() -> None:
         bastion,
         load_balancer,
         nat_gateway,
+        network_watcher,
         nic,
         nsg,
         nsg_associations,
+        private_endpoint,
         public_ip,
         route_table,
         subnet,
@@ -265,9 +270,11 @@ def _register_all_handlers() -> None:
         bastion,
         load_balancer,
         nat_gateway,
+        network_watcher,
         nic,
         nsg,
         nsg_associations,
+        private_endpoint,
         public_ip,
         route_table,
         subnet,

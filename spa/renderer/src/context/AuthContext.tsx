@@ -165,7 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.data.success) {
         // az login started successfully - extract device code info from response
         const deviceCode: DeviceCodeInfo = {
-          userCode: response.data.userCode,           // e.g., "ABC123DEF"
+          userCode: response.data.userCode,           // e.g., "ABC123DEF"  // pragma: allowlist secret
           verificationUri: response.data.verificationUri, // e.g., "https://microsoft.com/device"
           expiresIn: response.data.expiresIn,         // seconds until code expires (900 = 15 min)
           message: response.data.message,             // User-friendly instruction message

@@ -485,7 +485,6 @@ class TenantResetService:
             ).restore()
 
             if restored_sp:
-
                 # Log restore event
                 self._append_audit_entry(
                     "atg_sp_emergency_restore_success",
@@ -513,7 +512,7 @@ class TenantResetService:
 
             raise Exception(
                 f"CRITICAL: ATG SP emergency restore failed. Manual intervention required. {error_msg}"
-            )
+            ) from e
 
     async def order_by_dependencies(self, resources: List[str]) -> List[List[str]]:
         """
@@ -598,11 +597,10 @@ class TenantResetService:
         errors = {}
 
         for _wave_index, wave in enumerate(deletion_waves):
-
             # Create semaphore for concurrency control
             semaphore = asyncio.Semaphore(concurrency)
 
-            async def delete_with_semaphore(resource_id):
+            async def delete_with_semaphore(resource_id, semaphore=semaphore):
                 async with semaphore:
                     try:
                         await self._delete_single_resource(resource_id)
@@ -862,7 +860,9 @@ class TenantResetService:
                     f"Subscription {subscription_id} does not belong to tenant {self.tenant_id}"
                 )
         except Exception as e:
-            raise ValueError(f"Failed to validate subscription {subscription_id}: {e}")
+            raise ValueError(
+                f"Failed to validate subscription {subscription_id}: {e}"
+            ) from e
 
     async def _validate_resource_group_in_subscription(
         self, resource_group: str, subscription_id: str
@@ -877,7 +877,9 @@ class TenantResetService:
                     f"Resource group {resource_group} not found in subscription {subscription_id}"
                 )
         except Exception as e:
-            raise ValueError(f"Failed to validate resource group {resource_group}: {e}")
+            raise ValueError(
+                f"Failed to validate resource group {resource_group}: {e}"
+            ) from e
 
     async def _get_graph_client(self):
         """Get Microsoft Graph API client."""
@@ -904,10 +906,10 @@ class TenantResetService:
 
             session = AsyncNeo4jSession(neo4j_uri, neo4j_user, neo4j_password)
             return session
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
-                "Neo4j Python driver not available. " "Install with: pip install neo4j"
-            )
+                "Neo4j Python driver not available. Install with: pip install neo4j"
+            ) from e
 
     async def _cleanup_graph_resources(self, deleted_resource_ids: List[str]):
         """Remove deleted resources from Neo4j graph."""

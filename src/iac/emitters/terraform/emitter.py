@@ -154,13 +154,12 @@ class TerraformEmitter:
         # Phase 1: Emit main resources
         self._emit_resources(resources)
 
-        # Phase 2: Emit deferred resources (NSG associations, etc.)
-        self._emit_deferred_resources()
-
-        # Phase 3: Call post_emit on all handlers
+        # Phase 2: Call post_emit on all handlers (includes deferred resources)
+        # Note: NSG associations now emitted by NetworkSecurityGroupHandler.post_emit()
+        # instead of legacy _emit_deferred_resources() method (removed in Issue #888)
         self._post_emit_handlers()
 
-        # Phase 4: Validate resource references (Fix #566)
+        # Phase 3: Validate resource references (Fix #566)
         self._validate_resource_references()
 
         # Log statistics
@@ -245,69 +244,6 @@ class TerraformEmitter:
             if rg_name:
                 self.context.available_resource_groups.add(rg_name)
 
-    def _emit_deferred_resources(self) -> None:
-        """Emit deferred resources like NSG associations.
-
-        These are emitted after main resources to ensure all referenced
-        resources exist.
-        """
-        # Emit subnet-NSG associations
-        for subnet_tf, nsg_tf, subnet_name, nsg_name in self.context.nsg_associations:
-            # Validate both resources exist
-            if not self.context.resource_exists("azurerm_subnet", subnet_tf):
-                logger.warning(
-                    f"Skipping NSG association: subnet '{subnet_name}' not emitted"
-                )
-                continue
-            if not self.context.resource_exists(
-                "azurerm_network_security_group", nsg_tf
-            ):
-                logger.warning(
-                    f"Skipping NSG association: NSG '{nsg_name}' not emitted"
-                )
-                continue
-
-            assoc_name = f"{subnet_tf}_to_{nsg_tf}"
-            self._add_resource(
-                "azurerm_subnet_network_security_group_association",
-                assoc_name,
-                {
-                    "subnet_id": f"${{azurerm_subnet.{subnet_tf}.id}}",
-                    "network_security_group_id": (
-                        f"${{azurerm_network_security_group.{nsg_tf}.id}}"
-                    ),
-                },
-            )
-            logger.debug(str(f"Emitted NSG association: {subnet_name} -> {nsg_name}"))
-
-        # Emit NIC-NSG associations (Bug #57)
-        for nic_tf, nsg_tf, nic_name, nsg_name in self.context.nic_nsg_associations:
-            # Validate both resources exist
-            if not self.context.resource_exists("azurerm_network_interface", nic_tf):
-                logger.warning(
-                    f"Skipping NIC-NSG association: NIC '{nic_name}' not emitted"
-                )
-                continue
-            if not self.context.resource_exists(
-                "azurerm_network_security_group", nsg_tf
-            ):
-                logger.warning(
-                    f"Skipping NIC-NSG association: NSG '{nsg_name}' not emitted"
-                )
-                continue
-
-            assoc_name = f"{nic_tf}_to_{nsg_tf}"
-            self._add_resource(
-                "azurerm_network_interface_security_group_association",
-                assoc_name,
-                {
-                    "network_interface_id": f"${{azurerm_network_interface.{nic_tf}.id}}",
-                    "network_security_group_id": (
-                        f"${{azurerm_network_security_group.{nsg_tf}.id}}"
-                    ),
-                },
-            )
-            logger.debug(str(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}"))
 
     def _post_emit_handlers(self) -> None:
         """Call post_emit on all handlers.
