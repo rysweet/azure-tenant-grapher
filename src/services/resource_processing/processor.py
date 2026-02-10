@@ -471,14 +471,35 @@ class ResourceProcessor:
             logger.error("Could not import relationship rules package.")
             return
 
+        resource_id = resource.get("id", "unknown")
+        applied_rules = []
+
         for rule in ALL_RELATIONSHIP_RULES:
             try:
                 if rule.applies(resource):
+                    applied_rules.append(rule.__class__.__name__)
+                    # Get buffer size before emit
+                    buffer_before = len(rule._relationship_buffer)
+
                     rule.emit(resource, self.db_ops)
+
+                    # Get buffer size after emit
+                    buffer_after = len(rule._relationship_buffer)
+                    relationships_queued = buffer_after - buffer_before
+
+                    if relationships_queued > 0:
+                        logger.debug(
+                            f"✓ {rule.__class__.__name__} queued {relationships_queued} relationships for {resource_id}"
+                        )
             except Exception as e:
                 logger.exception(
                     f"Relationship rule {rule.__class__.__name__} failed: {e}"
                 )
+
+        if applied_rules:
+            logger.debug(
+                f"Applied {len(applied_rules)} relationship rules to {resource_id}: {', '.join(applied_rules)}"
+            )
 
         # Legacy relationships not yet migrated to rules
         rid = resource.get("id")
@@ -503,16 +524,56 @@ class ResourceProcessor:
 
     def _flush_relationship_buffers(self) -> None:
         """Flush any remaining buffered relationships from all rules."""
-        logger.info("Flushing buffered relationships from all rules...")
+        logger.info("🔄 Flushing buffered relationships from all rules...")
         try:
             from src.relationship_rules import ALL_RELATIONSHIP_RULES
 
             total_flushed = 0
+            total_buffered = 0
+            flush_details = []
+
             for rule in ALL_RELATIONSHIP_RULES:
                 if hasattr(rule, "flush_relationship_buffer"):
-                    flushed = rule.flush_relationship_buffer(self.db_ops)
-                    total_flushed += flushed
-            logger.info(str(f"Flushed {total_flushed} buffered relationships"))
+                    buffer_size = len(rule._relationship_buffer)
+                    total_buffered += buffer_size
+
+                    if buffer_size > 0:
+                        flushed = rule.flush_relationship_buffer(self.db_ops)
+                        total_flushed += flushed
+                        success_rate = (
+                            (flushed / buffer_size * 100) if buffer_size > 0 else 0
+                        )
+
+                        flush_details.append(
+                            f"{rule.__class__.__name__}: {flushed}/{buffer_size} ({success_rate:.1f}%)"
+                        )
+
+                        if flushed < buffer_size:
+                            logger.warning(
+                                f"⚠️  {rule.__class__.__name__} only flushed {flushed}/{buffer_size} relationships"
+                            )
+
+            logger.info(
+                f"✅ Flushed {total_flushed}/{total_buffered} buffered relationships"
+            )
+
+            if flush_details:
+                logger.info("Flush details by rule:")
+                for detail in flush_details:
+                    logger.info(f"  - {detail}")
+
+            if total_flushed < total_buffered:
+                missing_rate = (
+                    (total_buffered - total_flushed) / total_buffered * 100
+                    if total_buffered > 0
+                    else 0
+                )
+                logger.error(
+                    f"❌ {total_buffered - total_flushed} relationships failed to flush ({missing_rate:.1f}% failure rate)"
+                )
+                logger.error(
+                    "   Likely cause: Target nodes don't exist. Check if all resources were processed successfully."
+                )
         except Exception as e:
             logger.exception(f"Error flushing relationship buffers: {e}")
 

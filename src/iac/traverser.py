@@ -140,6 +140,9 @@ class GraphTraverser:
                 # This ensures we get all resources while using abstracted IDs when available
                 # Bug #15 fix: Include original_id from SCAN_SOURCE_NODE relationship
                 # for smart import comparison
+                # FIX Issue #873: Simplified query that actually finds relationships
+                # Previous complex query with OPTIONAL MATCH + WHERE was filtering out all relationships
+                # New approach: Use simple pattern matching that we know works
                 query = """
                 MATCH (r:Resource)
                 WHERE NOT EXISTS {
@@ -149,19 +152,21 @@ class GraphTraverser:
                     AND r:Original
                 }
                 OPTIONAL MATCH (r)-[:SCAN_SOURCE_NODE]->(orig:Resource:Original)
-                OPTIONAL MATCH (r)-[rel]->(t:Resource)
-                WHERE NOT EXISTS {
-                    MATCH (t_abstracted:Resource)
-                    WHERE NOT t_abstracted:Original
-                    AND t_abstracted.original_id = t.id
-                    AND t:Original
-                }
-                RETURN r, orig.id AS original_id, orig.properties AS original_properties, collect({
-                    type: type(rel),
-                    target: t.id,
-                    original_type: rel.original_type,
-                    narrative_context: rel.original_type
-                }) AS rels
+                RETURN r, orig.id AS original_id, orig.properties AS original_properties,
+                       [] AS rels
+                """
+
+                # Query relationships separately (simpler and works!)
+                rel_query = """
+                MATCH (src:Resource)-[rel]->(tgt:Resource)
+                WHERE NOT src:Original
+                AND NOT tgt:Original
+                AND type(rel) <> 'SCAN_SOURCE_NODE'
+                RETURN src.id AS source_id,
+                       type(rel) AS rel_type,
+                       tgt.id AS target_id,
+                       rel.original_type AS original_type,
+                       rel.narrative_context AS narrative_context
                 """
 
         resources = []
@@ -211,6 +216,28 @@ class GraphTraverser:
                     result = session.run(cast("LiteralString", fallback_query))  # type: ignore[arg-type]
                     result_list = list(result)
                 process_result(result_list, resources, relationships)
+
+                # FIX Issue #873: Query relationships separately (simple query that works!)
+                logger.info("Querying relationships separately...")
+                rel_result = session.run(cast("LiteralString", rel_query))  # type: ignore[arg-type]
+                for rel_rec in rel_result:
+                    src_id = rel_rec.get("source_id")
+                    tgt_id = rel_rec.get("target_id")
+                    rel_type = rel_rec.get("rel_type")
+
+                    if src_id and tgt_id and rel_type:
+                        relationships.append(
+                            {
+                                "source": src_id,
+                                "target": tgt_id,
+                                "type": rel_type,
+                                "original_type": rel_rec.get("original_type")
+                                or rel_type,
+                                "narrative_context": rel_rec.get("narrative_context")
+                                or rel_type,
+                            }
+                        )
+
                 logger.info(
                     f"Extracted {len(resources)} resources and {len(relationships)} relationships"
                 )

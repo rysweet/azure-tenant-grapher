@@ -1,6 +1,10 @@
 from typing import Any, Dict, Set
 
+import structlog  # type: ignore[import-untyped]
+
 from .relationship_rule import RelationshipRule
+
+logger = structlog.get_logger(__name__)
 
 
 class DependsOnRule(RelationshipRule):
@@ -23,6 +27,10 @@ class DependsOnRule(RelationshipRule):
                 # Use dual-graph helper for Resource-to-Resource relationships
                 self.create_dual_graph_relationship(
                     db_ops, str(rid), "DEPENDS_ON", str(dep_id)
+                )
+                # Log relationship creation
+                logger.debug(
+                    f"🔗 Queued DEPENDS_ON: {rid.split('/')[-1]} -> {dep_id.split('/')[-1]}"
                 )
 
     def extract_target_ids(self, resource: Dict[str, Any]) -> Set[str]:

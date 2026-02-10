@@ -339,7 +339,7 @@ class ResourceFidelityCalculator:
             List of resources
         """
         query = """
-        MATCH (r:AzureResource)
+        MATCH (r:Resource:Original)
         WHERE r.subscription_id = $subscription_id
         """
 
@@ -353,8 +353,9 @@ class ResourceFidelityCalculator:
         RETURN r.id AS id, r.name AS name, r.type AS type, r.properties AS properties
         """
 
-        result = self.session_manager.execute_read(query, params)
-        return [dict(record) for record in result]
+        with self.session_manager.session() as session:
+            result = session.run(query, params)
+            return [dict(record) for record in result]
 
     def _compare_properties(
         self,
