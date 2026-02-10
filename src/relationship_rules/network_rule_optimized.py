@@ -11,7 +11,11 @@ Performance improvement: 100-400x faster for large scans
 
 from typing import Any, Dict, List, Set
 
+import structlog  # type: ignore[import-untyped]
+
 from .relationship_rule import RelationshipRule
+
+logger = structlog.get_logger(__name__)
 
 # Node labels
 PRIVATE_ENDPOINT = "PrivateEndpoint"
@@ -54,32 +58,48 @@ class NetworkRuleOptimized(RelationshipRule):
         Instead of calling create_dual_graph_relationship() which issues immediate queries,
         this method queues relationships and flushes them in batches.
         """
+        import json
+
         rid = resource.get("id")
         rtype = resource.get("type", "")
-        props = resource
+
+        # Parse properties JSON if it exists
+        props_dict = {}
+        if "properties" in resource:
+            props_str = resource["properties"]
+            if isinstance(props_str, str):
+                try:
+                    props_dict = json.loads(props_str)
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse properties for {rid}: {e}")
+                    return  # Exit early - can't extract relationships without properties
+            elif isinstance(props_str, dict):
+                props_dict = props_str
 
         # (VirtualMachine) -[:USES_SUBNET]-> (Subnet)
-        if rtype.endswith("virtualMachines") and "network_profile" in props:
-            nics = props["network_profile"].get("network_interfaces", [])
+        # FIX: Look for networkProfile (camelCase) in properties dict
+        if rtype.endswith("virtualMachines") and "networkProfile" in props_dict:
+            nics = props_dict["networkProfile"].get("networkInterfaces", [])
             for nic in nics:
-                ip_cfgs = nic.get("ip_configurations", [])
-                for ipcfg in ip_cfgs:
-                    subnet = ipcfg.get("subnet")
-                    if subnet and isinstance(subnet, dict):
-                        subnet_id = subnet.get("id")
-                        if subnet_id and rid:
-                            # Queue instead of immediate creation
-                            self.queue_dual_graph_relationship(
-                                str(rid),
-                                "USES_SUBNET",
-                                str(subnet_id),
-                            )
-                            # Auto-flush if buffer is full
-                            self.auto_flush_if_needed(db_ops)
+                # NICs reference might just be {id: "..."}
+                if isinstance(nic, dict):
+                    nic_id = nic.get("id")
+                    if nic_id and rid:
+                        # Queue VM -> NIC relationship
+                        self.queue_dual_graph_relationship(
+                            str(rid),
+                            "USES",
+                            str(nic_id),
+                        )
+                        logger.debug(
+                            f"🔗 Queued USES: {rid.split('/')[-1]} -> {nic_id.split('/')[-1]}"
+                        )
+                        self.auto_flush_if_needed(db_ops)
 
         # (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
+        # FIX: Look for networkSecurityGroup (camelCase) in properties dict
         if rtype.endswith("subnets"):
-            nsg = props.get("network_security_group")
+            nsg = props_dict.get("networkSecurityGroup")
             if nsg and isinstance(nsg, dict):
                 nsg_id = nsg.get("id")
                 if nsg_id and rid:
@@ -88,6 +108,10 @@ class NetworkRuleOptimized(RelationshipRule):
                         str(rid),
                         "SECURED_BY",
                         str(nsg_id),
+                    )
+                    # Log relationship creation
+                    logger.debug(
+                        f"🔗 Queued SECURED_BY: {rid.split('/')[-1]} -> {nsg_id.split('/')[-1]}"
                     )
                     # Auto-flush if buffer is full
                     self.auto_flush_if_needed(db_ops)

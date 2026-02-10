@@ -39,16 +39,22 @@ class RelationshipRule(ABC):
         "HAS_ROLE",
         "INHERITS_TAG",
         "STORES_SECRET",
+        "USES",  # VM -> NIC relationship
     }
 
-    def __init__(self, enable_dual_graph: bool = False):
+    def __init__(
+        self, enable_dual_graph: bool = False, enable_auto_flush: bool = False
+    ):
         """
         Initialize relationship rule.
 
         Args:
             enable_dual_graph: If True, create relationships in both original and abstracted graphs
+            enable_auto_flush: If True, auto-flush when buffer reaches threshold (DEFAULT: False)
+                             Set to False to defer flushing until all nodes exist (fixes Issue #873)
         """
         self.enable_dual_graph = enable_dual_graph
+        self.enable_auto_flush = enable_auto_flush
         # Buffer for batched relationship creation
         self._relationship_buffer: List[
             Tuple[str, str, str, Optional[Dict[str, Any]]]
@@ -408,6 +414,13 @@ class RelationshipRule(ABC):
         Returns:
             bool: True if successful, False otherwise
         """
+        # SECURITY FIX (C1): Validate relationship type to prevent Cypher injection
+        if rel_type not in self.VALID_RELATIONSHIP_TYPES:
+            raise ValueError(
+                f"Invalid relationship type: {rel_type}. "
+                f"Must be one of {self.VALID_RELATIONSHIP_TYPES}"
+            )
+
         if not self.enable_dual_graph:
             # Legacy mode: use db_ops.create_generic_rel
             return db_ops.create_generic_rel(
@@ -569,6 +582,11 @@ class RelationshipRule(ABC):
                         expected_count = len(relationships)
                         total_expected += expected_count
 
+                        # Log specific relationship type being flushed
+                        logger.info(
+                            f"💾 Flushing {expected_count} {rel_type} relationships..."
+                        )
+
                         query = f"""
                         // Batch create relationships using UNWIND for optimal performance
                         UNWIND $relationships AS rel
@@ -610,7 +628,11 @@ class RelationshipRule(ABC):
                             # Log with appropriate level based on success rate
                             if created < expected_count:
                                 logger.warning(
-                                    f"Batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%)"
+                                    f"⚠️  Batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%)"
+                                )
+                            else:
+                                logger.info(
+                                    f"✅ Successfully created {created} {rel_type} relationships"
                                 )
 
                     # Commit the transaction (all relationships created atomically)
@@ -641,8 +663,16 @@ class RelationshipRule(ABC):
 
         This enables transparent batching without changing calling code.
 
+        FIX Issue #873: Auto-flush disabled by default to prevent flushing before
+        target nodes exist. Relationships are now flushed at the end when all nodes
+        are guaranteed to exist.
+
         Args:
             db_ops: DatabaseOperations instance
         """
+        if not self.enable_auto_flush:
+            # Don't auto-flush - defer until explicit flush at end
+            return
+
         if len(self._relationship_buffer) >= self._buffer_size:
             self.flush_relationship_buffer(db_ops)

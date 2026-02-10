@@ -1474,6 +1474,21 @@ async def mcp_query(
     is_flag=True,
     help="Do not auto-start Neo4j container",
 )
+@click.option(
+    "--resource-level",
+    is_flag=True,
+    help="Enable resource-level fidelity validation (property-level comparison)",
+)
+@click.option(
+    "--resource-type",
+    help="Filter validation to specific resource type (e.g., Microsoft.Storage/storageAccounts)",
+)
+@click.option(
+    "--redaction-level",
+    type=click.Choice(["FULL", "MINIMAL", "NONE"], case_sensitive=False),
+    default="FULL",
+    help="Security redaction level for sensitive properties (default: FULL)",
+)
 @click.pass_context
 @async_command
 async def fidelity(
@@ -1484,6 +1499,9 @@ async def fidelity(
     output: Optional[str],
     check_objective: Optional[str],
     no_container: bool,
+    resource_level: bool,
+    resource_type: Optional[str],
+    redaction_level: str,
 ) -> None:
     """Calculate and track resource replication fidelity between subscriptions.
 
@@ -1520,6 +1538,9 @@ async def fidelity(
         output=output,
         check_objective=check_objective,
         no_container=no_container,
+        resource_level=resource_level,
+        resource_type=resource_type,
+        redaction_level=redaction_level,
     )
 
 
