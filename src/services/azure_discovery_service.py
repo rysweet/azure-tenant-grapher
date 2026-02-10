@@ -31,6 +31,13 @@ from ..exceptions import (
     AzureDiscoveryError,
 )
 from ..models.filter_config import FilterConfig
+from ..utils.console_icons import (
+    ICON_INFO,
+    ICON_ITERATION,
+    ICON_SEARCH,
+    ICON_SUCCESS,
+    ICON_WARNING,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +184,7 @@ class AzureDiscoveryService:
             AzureAuthenticationError: If authentication fails
         """
         logger.info(
-            str(f"🔍 Discovering subscriptions in tenant {self.config.tenant_id}")
+            str(f"{ICON_SEARCH} Discovering subscriptions in tenant {self.config.tenant_id}")
         )
 
         async def _attempt_discovery() -> List[Dict[str, Any]]:
@@ -192,7 +199,7 @@ class AzureDiscoveryService:
                     }
                     subscriptions.append(subscription_dict)
                     logger.info(
-                        f"📋 Found subscription: {subscription_dict['display_name']} ({subscription_dict['id']})"
+                        f"{ICON_INFO} Found subscription: {subscription_dict['display_name']} ({subscription_dict['id']})"
                     )
                 # Apply filter if provided
                 if filter_config:
@@ -206,25 +213,25 @@ class AzureDiscoveryService:
                             )
                     subscriptions = filtered_subscriptions
                     logger.info(
-                        f"✅ After filtering: {len(subscriptions)} subscriptions included"
+                        f"{ICON_SUCCESS} After filtering: {len(subscriptions)} subscriptions included"
                     )
 
                 self._subscriptions = subscriptions
                 logger.info(
-                    str(f"✅ Discovered {len(subscriptions)} subscriptions total")
+                    str(f"{ICON_SUCCESS} Discovered {len(subscriptions)} subscriptions total")
                 )
 
                 # If we get 0 subscriptions but no error, it might be a permissions issue
                 # Try Azure CLI credential as a fallback (only if not already in fallback mode)
                 if len(subscriptions) == 0 and not _skip_fallback:
                     logger.warning(
-                        "🔄 Got 0 subscriptions with current credential, attempting Azure CLI fallback..."
+                        f"{ICON_ITERATION} Got 0 subscriptions with current credential, attempting Azure CLI fallback..."
                     )
                     try:
                         fallback_subs = await self._handle_auth_fallback()
                         if len(fallback_subs) > 0:
                             logger.info(
-                                f"✅ Azure CLI fallback succeeded, found {len(fallback_subs)} subscriptions"
+                                f"{ICON_SUCCESS} Azure CLI fallback succeeded, found {len(fallback_subs)} subscriptions"
                             )
                             self._subscriptions = fallback_subs
                             return fallback_subs
@@ -308,7 +315,7 @@ class AzureDiscoveryService:
         Raises:
             AzureDiscoveryError: If resource discovery fails
         """
-        logger.info(str(f"🔍 Discovering resources in subscription {subscription_id}"))
+        logger.info(str(f"{ICON_SEARCH} Discovering resources in subscription {subscription_id}"))
 
         async def _attempt_discovery() -> List[Dict[str, Any]]:
             try:
@@ -317,7 +324,7 @@ class AzureDiscoveryService:
                 )
 
                 # Phase 1: List all resources (lightweight)
-                logger.info("📋 Phase 1: Listing all resource IDs...")
+                logger.info(f"{ICON_INFO} Phase 1: Listing all resource IDs...")
                 resource_basics: List[Dict[str, Any]] = []
                 pager = resource_client.resources.list()
                 for resource in pager:
@@ -353,7 +360,7 @@ class AzureDiscoveryService:
                         resource_basics.append(resource_dict)
 
                 logger.info(
-                    f"✅ Found {len(resource_basics)} resources in subscription {subscription_id} after filtering"
+                    f"{ICON_SUCCESS} Found {len(resource_basics)} resources in subscription {subscription_id} after filtering"
                 )
 
                 # Phase 1.5: Discover role assignments in subscription
@@ -391,7 +398,7 @@ class AzureDiscoveryService:
                     all_role_assignments.extend(resource_scoped)
 
                     logger.info(
-                        f"✅ Total role assignments discovered: {len(all_role_assignments)} "
+                        f"{ICON_SUCCESS} Total role assignments discovered: {len(all_role_assignments)} "
                         f"({len(role_assignments)} subscription-level + {len(resource_scoped)} resource-scoped)"
                     )
 
@@ -407,13 +414,13 @@ class AzureDiscoveryService:
                                 )
                         all_role_assignments = filtered_assignments
                         logger.info(
-                            f"✅ After filtering: {len(all_role_assignments)} role assignments included"
+                            f"{ICON_SUCCESS} After filtering: {len(all_role_assignments)} role assignments included"
                         )
 
                     # Merge role assignments with resources
                     resource_basics.extend(all_role_assignments)
                     logger.info(
-                        f"✅ Total resources including role assignments: {len(resource_basics)}"
+                        f"{ICON_SUCCESS} Total resources including role assignments: {len(resource_basics)}"
                     )
                 except Exception as role_error:
                     # Log but don't fail - role assignments are supplementary
@@ -424,19 +431,19 @@ class AzureDiscoveryService:
                 # Apply resource_limit BEFORE child discovery to reduce API calls
                 if resource_limit and len(resource_basics) > resource_limit:
                     logger.info(
-                        f"🔢 Applying per-subscription resource_limit before child discovery: "
+                        f"{ICON_SEARCH} Applying per-subscription resource_limit before child discovery: "
                         f"{resource_limit} (before: {len(resource_basics)})"
                     )
                     resource_basics = resource_basics[:resource_limit]
                     logger.info(
-                        f"🔢 Resource list truncated to {len(resource_basics)} items "
+                        f"{ICON_SEARCH} Resource list truncated to {len(resource_basics)} items "
                         f"(child resources will only be discovered for these {len(resource_basics)} resources)"
                     )
 
                 # Phase 1.6: Discover child resources (Bug #520 fix)
                 # Child resources (subnets, runbooks, etc.) are not returned by resources.list()
                 # They require explicit API calls to parent resource endpoints
-                logger.info("🔍 Phase 1.6: Discovering child resources...")
+                logger.info(f"{ICON_SEARCH} Phase 1.6: Discovering child resources...")
                 child_resources = []
                 try:
                     discovered_children = await self.discover_child_resources(
@@ -456,7 +463,7 @@ class AzureDiscoveryService:
                                     )
                             child_resources = filtered_children
                             logger.info(
-                                f"✅ After filtering: {len(child_resources)} child resources included"
+                                f"{ICON_SUCCESS} After filtering: {len(child_resources)} child resources included"
                             )
                         else:
                             child_resources = discovered_children
@@ -464,7 +471,7 @@ class AzureDiscoveryService:
                         # Merge child resources with main resource list
                         resource_basics.extend(child_resources)
                         logger.info(
-                            f"✅ Total resources including children: {len(resource_basics)}"
+                            f"{ICON_SUCCESS} Total resources including children: {len(resource_basics)}"
                         )
                 except Exception as child_error:
                     # Log but don't fail - child resources are supplementary
@@ -494,14 +501,14 @@ class AzureDiscoveryService:
                                     )
                             diagnostic_settings = filtered_diagnostics
                             logger.info(
-                                f"✅ After filtering: {len(diagnostic_settings)} diagnostic settings included"
+                                f"{ICON_SUCCESS} After filtering: {len(diagnostic_settings)} diagnostic settings included"
                             )
 
                         # Merge diagnostic settings with main resource list
                         child_resources.extend(diagnostic_settings)
                         resource_basics.extend(diagnostic_settings)
                         logger.info(
-                            f"✅ Total resources including diagnostic settings: {len(resource_basics)}"
+                            f"{ICON_SUCCESS} Total resources including diagnostic settings: {len(resource_basics)}"
                         )
                 except Exception as diagnostic_error:
                     # Log but don't fail - diagnostic settings are supplementary
@@ -512,7 +519,7 @@ class AzureDiscoveryService:
                 # Phase 2: Fetch full properties in parallel if enabled
                 if self._max_build_threads > 0 and resource_basics:
                     logger.info(
-                        f"🔄 Phase 2: Fetching full properties for {len(resource_basics)} resources "
+                        f"{ICON_ITERATION} Phase 2: Fetching full properties for {len(resource_basics)} resources "
                         f"(max {self._max_build_threads} concurrent threads)..."
                     )
                     enriched_resources = await self._fetch_resources_with_properties(
@@ -664,7 +671,7 @@ class AzureDiscoveryService:
             AzureDiscoveryError: If role assignment discovery fails critically
         """
         logger.info(
-            f"🔍 Discovering role assignments in subscription {subscription_id}"
+            f"{ICON_SEARCH} Discovering role assignments in subscription {subscription_id}"
         )
 
         try:
@@ -731,7 +738,7 @@ class AzureDiscoveryService:
                     )
 
                 logger.info(
-                    f"✅ Discovered {len(role_assignments)} subscription-level role assignments in subscription {subscription_id}"
+                    f"{ICON_SUCCESS} Discovered {len(role_assignments)} subscription-level role assignments in subscription {subscription_id}"
                 )
 
             except Exception as perm_error:
@@ -748,7 +755,7 @@ class AzureDiscoveryService:
                     ]
                 ):
                     logger.warning(
-                        f"⚠️  Insufficient permissions to list role assignments in subscription {subscription_id}. "
+                        f"{ICON_WARNING}  Insufficient permissions to list role assignments in subscription {subscription_id}. "
                         "This requires Reader + User Access Administrator roles or Owner role. "
                         "Role assignment relationships will not be created for this subscription."
                     )
@@ -924,7 +931,7 @@ class AzureDiscoveryService:
                         )
 
             logger.info(
-                f"✅ Discovered {len(resource_scoped_assignments)} resource-scoped role assignments"
+                f"{ICON_SUCCESS} Discovered {len(resource_scoped_assignments)} resource-scoped role assignments"
             )
 
         except Exception:
@@ -1009,7 +1016,7 @@ class AzureDiscoveryService:
 
         # Discover subnets
         if vnets:
-            logger.info(str(f"🔍 Discovering subnets for {len(vnets)} VNets..."))
+            logger.info(str(f"{ICON_SEARCH} Discovering subnets for {len(vnets)} VNets..."))
             try:
                 network_client = NetworkManagementClient(
                     self.credential, subscription_id
@@ -1057,7 +1064,7 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Network/subnets"
                     ]
                 )
-                logger.info(str(f"✅ Found {subnet_count} subnets"))
+                logger.info(str(f"{ICON_SUCCESS} Found {subnet_count} subnets"))
 
             except Exception as e:
                 logger.warning(str(f"Failed to create network client: {e}"))
@@ -1065,7 +1072,7 @@ class AzureDiscoveryService:
         # Discover automation runbooks
         if automation_accounts:
             logger.info(
-                f"🔍 Discovering runbooks for {len(automation_accounts)} Automation Accounts..."
+                f"{ICON_SEARCH} Discovering runbooks for {len(automation_accounts)} Automation Accounts..."
             )
             try:
                 automation_client = AutomationClient(self.credential, subscription_id)
@@ -1112,7 +1119,7 @@ class AzureDiscoveryService:
                 runbook_count = len(
                     [r for r in child_resources if "runbooks" in r["type"]]
                 )
-                logger.info(str(f"✅ Found {runbook_count} runbooks"))
+                logger.info(str(f"{ICON_SUCCESS} Found {runbook_count} runbooks"))
 
             except Exception as e:
                 logger.warning(str(f"Failed to create automation client: {e}"))
@@ -1125,7 +1132,7 @@ class AzureDiscoveryService:
         ]
         if dns_zones:
             logger.info(
-                f"🔍 Discovering virtual network links for {len(dns_zones)} DNS zones..."
+                f"{ICON_SEARCH} Discovering virtual network links for {len(dns_zones)} DNS zones..."
             )
             try:
                 network_client = NetworkManagementClient(
@@ -1172,7 +1179,7 @@ class AzureDiscoveryService:
                 link_count = len(
                     [r for r in child_resources if "virtualNetworkLinks" in r["type"]]
                 )
-                logger.info(str(f"✅ Found {link_count} DNS zone links"))
+                logger.info(str(f"{ICON_SUCCESS} Found {link_count} DNS zone links"))
 
             except Exception as e:
                 logger.warning(str(f"Failed to discover DNS zone links: {e}"))
@@ -1184,7 +1191,7 @@ class AzureDiscoveryService:
             if r.get("type") == "Microsoft.Compute/virtualMachines"
         ]
         if vms:
-            logger.info(str(f"🔍 Discovering VM extensions for {len(vms)} VMs..."))
+            logger.info(str(f"{ICON_SEARCH} Discovering VM extensions for {len(vms)} VMs..."))
             try:
                 from azure.mgmt.compute import (
                     ComputeManagementClient,  # type: ignore[import-untyped]
@@ -1238,7 +1245,7 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Compute/virtualMachines/extensions"
                     ]
                 )
-                logger.info(str(f"✅ Found {ext_count} VM extensions"))
+                logger.info(str(f"{ICON_SUCCESS} Found {ext_count} VM extensions"))
 
             except Exception as e:
                 logger.warning(str(f"Failed to discover VM extensions: {e}"))
@@ -1249,7 +1256,7 @@ class AzureDiscoveryService:
         ]
         if sql_servers:
             logger.info(
-                f"🔍 Discovering databases for {len(sql_servers)} SQL servers..."
+                f"{ICON_SEARCH} Discovering databases for {len(sql_servers)} SQL servers..."
             )
             try:
                 from azure.mgmt.sql import (
@@ -1302,7 +1309,7 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Sql/servers/databases"
                     ]
                 )
-                logger.info(str(f"✅ Found {db_count} SQL databases"))
+                logger.info(str(f"{ICON_SUCCESS} Found {db_count} SQL databases"))
 
             except Exception as e:
                 logger.warning(str(f"Failed to discover SQL databases: {e}"))
@@ -1319,7 +1326,7 @@ class AzureDiscoveryService:
         ]
         if pg_servers:
             logger.info(
-                f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers..."
+                f"{ICON_SEARCH} Discovering configurations for {len(pg_servers)} PostgreSQL servers..."
             )
             try:
                 from azure.mgmt.rdbms.postgresql import (
@@ -1376,7 +1383,7 @@ class AzureDiscoveryService:
                         if "configurations" in r.get("type", "")
                     ]
                 )
-                logger.info(str(f"✅ Found {config_count} PostgreSQL configurations"))
+                logger.info(str(f"{ICON_SUCCESS} Found {config_count} PostgreSQL configurations"))
 
             except Exception as e:
                 logger.warning(
@@ -1391,7 +1398,7 @@ class AzureDiscoveryService:
         ]
         if registries:
             logger.info(
-                f"🔍 Discovering webhooks for {len(registries)} container registries..."
+                f"{ICON_SEARCH} Discovering webhooks for {len(registries)} container registries..."
             )
             try:
                 from azure.mgmt.containerregistry import (  # type: ignore[import-untyped]
@@ -1440,7 +1447,7 @@ class AzureDiscoveryService:
                     [r for r in child_resources if "webhooks" in r.get("type", "")]
                 )
                 logger.info(
-                    str(f"✅ Found {webhook_count} container registry webhooks")
+                    str(f"{ICON_SUCCESS} Found {webhook_count} container registry webhooks")
                 )
 
             except Exception as e:
@@ -1454,7 +1461,7 @@ class AzureDiscoveryService:
         ]
         if devtest_labs:
             logger.info(
-                f"🔍 Discovering child resources for {len(devtest_labs)} DevTest Labs..."
+                f"{ICON_SEARCH} Discovering child resources for {len(devtest_labs)} DevTest Labs..."
             )
             try:
                 from azure.mgmt.devtestlabs import (  # type: ignore[import-untyped]
@@ -1604,7 +1611,7 @@ class AzureDiscoveryService:
                     ]
                 )
                 logger.info(
-                    f"✅ Found {devtest_vm_count} DevTest Lab VMs, "
+                    f"{ICON_SUCCESS} Found {devtest_vm_count} DevTest Lab VMs, "
                     f"{devtest_policy_count} policies, "
                     f"{devtest_schedule_count} schedules, "
                     f"{devtest_vnet_count} virtual networks"
@@ -1620,7 +1627,7 @@ class AzureDiscoveryService:
             child_type_counts[child_type] = child_type_counts.get(child_type, 0) + 1
 
         logger.info(
-            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered across {len(child_type_counts)} types"
+            f"{ICON_SUCCESS} Phase 1.6 complete: {len(child_resources)} child resources discovered across {len(child_type_counts)} types"
         )
         logger.debug(str(f"Child resource breakdown: {child_type_counts}"))
 
@@ -1802,7 +1809,7 @@ class AzureDiscoveryService:
                             f"Failed to fetch diagnostic settings for {resource.get('id')}: {e}"
                         )
 
-            logger.info(f"✅ Discovered {len(diagnostic_settings)} diagnostic settings")
+            logger.info(f"{ICON_SUCCESS} Discovered {len(diagnostic_settings)} diagnostic settings")
 
         except Exception:
             # Catch-all for unexpected errors
@@ -1861,13 +1868,13 @@ class AzureDiscoveryService:
         Raises:
             AzureAuthenticationError: If both primary and fallback fail
         """
-        logger.info("🔄 Attempting to authenticate with AzureCliCredential fallback...")
+        logger.info(f"{ICON_ITERATION} Attempting to authenticate with AzureCliCredential fallback...")
         try:
             cli_credential = AzureCliCredential()
             # Test the credential
             cli_credential.get_token("https://management.azure.com/.default")
             self.credential = cli_credential
-            logger.info("✅ Successfully authenticated with AzureCliCredential")
+            logger.info(f"{ICON_SUCCESS} Successfully authenticated with AzureCliCredential")
             if discovery_func:
                 return await discovery_func(self.credential, *args, **kwargs)
             # Default: retry subscription discovery with new credential (skip fallback to avoid recursion)
@@ -2091,7 +2098,7 @@ class AzureDiscoveryService:
 
         success_count = len([r for r in all_resources if r.get("properties")])
         logger.info(
-            f"✅ Successfully fetched properties for {success_count} "
+            f"{ICON_SUCCESS} Successfully fetched properties for {success_count} "
             f"out of {len(all_resources)} resources"
         )
 
