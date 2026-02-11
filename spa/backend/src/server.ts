@@ -17,6 +17,7 @@ import { AuthMiddleware } from './security/auth-middleware';
 import { authRouter } from './routes/auth.routes';
 import { TokenStorageService } from './services/token-storage.service';
 import { DualAuthService } from './services/dual-auth.service';
+import { getPlatformCommands } from '../../main/platform-utils';
 
 // Declare global rate limit cache
 declare global {
@@ -793,13 +794,14 @@ app.get('/api/dependencies', async (req, res) => {
   let azInstalled = false;
   let azVersion = 'unknown';
 
-  // Method 1: Try 'which az' command
+  // Method 1: Try platform-specific Azure CLI check command
   try {
-    const { stdout: whichOutput } = await execPromise('which az');
+    const { azCliCheck, versionParser } = getPlatformCommands();
+    const { stdout: whichOutput } = await execPromise(azCliCheck);
     if (whichOutput && whichOutput.trim()) {
-      // Found az in PATH, now get version (capture both stdout and stderr)
+      // Found az in PATH, now get version using platform-specific parser
       try {
-        const { stdout: versionOutput } = await execPromise('az --version 2>&1 | grep azure-cli | head -1');
+        const { stdout: versionOutput } = await execPromise(versionParser);
         if (versionOutput && versionOutput.includes('azure-cli')) {
           azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
           azInstalled = true;
@@ -836,10 +838,11 @@ app.get('/api/dependencies', async (req, res) => {
       }
     }
 
-    // Method 3: Last resort - try direct az command (might work even if which fails)
+    // Method 3: Last resort - try direct az command with platform-specific version parser
     if (!azInstalled) {
       try {
-        const { stdout: directOutput } = await execPromise('az --version 2>&1 | head -1');
+        const { versionParser } = getPlatformCommands();
+        const { stdout: directOutput } = await execPromise(versionParser);
         if (directOutput && directOutput.includes('azure-cli')) {
           azVersion = directOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
           azInstalled = true;
@@ -901,9 +904,10 @@ app.get('/api/test/azure', async (req, res) => {
     const { promisify } = require('util');
     const execPromise = promisify(exec);
 
-    // Check if Azure CLI is installed
+    // Check if Azure CLI is installed using platform-specific command
     try {
-      await execPromise('which az');
+      const { azCliCheck } = getPlatformCommands();
+      await execPromise(azCliCheck);
     } catch {
       return res.json({ success: false, error: 'Azure CLI not installed' });
     }
