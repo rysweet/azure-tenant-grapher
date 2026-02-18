@@ -1233,10 +1233,11 @@ class TerraformEmitter(IaCEmitter):
                     )
                     # Show first subnet details
                     first_ref = refs[0]
+                    expected_tf_name = first_ref.get('expected_terraform_name', 'N/A')
                     logger.warning(
-                        f"    Missing subnet: {first_ref['missing_resource_name']}\n"
-                        f"    Expected Terraform name: {first_ref['expected_terraform_name']}\n"
-                        f"    Azure ID: {first_ref['missing_resource_id']}"
+                        f"    Missing subnet: {first_ref.get('missing_resource_name', 'unknown')}\n"
+                        f"    Expected Terraform name: {expected_tf_name}\n"
+                        f"    Azure ID: {first_ref.get('missing_resource_id', 'unknown')}"
                     )
                     # List all resources referencing this subnet
                     logger.warning("    Resources referencing this subnet:")
