@@ -185,5 +185,73 @@ class TargetGraphBuilder:
 
         return target_graph
 
+    def store_replication_mappings(
+        self,
+        resource_mappings: dict[str, dict[str, Any]],
+    ) -> int:
+        """
+        Store REPLICATED_FROM relationships in Neo4j after deployment.
+
+        This method creates relationships between target (replicated) resources
+        and their source resources, enabling accurate fidelity validation and
+        tracking of replication lineage.
+
+        Args:
+            resource_mappings: Dict mapping target_resource_id to metadata
+                              {"source_resource_id": source_id, ...}
+
+        Returns:
+            Number of mappings successfully stored
+
+        Examples:
+            >>> builder = TargetGraphBuilder(analyzer, uri, user, password)
+            >>> mappings = {
+            ...     "target_vm1": {"source_resource_id": "source_vm1"},
+            ...     "target_db1": {"source_resource_id": "source_db1"}
+            ... }
+            >>> count = builder.store_replication_mappings(mappings)
+            >>> print(f"Stored {count} mappings")
+            Stored 2 mappings
+        """
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        )
+
+        stored_count = 0
+
+        try:
+            with driver.session() as session:
+                for target_id, mapping in resource_mappings.items():
+                    source_id = mapping.get("source_resource_id")
+                    if not source_id:
+                        continue
+
+                    try:
+                        # Create REPLICATED_FROM relationship and store source_id property
+                        result = session.run(
+                            """
+                            MATCH (source:Resource:Original {id: $source_id})
+                            MATCH (target:Resource {id: $target_id})
+                            MERGE (target)-[:REPLICATED_FROM]->(source)
+                            SET target.source_id = $source_id
+                            RETURN target.id AS target_id
+                            """,
+                            source_id=source_id,
+                            target_id=target_id,
+                        )
+
+                        if result.single():
+                            stored_count += 1
+
+                    except Exception as e:
+                        # Log error but continue with other mappings
+                        print(f"Warning: Failed to store mapping {target_id} -> {source_id}: {e}")
+                        continue
+
+        finally:
+            driver.close()
+
+        return stored_count
+
 
 __all__ = ["TargetGraphBuilder"]
