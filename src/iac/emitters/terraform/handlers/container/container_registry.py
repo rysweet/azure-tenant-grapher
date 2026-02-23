@@ -103,12 +103,18 @@ class ContainerRegistryHandler(ResourceHandler):
                 config["data_endpoint_enabled"] = data_endpoint
 
         # Optional: network_rule_set (security - HIGH for network restrictions)
-        # Maps to Azure property: networkRuleSet
+        # Only supported on Premium SKU. ip_rule is required by the provider (even if empty).
         network_rule_set = properties.get("networkRuleSet")
-        if network_rule_set and isinstance(network_rule_set, dict):
+        if network_rule_set and isinstance(network_rule_set, dict) and sku_name == "Premium":
             default_action = network_rule_set.get("defaultAction", "Allow")
-            if default_action:
-                config["network_rule_set"] = [{"default_action": default_action}]
+            ip_rules = [
+                {"action": rule.get("action", "Allow"), "ip_range": rule["value"]}
+                for rule in network_rule_set.get("ipRules", [])
+                if rule.get("value")
+            ]
+            config["network_rule_set"] = [
+                {"default_action": default_action, "ip_rule": ip_rules}
+            ]
 
         logger.debug(f"Container Registry '{resource_name}' emitted")
 

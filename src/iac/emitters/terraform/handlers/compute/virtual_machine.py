@@ -2,7 +2,7 @@
 
 Handles: Microsoft.Compute/virtualMachines
 Emits: azurerm_linux_virtual_machine, azurerm_windows_virtual_machine,
-       tls_private_key, data.azurerm_key_vault_secret
+       tls_private_key, random_password
 """
 
 import logging
@@ -23,7 +23,7 @@ class VirtualMachineHandler(ResourceHandler):
         - azurerm_linux_virtual_machine (for Linux VMs)
         - azurerm_windows_virtual_machine (for Windows VMs)
         - tls_private_key (helper resource for SSH authentication on Linux)
-        - data.azurerm_key_vault_secret (data source for Windows VM admin passwords - Fix #568)
+        - random_password (auto-generated passwords for Windows VM admin authentication)
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -34,7 +34,7 @@ class VirtualMachineHandler(ResourceHandler):
         "azurerm_linux_virtual_machine",
         "azurerm_windows_virtual_machine",
         "tls_private_key",
-        "data.azurerm_key_vault_secret",  # Fix #568: Key Vault secret for Windows VM passwords
+        "random_password",  # Fix: Random password for Windows VM admin authentication
     }
 
     def emit(
@@ -136,26 +136,27 @@ class VirtualMachineHandler(ResourceHandler):
 
         # Fix #596, #568: Add authentication based on OS type
         if is_windows:
-            # Windows VMs require admin_password from Azure Key Vault (Option A - Issue #568)
-            # PREREQUISITE: User must create Key Vault and secret before terraform apply:
-            #   1. Create Key Vault: az keyvault create --name <vault-name> --resource-group <rg-name> --location <location>
-            #   2. Set password secret: az keyvault secret set --vault-name <vault-name> --name <secret-name> --value <password>
-            #   3. Ensure Terraform has Key Vault access (IAM role: Key Vault Secrets User)
-            password_secret_name = f"{safe_name}_admin_password"
+            # Windows VMs require admin_password
+            # For full tenant replication: Use random_password resource (auto-generated, secure)
+            password_resource_name = f"{safe_name}_admin_password"
 
-            # Add data source for Key Vault secret
-            # NOTE: User must provide key_vault_id - this is a placeholder that MUST be updated
-            context.add_data_source(
-                "azurerm_key_vault_secret",
-                password_secret_name,
+            # Add random_password resource for Windows VM password
+            context.add_helper_resource(
+                "random_password",
+                password_resource_name,
                 {
-                    "name": f"{safe_name}-admin-password",
-                    "key_vault_id": "${var.key_vault_id}",  # User must define this variable
+                    "length": 16,
+                    "special": True,
+                    "override_special": "!@#$%^&*()",
+                    "min_lower": 1,
+                    "min_upper": 1,
+                    "min_numeric": 1,
+                    "min_special": 1,
                 },
             )
 
             config["admin_password"] = (
-                f"${{data.azurerm_key_vault_secret.{password_secret_name}.value}}"
+                f"${{random_password.{password_resource_name}.result}}"
             )
         else:
             # Linux VMs use SSH keys
