@@ -19,7 +19,7 @@ def main():
     # Initialize
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-    neo4j_password = os.getenv("NEO4J_PASSWORD", "neo4j123")
+    neo4j_password = os.getenv("NEO4J_PASSWORD")
 
     replicator = ArchitecturePatternReplicator(
         neo4j_uri=neo4j_uri,
