@@ -60,7 +60,7 @@ class CosmosDBHandler(ResourceHandler):
         if locations:
             config["geo_location"] = [
                 {
-                    "location": loc.get("locationName", location).lower(),
+                    "location": loc.get("locationName", location).lower().replace(" ", ""),
                     "failover_priority": loc.get("failoverPriority", 0),
                 }
                 for loc in locations
@@ -96,16 +96,14 @@ class CosmosDBHandler(ResourceHandler):
 
         # Optional: ip_range_filter (security - HIGH for IP firewall)
         # Maps to Azure property: ipRules
+        # azurerm provider 4.x expects a set of strings, not a comma-separated string.
         ip_rules = properties.get("ipRules", [])
         if ip_rules:
-            # Cosmos DB expects comma-separated CIDR ranges
-            config["ip_range_filter"] = ",".join(
-                [
-                    rule.get("ipAddressOrRange", "")
-                    for rule in ip_rules
-                    if rule.get("ipAddressOrRange")
-                ]
-            )
+            config["ip_range_filter"] = [
+                rule.get("ipAddressOrRange", "")
+                for rule in ip_rules
+                if rule.get("ipAddressOrRange")
+            ]
 
         # Optional: virtual_network_rule (security - HIGH for VNet restrictions)
         # Maps to Azure property: virtualNetworkRules

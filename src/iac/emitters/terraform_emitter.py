@@ -557,6 +557,9 @@ class TerraformEmitter(IaCEmitter):
                 azure_type = "Microsoft.Graph/servicePrincipals"
             elif azure_type.lower() == "managedidentity":
                 azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+            # Handle simplified child resource types
+            elif azure_type.lower() == "virtualnetworklinks":
+                azure_type = "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
 
             # Normalize casing before lookup (fixes case-sensitivity issues)
             azure_type = self._normalize_azure_type(azure_type)
@@ -913,13 +916,30 @@ class TerraformEmitter(IaCEmitter):
                     )
                     continue
 
-                # Add depends_on if resource has dependencies
+                # Add depends_on if resource has dependencies, filtering out
+                # references to resources not present in the emitted config
+                # (e.g. when sampling a subset of resources).
                 if resource_dep.depends_on:
-                    resource_config["depends_on"] = sorted(resource_dep.depends_on)
-                    logger.debug(
-                        f"Added dependencies for {resource_type}.{resource_name}: "
-                        f"{resource_dep.depends_on}"
-                    )
+                    valid_deps = []
+                    for dep in sorted(resource_dep.depends_on):
+                        parts = dep.split(".", 1)
+                        if len(parts) == 2:
+                            dep_type, dep_name = parts
+                            if dep_name in terraform_config.get("resource", {}).get(dep_type, {}):
+                                valid_deps.append(dep)
+                            else:
+                                logger.debug(
+                                    f"Dropping depends_on '{dep}' for {resource_type}.{resource_name}: "
+                                    f"referenced resource not in emitted config"
+                                )
+                        else:
+                            valid_deps.append(dep)
+                    if valid_deps:
+                        resource_config["depends_on"] = valid_deps
+                        logger.debug(
+                            f"Added dependencies for {resource_type}.{resource_name}: "
+                            f"{valid_deps}"
+                        )
 
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
@@ -1034,6 +1054,18 @@ class TerraformEmitter(IaCEmitter):
                 nic_name,
                 nsg_name,
             ) in self._nic_nsg_associations:
+                # Validate NIC exists before creating association
+                nic_available = self._validate_resource_reference(
+                    "azurerm_network_interface", nic_tf_name, terraform_config
+                )
+
+                if not nic_available:
+                    logger.warning(
+                        f"Skipping NIC NSG association for '{nic_name}' - "
+                        f"NIC '{nic_name}' not emitted. Association cannot be created."
+                    )
+                    continue
+
                 # Validate NSG exists before creating association (Bug #58)
                 nsg_available = (
                     "azurerm_network_security_group" in self._available_resources
@@ -1187,6 +1219,13 @@ class TerraformEmitter(IaCEmitter):
                 split_by_community = False
 
         if not split_by_community:
+            # Remove empty resource type blocks (e.g. post_emit handlers that
+            # found no valid associations) to prevent terraform init failures.
+            terraform_config["resource"] = {
+                rt: res
+                for rt, res in terraform_config.get("resource", {}).items()
+                if res
+            }
             # Write single main.tf.json file
             output_file = out_dir / "main.tf.json"
             with open(output_file, "w") as f:
@@ -1928,6 +1967,19 @@ class TerraformEmitter(IaCEmitter):
         azure_type = resource.get("type", "")
         resource_name = resource.get("name", "unknown")
 
+        # Handle simplified type names before handler lookup
+        if azure_type.lower() in ("user", "aaduser"):
+            azure_type = "Microsoft.Graph/users"
+        elif azure_type.lower() in ("group", "aadgroup", "identitygroup"):
+            azure_type = "Microsoft.Graph/groups"
+        elif azure_type.lower() == "serviceprincipal":
+            azure_type = "Microsoft.Graph/servicePrincipals"
+        elif azure_type.lower() == "managedidentity":
+            azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+        # Handle simplified child resource types
+        elif azure_type.lower() == "virtualnetworklinks":
+            azure_type = "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
+
         # Ensure handlers are registered
         ensure_handlers_registered()
 
@@ -2617,6 +2669,7 @@ class TerraformEmitter(IaCEmitter):
             """Recursively extract Terraform references from config object."""
             if isinstance(obj, str):
                 # Pattern: ${azurerm_type.name.field} or ${azuread_type.name.field}
+                # Also match data sources: ${data.azurerm_type.name.field}
                 pattern = r"\$\{(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
                 matches = re.findall(pattern, obj)
                 for terraform_type, ref_name in matches:
@@ -2631,6 +2684,15 @@ class TerraformEmitter(IaCEmitter):
                                 f"Resource '{resource_name}' references undeclared "
                                 f"resource: {ref_str}"
                             )
+
+                # Separately check for data source references (these are always valid - external)
+                # Pattern: ${data.azurerm_type.name.field} or ${data.azuread_type.name.field}
+                data_pattern = r"\$\{data\.(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
+                data_matches = re.findall(data_pattern, obj)
+                if data_matches:
+                    logger.debug(
+                        f"Resource '{resource_name}' uses {len(data_matches)} data source(s) (external references - not validated)"
+                    )
             elif isinstance(obj, dict):
                 for value in obj.values():
                     extract_references(value)

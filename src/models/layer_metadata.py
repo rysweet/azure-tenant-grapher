@@ -7,9 +7,12 @@ abstracted projections while preserving the immutable Original graph as source o
 """
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+# Python 3.10 compatibility: UTC was added in 3.11
+UTC = timezone.utc
 
 
 class LayerType(Enum):
