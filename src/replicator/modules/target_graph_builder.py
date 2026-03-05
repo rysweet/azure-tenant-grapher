@@ -58,6 +58,96 @@ class TargetGraphBuilder:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
+        # Relationship cache: resource_id -> list of relationships
+        self._relationship_cache: dict[str, list[dict[str, Any]]] = {}
+        self._cache_enabled = False
+
+    def warm_cache(self, all_candidate_instances: list[tuple[str, list[list[dict[str, Any]]]]]):
+        """
+        Pre-fetch relationships for all candidate instances to enable fast graph building.
+
+        This dramatically improves performance when evaluating many candidate instances
+        for spectral-guided selection by querying Neo4j once instead of N times.
+
+        Args:
+            all_candidate_instances: List of (pattern_name, instances) tuples where
+                                    instances is a list of resource instances
+
+        Example:
+            >>> builder.warm_cache([("web_app", instances), ("vm", instances)])
+            >>> # Now build_from_instances will use cached data
+        """
+        # Collect all unique resource IDs from all candidates
+        all_resource_ids = set()
+        for _pattern_name, instances in all_candidate_instances:
+            # instances is a list of resource instances
+            # each instance is a list of resource dicts
+            for instance in instances:
+                if isinstance(instance, list):
+                    # Instance is a list of resource dicts
+                    for resource in instance:
+                        if isinstance(resource, dict) and "id" in resource:
+                            all_resource_ids.add(resource["id"])
+                        elif isinstance(resource, str):
+                            # Sometimes resource IDs are stored directly as strings
+                            all_resource_ids.add(resource)
+                elif isinstance(instance, dict) and "id" in instance:
+                    # Sometimes the instance itself is a resource dict
+                    all_resource_ids.add(instance["id"])
+
+        if not all_resource_ids:
+            return
+
+        # Query Neo4j once for all relationships
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        )
+
+        try:
+            with driver.session() as session:
+                result = session.run(
+                    """
+                    MATCH (source)-[r]->(target)
+                    WHERE (source:Resource:Original AND source.id IN $ids)
+                       OR (target:Resource:Original AND target.id IN $ids)
+                    AND type(r) <> 'SCAN_SOURCE_NODE'
+                    RETURN source.id as source_id,
+                           labels(source) as source_labels,
+                           source.type as source_type,
+                           type(r) as rel_type,
+                           target.id as target_id,
+                           labels(target) as target_labels,
+                           target.type as target_type
+                    """,
+                    ids=list(all_resource_ids),
+                )
+
+                # Store relationships indexed by resource ID
+                for record in result:
+                    rel = {
+                        "source_labels": record["source_labels"],
+                        "source_type": record["source_type"],
+                        "rel_type": record["rel_type"],
+                        "target_labels": record["target_labels"],
+                        "target_type": record["target_type"],
+                    }
+
+                    # Add to cache for both source and target IDs
+                    source_id = record["source_id"]
+                    target_id = record["target_id"]
+
+                    if source_id not in self._relationship_cache:
+                        self._relationship_cache[source_id] = []
+                    self._relationship_cache[source_id].append(rel)
+
+                    if target_id not in self._relationship_cache:
+                        self._relationship_cache[target_id] = []
+                    self._relationship_cache[target_id].append(rel)
+
+        finally:
+            driver.close()
+
+        self._cache_enabled = True
 
     def build_from_instances(
         self, selected_instances: list[tuple[str, list[dict[str, Any]]]]
@@ -94,7 +184,12 @@ class TargetGraphBuilder:
         # Collect all resource IDs from selected instances
         all_resource_ids = []
         for _pattern_name, instance in selected_instances:
-            all_resource_ids.extend([r["id"] for r in instance])
+            for r in instance:
+                if isinstance(r, dict) and "id" in r:
+                    all_resource_ids.append(r["id"])
+                elif isinstance(r, str):
+                    # Resource is already an ID string
+                    all_resource_ids.append(r)
 
         # Build pattern graph
         target_graph = nx.MultiDiGraph()
@@ -103,85 +198,104 @@ class TargetGraphBuilder:
         if not all_resource_ids:
             return target_graph
 
-        # Count resource types
-        driver = GraphDatabase.driver(
-            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
-        )
+        # Get relationships (from cache if enabled, otherwise query Neo4j)
+        relationships = []
+        if self._cache_enabled:
+            # Use cached relationships
+            seen_rels = set()  # Deduplicate
+            for resource_id in all_resource_ids:
+                if resource_id in self._relationship_cache:
+                    for rel in self._relationship_cache[resource_id]:
+                        rel_tuple = (
+                            rel["source_type"],
+                            rel["rel_type"],
+                            rel["target_type"],
+                        )
+                        if rel_tuple not in seen_rels:
+                            relationships.append(rel)
+                            seen_rels.add(rel_tuple)
+        else:
+            # Query Neo4j (original behavior)
+            driver = GraphDatabase.driver(
+                self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+            )
 
-        try:
-            with driver.session() as session:
-                # Fetch ALL relationships involving the selected Original resources
-                # This includes Resource→Resource, Resource→ResourceGroup, Resource→Tag, etc.
-                # We need to match the same approach as ArchitecturalPatternAnalyzer
-                result = session.run(
-                    """
-                    MATCH (source)-[r]->(target)
-                    WHERE (source:Resource:Original AND source.id IN $ids)
-                       OR (target:Resource:Original AND target.id IN $ids)
-                    AND type(r) <> 'SCAN_SOURCE_NODE'
-                    RETURN labels(source) as source_labels,
-                           source.type as source_type,
-                           type(r) as rel_type,
-                           labels(target) as target_labels,
-                           target.type as target_type
-                """,
-                    ids=all_resource_ids,
-                )
-
-                # Collect all relationships
-                relationships = []
-                for record in result:
-                    relationships.append(
-                        {
-                            "source_labels": record["source_labels"],
-                            "source_type": record["source_type"],
-                            "rel_type": record["rel_type"],
-                            "target_labels": record["target_labels"],
-                            "target_type": record["target_type"],
-                        }
+            try:
+                with driver.session() as session:
+                    # Fetch ALL relationships involving the selected Original resources
+                    result = session.run(
+                        """
+                        MATCH (source)-[r]->(target)
+                        WHERE (source:Resource:Original AND source.id IN $ids)
+                           OR (target:Resource:Original AND target.id IN $ids)
+                        AND type(r) <> 'SCAN_SOURCE_NODE'
+                        RETURN labels(source) as source_labels,
+                               source.type as source_type,
+                               type(r) as rel_type,
+                               labels(target) as target_labels,
+                               target.type as target_type
+                    """,
+                        ids=all_resource_ids,
                     )
 
-                # First, add ALL resource types from selected instances as nodes
-                # This ensures orphaned types without relationships still appear in the graph
-                resource_type_counts = {}
-                for _pattern_name, instance in selected_instances:
-                    for resource in instance:
-                        rtype = resource["type"]
-                        resource_type_counts[rtype] = (
-                            resource_type_counts.get(rtype, 0) + 1
+                    # Collect all relationships
+                    for record in result:
+                        relationships.append(
+                            {
+                                "source_labels": record["source_labels"],
+                                "source_type": record["source_type"],
+                                "rel_type": record["rel_type"],
+                                "target_labels": record["target_labels"],
+                                "target_type": record["target_type"],
+                            }
                         )
 
-                # Add all resource types as nodes
-                for rtype, count in resource_type_counts.items():
-                    if not target_graph.has_node(rtype):
-                        target_graph.add_node(rtype, count=count)
+            finally:
+                driver.close()
 
-                # Aggregate relationships by type (same as ArchitecturalPatternAnalyzer)
-                aggregated = self.analyzer.aggregate_relationships(relationships)
-
-                # Build edges from aggregated relationships
-                for rel in aggregated:
-                    source_type = rel["source_type"]
-                    target_type = rel["target_type"]
-                    rel_type = rel["rel_type"]
-                    frequency = rel["frequency"]
-
-                    # Add nodes if not already added (for relationship endpoints)
-                    if not target_graph.has_node(source_type):
-                        target_graph.add_node(source_type, count=0)
-                    if not target_graph.has_node(target_type):
-                        target_graph.add_node(target_type, count=0)
-
-                    # Add edge
-                    target_graph.add_edge(
-                        source_type,
-                        target_type,
-                        relationship=rel_type,
-                        frequency=frequency,
+        # First, add ALL resource types from selected instances as nodes
+        # This ensures orphaned types without relationships still appear in the graph
+        resource_type_counts = {}
+        for _pattern_name, instance in selected_instances:
+            for resource in instance:
+                # Handle both dict and string (resource ID) formats
+                if isinstance(resource, dict):
+                    rtype = resource.get("type", "unknown")
+                    resource_type_counts[rtype] = (
+                        resource_type_counts.get(rtype, 0) + 1
                     )
+                elif isinstance(resource, str):
+                    # Resource is just an ID string - skip for type counting
+                    continue
 
-        finally:
-            driver.close()
+        # Add all resource types as nodes
+        for rtype, count in resource_type_counts.items():
+            if not target_graph.has_node(rtype):
+                target_graph.add_node(rtype, count=count)
+
+        # Aggregate relationships by type (same as ArchitecturalPatternAnalyzer)
+        aggregated = self.analyzer.aggregate_relationships(relationships)
+
+        # Build edges from aggregated relationships
+        for rel in aggregated:
+            source_type = rel["source_type"]
+            target_type = rel["target_type"]
+            rel_type = rel["rel_type"]
+            frequency = rel["frequency"]
+
+            # Add nodes if not already added (for relationship endpoints)
+            if not target_graph.has_node(source_type):
+                target_graph.add_node(source_type, count=0)
+            if not target_graph.has_node(target_type):
+                target_graph.add_node(target_type, count=0)
+
+            # Add edge
+            target_graph.add_edge(
+                source_type,
+                target_type,
+                relationship=rel_type,
+                frequency=frequency,
+            )
 
         return target_graph
 

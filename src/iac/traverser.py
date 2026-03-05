@@ -10,7 +10,12 @@ to ensure resources are ordered by dependencies for proper IaC deployment.
 import logging
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, LiteralString, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set, cast
+
+try:
+    from typing import LiteralString
+except ImportError:
+    from typing_extensions import LiteralString
 
 from neo4j import Driver
 

@@ -6,11 +6,14 @@ Includes nodes, relationships, and metadata.
 """
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Set
 
 import networkx as nx
 import yaml
+
+# Python 3.10 compatibility: UTC was added in 3.11
+UTC = timezone.utc
 
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 

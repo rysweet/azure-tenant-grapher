@@ -347,6 +347,163 @@ class ResourceFidelityCalculator:
             security_warnings=security_warnings,
         )
 
+    def calculate_fidelity_with_mappings(
+        self,
+        resource_mappings: List[Dict[str, str]],
+        redaction_level: RedactionLevel = RedactionLevel.FULL,
+    ) -> FidelityResult:
+        """Calculate resource-level fidelity using explicit source-target mappings.
+
+        This method addresses three key issues:
+        1. Uses resource mappings for ID translation (source → target)
+        2. Compares only replicated resources (not entire source tenant)
+        3. Handles cross-subscription resource ID differences
+
+        Args:
+            resource_mappings: List of mappings with 'source_id' and 'target_id' keys
+            redaction_level: Security redaction level
+
+        Returns:
+            FidelityResult with classifications and metrics
+
+        Raises:
+            RuntimeError: If Neo4j queries fail (with sanitized error message)
+        """
+        # Check if debug mode is enabled via environment variable
+        debug_mode = os.environ.get("ATG_DEBUG", "").lower() in ("1", "true", "yes")
+
+        try:
+            # Extract source and target resource IDs from mappings
+            source_ids = [m["source_id"] for m in resource_mappings]
+            target_ids = [m["target_id"] for m in resource_mappings]
+
+            # Query only the replicated resources (not entire tenant)
+            source_resources = self._query_resources_by_ids(source_ids)
+            target_resources = self._query_resources_by_ids(target_ids)
+
+            # Build mapping lookup: source_id → target_id (case-insensitive)
+            # Azure resource IDs are case-insensitive, but Neo4j and mappings may have different casing
+            mapping_lookup = {m["source_id"].lower(): m["target_id"] for m in resource_mappings}
+
+            # Build target lookup by ID for fast access (case-insensitive)
+            target_by_id = {r["id"].lower(): r for r in target_resources}
+
+        except Exception as e:
+            # Sanitize error message and log full details to file
+            sanitized_msg = _sanitize_error_message(e, debug_mode=debug_mode)
+            logger.error(f"Neo4j query failed: {sanitized_msg}")
+
+            # Log full traceback to file (not console) for debugging
+            if not debug_mode:
+                logger.debug("Full error details:", exc_info=True)
+
+            raise RuntimeError(sanitized_msg) from e
+
+        # Classify resources using explicit mappings
+        classifications = []
+        matched_target_ids = set()
+
+        # Process source resources using mappings
+        for source in source_resources:
+            source_id = source.get("id", "")
+            resource_name = source.get("name", "")
+            resource_type = source.get("type", "")
+
+            # Look up target ID from mapping (case-insensitive)
+            target_id = mapping_lookup.get(source_id.lower())
+
+            if target_id is None:
+                # Mapping missing (shouldn't happen if mappings are correct)
+                logger.warning(f"No mapping found for source resource: {source_id}")
+                classification = ResourceClassification(
+                    resource_id=source_id,
+                    resource_name=resource_name,
+                    resource_type=resource_type,
+                    status=ResourceStatus.MISSING_TARGET,
+                    source_exists=True,
+                    target_exists=False,
+                    property_comparisons=[],
+                    mismatch_count=0,
+                    match_count=0,
+                )
+            else:
+                # Get target resource (case-insensitive lookup)
+                target = target_by_id.get(target_id.lower())
+
+                if target is None:
+                    # Target resource not found in Neo4j
+                    classification = ResourceClassification(
+                        resource_id=source_id,
+                        resource_name=resource_name,
+                        resource_type=resource_type,
+                        status=ResourceStatus.MISSING_TARGET,
+                        source_exists=True,
+                        target_exists=False,
+                        property_comparisons=[],
+                        mismatch_count=0,
+                        match_count=0,
+                    )
+                else:
+                    # Mark this target as matched (case-insensitive)
+                    matched_target_ids.add(target_id.lower())
+
+                    # Compare properties
+                    comparisons = self._compare_properties(
+                        source.get("properties", {}), target.get("properties", {}), redaction_level
+                    )
+
+                    mismatch_count = sum(1 for c in comparisons if not c.match and not c.redacted)
+                    match_count = sum(1 for c in comparisons if c.match)
+
+                    status = ResourceStatus.EXACT_MATCH if mismatch_count == 0 else ResourceStatus.DRIFTED
+
+                    classification = ResourceClassification(
+                        resource_id=source_id,
+                        resource_name=resource_name,
+                        resource_type=resource_type,
+                        status=status,
+                        source_exists=True,
+                        target_exists=True,
+                        property_comparisons=comparisons,
+                        mismatch_count=mismatch_count,
+                        match_count=match_count,
+                    )
+
+            classifications.append(classification)
+
+        # Check for target resources without source mapping (orphaned targets)
+        for target in target_resources:
+            target_id = target.get("id", "")
+            # Case-insensitive check
+            if target_id.lower() not in matched_target_ids:
+                classification = ResourceClassification(
+                    resource_id=target_id,
+                    resource_name=target.get("name", ""),
+                    resource_type=target.get("type", ""),
+                    status=ResourceStatus.MISSING_SOURCE,
+                    source_exists=False,
+                    target_exists=True,
+                    property_comparisons=[],
+                    mismatch_count=0,
+                    match_count=0,
+                )
+                classifications.append(classification)
+
+        # Calculate metrics
+        metrics = self._calculate_metrics(classifications)
+
+        # Generate security warnings
+        security_warnings = self._generate_security_warnings(redaction_level)
+
+        return FidelityResult(
+            classifications=classifications,
+            metrics=metrics,
+            source_subscription=self.source_subscription_id,
+            target_subscription=self.target_subscription_id,
+            redaction_level=redaction_level,
+            security_warnings=security_warnings,
+        )
+
     def _find_best_fuzzy_match(
         self,
         source: Dict[str, Any],
@@ -419,6 +576,46 @@ class ResourceFidelityCalculator:
 
         with self.session_manager.session() as session:
             result = session.run(query, params)
+            resources = []
+            for record in result:
+                resource_dict = dict(record)
+                # Parse properties if it's a JSON string
+                if isinstance(resource_dict.get("properties"), str):
+                    try:
+                        resource_dict["properties"] = json.loads(resource_dict["properties"])
+                    except (json.JSONDecodeError, ValueError):
+                        # If JSON parsing fails, use empty dict
+                        logger.warning(f"Failed to parse properties for resource {resource_dict.get('id', 'unknown')}")
+                        resource_dict["properties"] = {}
+                elif resource_dict.get("properties") is None:
+                    resource_dict["properties"] = {}
+                resources.append(resource_dict)
+            return resources
+
+    def _query_resources_by_ids(self, resource_ids: List[str]) -> List[Dict[str, Any]]:
+        """Query specific resources by ID from Neo4j.
+
+        Args:
+            resource_ids: List of resource IDs to query
+
+        Returns:
+            List of resources matching the provided IDs
+        """
+        import json
+
+        if not resource_ids:
+            return []
+
+        # Case-insensitive query: Azure resource IDs are case-insensitive
+        # Use toLower() for case-insensitive matching
+        query = """
+        MATCH (r:Resource:Original)
+        WHERE toLower(r.id) IN [id IN $resource_ids | toLower(id)]
+        RETURN r.id AS id, r.name AS name, r.type AS type, r.properties AS properties
+        """
+
+        with self.session_manager.session() as session:
+            result = session.run(query, {"resource_ids": resource_ids})
             resources = []
             for record in result:
                 resource_dict = dict(record)

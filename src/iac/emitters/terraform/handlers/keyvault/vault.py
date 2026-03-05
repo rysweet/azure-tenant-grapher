@@ -48,11 +48,17 @@ class KeyVaultHandler(ResourceHandler):
         # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
 
-        # Add tenant suffix for cross-tenant deployments (using resource ID hash for determinism)
-        if (
+        # Add unique suffix for cross-tenant or cross-subscription deployments.
+        # KV names are globally unique — the source name will collide if reused.
+        is_cross_deployment = (
             context.target_tenant_id
             and context.source_tenant_id != context.target_tenant_id
-        ):
+        ) or (
+            context.target_subscription_id
+            and context.source_subscription_id
+            and context.target_subscription_id != context.source_subscription_id
+        )
+        if is_cross_deployment:
             import hashlib
 
             resource_id = resource.get("id", "")

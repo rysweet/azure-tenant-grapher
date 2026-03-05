@@ -117,7 +117,96 @@ class ArchitecturalPatternAnalyzer:
         },
     }
 
-    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
+    # Lookup table for naming orphaned resource type clusters.
+    # Maps simplified Azure resource type names to descriptive pattern names.
+    _ORPHAN_PATTERN_NAMES: dict[str, str] = {
+        # Monitoring & Alerting
+        "actiongroups": "Azure Monitor Alerting",
+        "metricalerts": "Azure Monitor Alerting",
+        "scheduledqueryrules": "Log Analytics Query Alerts",
+        "alertrules": "Azure Monitor Alerting",
+        "dataCollectionRules": "Azure Monitor Data Collection",
+        "prometheusRuleGroups": "Prometheus Monitoring Rules",
+        "monitorWorkspaces": "Azure Monitor Workspace",
+        "smartDetectorAlertRules": "Azure Monitor Alerting",
+        # Networking
+        "loadBalancers": "Network Load Balancing",
+        "publicIPAddresses": "Public IP Addresses",
+        "applicationGateways": "Application Gateway",
+        "trafficManagerProfiles": "Global Traffic Management",
+        "frontDoors": "Azure Front Door",
+        "bastionHosts": "Secure Remote Access",
+        "firewalls": "Azure Firewall",
+        "networkWatchers": "Network Watcher",
+        "privateDnsZones": "Private DNS",
+        "dnsZones": "Azure DNS",
+        "virtualNetworkGateways": "VPN Gateway",
+        "expressRouteCircuits": "ExpressRoute Connectivity",
+        "localNetworkGateways": "VPN Gateway",
+        "privateEndpoints": "Private Endpoint",
+        "natGateways": "NAT Gateway",
+        "ddosProtectionPlans": "DDoS Protection",
+        "ipGroups": "IP Group Management",
+        "networkProfiles": "Network Profile",
+        # Compute extras
+        "diskEncryptionSets": "Disk Encryption",
+        "hostGroups": "Dedicated Host",
+        "hosts": "Dedicated Host",
+        "availabilitySets": "VM Availability Set",
+        "proximityPlacementGroups": "Proximity Placement Group",
+        "images": "VM Image Management",
+        "galleries": "Shared Image Gallery",
+        "snapshots": "Disk Snapshot",
+        "capacityReservationGroups": "Capacity Reservation",
+        # Backup & Recovery
+        "recoveryServicesVaults": "Backup and Recovery",
+        # Messaging & Events
+        "signalR": "Real-time Messaging",
+        "eventHubNamespaces": "Event Hub",
+        "serviceBusNamespaces": "Service Bus Messaging",
+        "eventGridTopics": "Event Grid",
+        "eventGridDomains": "Event Grid",
+        "notificationHubs": "Push Notifications",
+        # Integration & Automation
+        "apiManagementService": "API Management",
+        "logicApps": "Logic Apps Automation",
+        "dataFactories": "Azure Data Factory",
+        "automationAccounts": "Automation Account",
+        "blueprints": "Azure Blueprints",
+        # Analytics
+        "synapseWorkspaces": "Synapse Analytics",
+        "streamAnalytics": "Stream Analytics",
+        "dataLakeStoreAccounts": "Data Lake Storage",
+        "kusto": "Azure Data Explorer",
+        "clusters": "Azure Data Explorer",
+        # AI & ML
+        "cognitiveServices": "Azure Cognitive Services",
+        "mlWorkspaces": "Machine Learning Workspace",
+        "botServices": "Azure Bot Service",
+        "openAIAccounts": "Azure OpenAI",
+        # Developer Tools
+        "appConfigurations": "App Configuration",
+        "devTestLabs": "Dev/Test Labs",
+        "staticSites": "Azure Static Web Apps",
+        "springApps": "Azure Spring Apps",
+        # IoT
+        "iotHubs": "Azure IoT Hub",
+        "digitalTwinsInstances": "Azure Digital Twins",
+        "provisioningServices": "IoT Device Provisioning",
+        # Governance
+        "policyAssignments": "Azure Policy",
+        "policyDefinitions": "Azure Policy",
+        "managementGroups": "Management Group",
+        "userAssignedIdentities": "Managed Identity",
+    }
+
+    def __init__(
+        self,
+        neo4j_uri: str,
+        neo4j_user: str,
+        neo4j_password: str,
+        source_tenant_id: Optional[str] = None,
+    ):
         """
         Initialize the pattern analyzer.
 
@@ -125,10 +214,17 @@ class ArchitecturalPatternAnalyzer:
             neo4j_uri: Neo4j database URI
             neo4j_user: Neo4j username
             neo4j_password: Neo4j password
+            source_tenant_id: Azure tenant ID for the source scan.  When
+                provided, ``fetch_all_relationships`` will exclude any
+                ``Original`` resources that live under a UUID-named
+                management group belonging to a *different* tenant.
         """
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
+        self.source_tenant_id: Optional[str] = (
+            source_tenant_id.lower() if source_tenant_id else None
+        )
         self.driver: Optional[Driver] = None
 
         # Initialize modular components (Issue #714)
@@ -186,9 +282,33 @@ class ArchitecturalPatternAnalyzer:
         if not self.driver:
             raise RuntimeError("Not connected to Neo4j. Call connect() first.")
 
-        query = """
+        # When we know the source tenant, exclude Original resources that sit
+        # under a UUID-named management group belonging to a *different* tenant.
+        # UUID management groups are foreign tenants; human-readable names
+        # (alz, landingzones, platform, …) always belong to our tenant.
+        # This is deliberately opt-in so the analyzer stays backward-compatible
+        # when source_tenant_id is not supplied.
+        if self.source_tenant_id:
+            tenant_filter = """
+          AND (
+            NOT 'Original' IN labels(source)
+            OR NOT toLower(source.id) =~ '.*/managementgroups/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.*'
+            OR toLower(source.id) CONTAINS $source_tenant_id
+          )
+          AND (
+            NOT 'Original' IN labels(target)
+            OR NOT toLower(target.id) =~ '.*/managementgroups/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.*'
+            OR toLower(target.id) CONTAINS $source_tenant_id
+          )"""
+            params: Dict[str, Any] = {"source_tenant_id": self.source_tenant_id}
+        else:
+            tenant_filter = ""
+            params = {}
+
+        query = f"""
         MATCH (source)-[r]->(target)
         WHERE type(r) <> 'SCAN_SOURCE_NODE'
+        {tenant_filter}
         RETURN labels(source) as source_labels,
                source.type as source_type,
                type(r) as rel_type,
@@ -198,7 +318,7 @@ class ArchitecturalPatternAnalyzer:
 
         all_relationships = []
         with self.driver.session() as session:
-            result = session.run(query)
+            result = session.run(query, params)
             for record in result:
                 all_relationships.append(
                     {
@@ -633,6 +753,167 @@ class ArchitecturalPatternAnalyzer:
             List of orphaned nodes with their connection information
         """
         return self._orphan_detector.identify_orphaned_nodes(graph, pattern_matches)
+
+    def group_orphans_into_named_patterns(
+        self,
+        orphaned_instances: list[tuple[str, list[dict[str, Any]]]],
+    ) -> dict[str, list[list[dict[str, Any]]]]:
+        """
+        Group orphaned resource instances into meaningfully named architectural patterns.
+
+        Each instance is assigned a name derived from its most distinctive resource type
+        using the Microsoft Learn lookup table (with a live API fallback for unknown types).
+        Instances that resolve to the same name are merged into one pattern group.
+
+        Args:
+            orphaned_instances: List of (pseudo_name, instance) tuples as returned
+                by OrphanedResourceManager.find_orphaned_instances().
+
+        Returns:
+            dict mapping descriptive pattern name -> list of instances (each instance
+            is a list[dict] with keys id, type, name).
+        """
+        if not orphaned_instances:
+            return {}
+
+        # Generic types that shouldn't drive the pattern name on their own
+        _GENERIC = frozenset(
+            {"publicIPAddresses", "networkInterfaces", "disks", "extensions"}
+        )
+
+        # Name each instance, then group by name so that semantically related
+        # instances (e.g. {actiongroups} and {actiongroups, metricalerts}) are
+        # merged under the same pattern key rather than split by exact type set.
+        named: dict[str, list[list[dict[str, Any]]]] = defaultdict(list)
+        for _pseudo_name, instance in orphaned_instances:
+            type_set = frozenset(r["type"] for r in instance)
+            distinctive = [t for t in type_set if t not in _GENERIC] or sorted(type_set)
+            primary = sorted(distinctive)[0]
+
+            # Lookup table first (fast, no network)
+            name = (
+                self._ORPHAN_PATTERN_NAMES.get(primary)
+                or self._ORPHAN_PATTERN_NAMES.get(primary.lower())
+            )
+
+            if not name:
+                # Try MS Learn API for unknown types (cached per session via local var)
+                name = self._ms_learn_pattern_name(primary)
+
+            named[name].append(instance)
+
+        result = dict(named)
+        logger.info(
+            f"Grouped orphaned instances into {len(result)} named patterns: {list(result.keys())}"
+        )
+        return result
+
+    def _ms_learn_pattern_name(self, resource_type: str) -> str:
+        """
+        Query the Microsoft Learn search API to derive a pattern name.
+
+        Only uses the API result when it yields a meaningful service-level title.
+        Falls back to a camelCase-to-words conversion for API-reference results
+        or when the API is unavailable.
+
+        Args:
+            resource_type: Simplified Azure resource type name (e.g. "loadBalancers")
+
+        Returns:
+            A concise architectural pattern name string.
+        """
+        import json
+        import re
+        import urllib.request
+        from urllib.parse import quote
+
+        # Titles containing these substrings are API/ARM references, not overview docs
+        _REFERENCE_MARKERS = (
+            "interface",
+            "azapi reference",
+            "bicep",
+            "arm template",
+            "azure architecture center",
+            "rest api",
+            "sdk reference",
+        )
+
+        query = quote(f"Azure {resource_type} overview")
+        url = (
+            f"https://learn.microsoft.com/api/search"
+            f"?search={query}&locale=en-us&$top=5&category=Documentation"
+        )
+
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+
+            # Extract meaningful words from camelCase resource type for relevance check
+            _NOISE_WORDS = frozenset(
+                {"azure", "microsoft", "service", "services", "account", "accounts",
+                 "resource", "resources", "namespace", "namespaces", "management"}
+            )
+            type_words = re.findall(r"[a-zA-Z][a-z]+", resource_type)
+            type_words_lower = {
+                w.lower() for w in type_words
+                if len(w) > 3 and w.lower() not in _NOISE_WORDS
+            }
+
+            for result in data.get("results", []):
+                title = result.get("title", "")
+                title_lower = title.lower()
+                # Skip non-Azure and API-reference results
+                if "azure" not in title_lower:
+                    continue
+                if any(m in title_lower for m in _REFERENCE_MARKERS):
+                    continue
+                # Require that the title contains at least one word from the resource type
+                if type_words_lower and not any(w in title_lower for w in type_words_lower):
+                    continue
+
+                # Strip common noise: "What is Azure X", "Overview – Azure X", etc.
+                name = re.sub(
+                    r"^(what is|overview[:\s\-]+|introduction to|get started with|about)\s+",
+                    "",
+                    title,
+                    flags=re.IGNORECASE,
+                ).strip()
+                # Drop trailing "- Azure | Microsoft Learn" suffixes
+                name = re.sub(
+                    r"\s*[-|]\s*(Azure|Microsoft Learn|Azure Docs).*$",
+                    "",
+                    name,
+                    flags=re.IGNORECASE,
+                ).strip()
+                # Drop generic trailing words
+                name = re.sub(
+                    r"\s+(documentation|overview|guide|tutorial|reference)$",
+                    "",
+                    name,
+                    flags=re.IGNORECASE,
+                ).strip()
+                if 4 < len(name) < 60:
+                    logger.debug(f"MS Learn name for '{resource_type}': {name}")
+                    return name
+        except Exception as exc:
+            logger.debug(f"MS Learn search unavailable for '{resource_type}': {exc}")
+
+        # Fallback: convert camelCase to "Azure Foo Bar"
+        return self._camel_to_pattern_name(resource_type)
+
+    @staticmethod
+    def _camel_to_pattern_name(resource_type: str) -> str:
+        """Convert a camelCase Azure resource type to a readable pattern name."""
+        import re
+
+        # Insert spaces before uppercase transitions: "loadBalancers" -> "load Balancers"
+        spaced = re.sub(r"([a-z])([A-Z])", r"\1 \2", resource_type)
+        # Remove embedded "Azure" to avoid "Azure Some New Azure Service"
+        spaced = re.sub(r"\bAzure\b", "", spaced, flags=re.IGNORECASE)
+        # Collapse multiple spaces left by the removal
+        spaced = re.sub(r"\s{2,}", " ", spaced).strip()
+        return f"Azure {spaced.title()}"
 
     def fetch_microsoft_learn_documentation(
         self, resource_type: str, max_attempts: int = 3

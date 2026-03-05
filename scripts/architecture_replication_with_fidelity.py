@@ -99,6 +99,7 @@ class ArchitectureReplicationOrchestrator:
         neo4j_user: str,
         neo4j_password: str,
         output_dir: Path,
+        target_tenant_id: Optional[str] = None,
     ):
         """Initialize orchestrator.
 
@@ -109,6 +110,7 @@ class ArchitectureReplicationOrchestrator:
             neo4j_user: Neo4j username
             neo4j_password: Neo4j password
             output_dir: Output directory for results
+            target_tenant_id: Target tenant ID (enables cross-tenant role assignment skipping)
         """
         self.source_subscription = source_subscription
         self.target_subscription = target_subscription
@@ -116,6 +118,7 @@ class ArchitectureReplicationOrchestrator:
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.output_dir = output_dir
+        self.target_tenant_id = target_tenant_id
 
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -199,13 +202,12 @@ class ArchitectureReplicationOrchestrator:
                 "distribution_metadata": distribution_metadata,
             }
 
-            # Count resources by pattern
-            for pattern_name, instances in selected_instances:
-                resource_count = sum(len(inst) for inst in instances)
-                plan_summary["patterns"][pattern_name] = {
-                    "instance_count": len(instances),
-                    "resource_count": resource_count,
-                }
+            # Count resources by pattern (each element is (pattern_name, single_instance))
+            for pattern_name, instance in selected_instances:
+                if pattern_name not in plan_summary["patterns"]:
+                    plan_summary["patterns"][pattern_name] = {"instance_count": 0, "resource_count": 0}
+                plan_summary["patterns"][pattern_name]["instance_count"] += 1
+                plan_summary["patterns"][pattern_name]["resource_count"] += len(instance)
 
             # Save replication plan
             plan_file = self.output_dir / "02_replication_plan.json"
@@ -376,39 +378,38 @@ class ArchitectureReplicationOrchestrator:
         Args:
             selected_instances: List of (pattern_name, instances) tuples
         """
-        for pattern_name, instances in selected_instances:
-            for instance in instances:
-                for resource in instance:
-                    # Handle both dict and string (resource ID) formats
-                    if isinstance(resource, dict):
-                        source_id = resource.get("id", "")
-                        source_name = resource.get("name", "")
-                        source_type = resource.get("type", "")
-                    elif isinstance(resource, str):
-                        # Resource is just an ID string - skip for mapping
-                        # (we need full resource metadata for proper mapping)
-                        continue
-                    else:
-                        # Unknown format - skip
-                        continue
+        for pattern_name, instance in selected_instances:
+            for resource in instance:
+                # Handle both dict and string (resource ID) formats
+                if isinstance(resource, dict):
+                    source_id = resource.get("id", "")
+                    source_name = resource.get("name", "")
+                    source_type = resource.get("type", "")
+                elif isinstance(resource, str):
+                    # Resource is just an ID string - skip for mapping
+                    # (we need full resource metadata for proper mapping)
+                    continue
+                else:
+                    # Unknown format - skip
+                    continue
 
-                    # Generate target name (append suffix for uniqueness)
-                    target_name = f"{source_name}-replica"
-                    target_id = source_id.replace(self.source_subscription, self.target_subscription)
-                    target_id = target_id.replace(source_name, target_name)
+                # Generate target name (append suffix for uniqueness)
+                target_name = f"{source_name}-replica"
+                target_id = source_id.replace(self.source_subscription, self.target_subscription)
+                target_id = target_id.replace(source_name, target_name)
 
-                    mapping = ReplicationMapping(
-                        source_resource_id=source_id,
-                        source_resource_name=source_name,
-                        source_resource_type=source_type,
-                        target_resource_id=target_id,
-                        target_resource_name=target_name,
-                        target_resource_type=source_type,
-                        pattern_name=pattern_name,
-                        configuration_fingerprint=resource.get("configuration", {}),
-                    )
+                mapping = ReplicationMapping(
+                    source_resource_id=source_id,
+                    source_resource_name=source_name,
+                    source_resource_type=source_type,
+                    target_resource_id=target_id,
+                    target_resource_name=target_name,
+                    target_resource_type=source_type,
+                    pattern_name=pattern_name,
+                    configuration_fingerprint=resource.get("configuration", {}),
+                )
 
-                    self.mappings.append(mapping)
+                self.mappings.append(mapping)
 
     async def _deploy_resources(self, selected_instances: List[tuple]) -> Dict[str, Any]:
         """Deploy resources to target tenant.
@@ -447,6 +448,7 @@ class ArchitectureReplicationOrchestrator:
             source_subscription_id=self.source_subscription,
             auto_import_existing=False,  # Don't import existing resources for replication
             resource_name_mappings=resource_name_mappings,  # Pass mappings for "-replica" suffix
+            target_tenant_id=self.target_tenant_id,  # Skip cross-tenant role assignments
         )
 
         generated_files = emitter.emit(
@@ -495,24 +497,34 @@ class ArchitectureReplicationOrchestrator:
         all_resource_ids = []
         dict_count = 0
         string_count = 0
-        for _pattern_name, instances in selected_instances:
-            for instance in instances:
-                for resource in instance:
-                    if isinstance(resource, dict) and "id" in resource:
-                        all_resource_ids.append(resource["id"])
-                        dict_count += 1
-                    elif isinstance(resource, str):
-                        all_resource_ids.append(resource)
-                        string_count += 1
+        resource_type_counts = {}  # Track resource types
+
+        for _pattern_name, instance in selected_instances:
+            logger.info(f"  [DEBUG] Pattern '{_pattern_name}': {len(instance)} resources in instance")
+            for resource in instance:
+                if isinstance(resource, dict) and "id" in resource:
+                    all_resource_ids.append(resource["id"])
+                    dict_count += 1
+                    res_type = resource.get("type", "unknown")
+                    resource_type_counts[res_type] = resource_type_counts.get(res_type, 0) + 1
+                elif isinstance(resource, str):
+                    all_resource_ids.append(resource)
+                    string_count += 1
+
+                    # Try to extract type from string ID
+                    if "/providers/" in resource:
+                        res_type = resource.split("/providers/")[-1].split("/")[0]
+                        resource_type_counts[res_type] = resource_type_counts.get(res_type, 0) + 1
 
         logger.info(f"  Querying Neo4j for {len(all_resource_ids)} resources...")
         logger.info(f"  Resource format breakdown: {dict_count} dicts, {string_count} strings")
+        logger.info(f"  Resource type breakdown: {dict(sorted(resource_type_counts.items()))}")
 
         # Log first few resource IDs for debugging
         if all_resource_ids:
-            logger.info(f"  Sample resource IDs (first 3):")
-            for i, res_id in enumerate(all_resource_ids[:3], 1):
-                logger.info(f"    {i}. {res_id}")
+            logger.info(f"  Sample resource IDs (first 5):")
+            for i, res_id in enumerate(all_resource_ids[:5], 1):
+                logger.info(f"    {i}. {res_id[:120]}...")
 
         # Query Neo4j for full resource data
         driver = GraphDatabase.driver(
@@ -936,6 +948,11 @@ async def main():
         default="FULL",
         help="Security redaction level for fidelity validation",
     )
+    parser.add_argument(
+        "--target-tenant-id",
+        default=None,
+        help="Target tenant ID (enables cross-tenant role assignment skipping)",
+    )
 
     args = parser.parse_args()
 
@@ -947,6 +964,7 @@ async def main():
         neo4j_user=args.neo4j_user,
         neo4j_password=args.neo4j_password,
         output_dir=args.output_dir,
+        target_tenant_id=args.target_tenant_id,
     )
 
     # Run workflow
