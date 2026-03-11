@@ -200,6 +200,366 @@ class ArchitecturalPatternAnalyzer:
         "userAssignedIdentities": "Managed Identity",
     }
 
+    # ---------------------------------------------------------------------------
+    # Deployment Complexity Scoring
+    #
+    # Two independent dimensions per resource type, grounded in Microsoft Learn
+    # documentation and Azure Q&A data (March 2026):
+    #
+    #   time_score   (1–10)  Estimated provisioning duration
+    #                        1 = <1 min · 5 = 5–7 min · 10 = 45+ min
+    #
+    #   complexity_score (1–10)  Configuration & operational difficulty
+    #                        Accounts for: prerequisite resources, IAM surface,
+    #                        networking integration, global-name constraints,
+    #                        quota risk, and number of required settings.
+    #
+    # Sources:
+    #   - learn.microsoft.com/en-us/azure/aks/faq  (~5–10 min)
+    #   - learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-vpn-faq  (30–45 min)
+    #   - learn.microsoft.com/en-us/azure/bastion/quickstart-host-portal  (~10 min)
+    #   - learn.microsoft.com/en-us/azure/application-gateway/application-gateway-faq  (~6 min)
+    #   - learn.microsoft.com/en-us/azure/azure-sql/managed-instance/management-operations-duration
+    # ---------------------------------------------------------------------------
+    RESOURCE_DEPLOYMENT_SCORES: Dict[str, Dict[str, Any]] = {
+        # ── Compute ────────────────────────────────────────────────────────────
+        "virtualMachines": {
+            "time_score": 4, "complexity_score": 6,
+            "time_estimate": "2–5 min",
+            "notes": "NIC + disk + image + extensions; custom images add time",
+        },
+        "disks": {
+            "time_score": 1, "complexity_score": 1,
+            "time_estimate": "<1 min",
+            "notes": "Simple managed disk; encryption sets add complexity",
+        },
+        "availabilitySets": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Fault/update domain configuration required",
+        },
+        "snapshots": {
+            "time_score": 1, "complexity_score": 1,
+            "time_estimate": "<1 min",
+            "notes": "Trivial; size-dependent copy time",
+        },
+        "images": {
+            "time_score": 2, "complexity_score": 2,
+            "time_estimate": "1–2 min",
+            "notes": "Captured from deallocated VM",
+        },
+        "galleries": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–2 min",
+            "notes": "Image versions and replication add complexity",
+        },
+        # ── Containers ─────────────────────────────────────────────────────────
+        "managedClusters": {
+            "time_score": 7, "complexity_score": 9,
+            "time_estimate": "5–15 min",
+            "notes": "Node pools, CNI networking, RBAC, add-ons, MSI; most complex resource type",
+        },
+        "managedEnvironments": {
+            "time_score": 4, "complexity_score": 6,
+            "time_estimate": "3–5 min",
+            "notes": "VNet integration, workload profiles, Dapr configuration",
+        },
+        "containerRegistries": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–2 min",
+            "notes": "Admin/RBAC, geo-replication, webhooks increase complexity",
+        },
+        "registries": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–2 min",
+            "notes": "Alias for containerRegistries",
+        },
+        # ── App Service ────────────────────────────────────────────────────────
+        "sites": {
+            "time_score": 3, "complexity_score": 4,
+            "time_estimate": "1–3 min",
+            "notes": "VNet integration, managed identity, slot configuration",
+        },
+        "serverFarms": {
+            "time_score": 2, "complexity_score": 2,
+            "time_estimate": "1–2 min",
+            "notes": "SKU selection; premium VNet integration enabled separately",
+        },
+        "staticSites": {
+            "time_score": 2, "complexity_score": 2,
+            "time_estimate": "1–2 min",
+            "notes": "GitHub/ADO integration optional",
+        },
+        "sessionPools": {
+            "time_score": 3, "complexity_score": 4,
+            "time_estimate": "2–4 min",
+            "notes": "Container Apps Session Pools; requires managed environment",
+        },
+        # ── Networking ─────────────────────────────────────────────────────────
+        "virtualNetworks": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Address space planning, subnet delegation, peering",
+        },
+        "subnets": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Service endpoint and delegation configuration",
+        },
+        "networkInterfaces": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Requires subnet; IP config can be complex",
+        },
+        "networkSecurityGroups": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Rule ordering and port management",
+        },
+        "publicIPAddresses": {
+            "time_score": 1, "complexity_score": 1,
+            "time_estimate": "<1 min",
+            "notes": "SKU (Basic/Standard) and zone redundancy",
+        },
+        "loadBalancers": {
+            "time_score": 3, "complexity_score": 5,
+            "time_estimate": "2–4 min",
+            "notes": "Frontend IPs, backend pools, health probes, LB rules",
+        },
+        "applicationGateways": {
+            "time_score": 6, "complexity_score": 8,
+            "time_estimate": "5–8 min",
+            "notes": "Listeners, routing rules, probes, WAF policy, SSL certificates",
+        },
+        "firewalls": {
+            "time_score": 7, "complexity_score": 8,
+            "time_estimate": "5–10 min",
+            "notes": "Firewall policy, rule collections, UDR, dedicated subnet",
+        },
+        "bastionHosts": {
+            "time_score": 6, "complexity_score": 4,
+            "time_estimate": "~10 min",
+            "notes": "Requires dedicated AzureBastionSubnet + public IP; ~10 min per MS docs",
+        },
+        "virtualNetworkGateways": {
+            "time_score": 10, "complexity_score": 9,
+            "time_estimate": "30–45 min",
+            "notes": "Gateway SKU selection, BGP config, certificates; slowest common resource",
+        },
+        "natGateways": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–3 min",
+            "notes": "Public IP prefix association, subnet assignment",
+        },
+        "routeTables": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "UDR entries, subnet association",
+        },
+        "privateDnsZones": {
+            "time_score": 1, "complexity_score": 5,
+            "time_estimate": "<1 min",
+            "notes": "VNet links required per zone; naming must match service DNS pattern exactly",
+        },
+        "dnszones": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Delegation at registrar required",
+        },
+        "privateEndpoints": {
+            "time_score": 3, "complexity_score": 6,
+            "time_estimate": "2–4 min",
+            "notes": "Requires service, subnet, NIC, DNS zone group; easy to misconfigure DNS",
+        },
+        "networkWatchers": {
+            "time_score": 1, "complexity_score": 1,
+            "time_estimate": "<1 min",
+            "notes": "Auto-created per region; explicit deployment rarely needed",
+        },
+        "networkIntentPolicies": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Subnet-level network intent enforcement",
+        },
+        # ── Storage ────────────────────────────────────────────────────────────
+        "storageAccounts": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "SKU, replication, hierarchical namespace, network rules",
+        },
+        # ── Databases ──────────────────────────────────────────────────────────
+        "servers": {
+            "time_score": 4, "complexity_score": 5,
+            "time_estimate": "3–5 min",
+            "notes": "SQL Server logical server; firewall rules, AAD admin, auditing",
+        },
+        "databases": {
+            "time_score": 5, "complexity_score": 5,
+            "time_estimate": "3–30 min",
+            "notes": "DTU/vCore tier selection, geo-replication, TDE; Bicep deployments known to timeout",
+        },
+        "flexibleServers": {
+            "time_score": 4, "complexity_score": 5,
+            "time_estimate": "3–6 min",
+            "notes": "MySQL/PostgreSQL Flexible Server; admin, firewall, VNet integration",
+        },
+        "managedInstances": {
+            "time_score": 9, "complexity_score": 9,
+            "time_estimate": "20–30 min",
+            "notes": "Dedicated virtual cluster; requires dedicated subnet; longest SQL provisioning",
+        },
+        # ── Security & Identity ────────────────────────────────────────────────
+        "vaults": {
+            "time_score": 2, "complexity_score": 5,
+            "time_estimate": "1–2 min",
+            "notes": "Soft-delete, purge protection, access policies vs RBAC, networking; globally unique name",
+        },
+        "userAssignedIdentities": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Create fast; RBAC role assignments take up to 10 min to propagate",
+        },
+        "diskEncryptionSets": {
+            "time_score": 2, "complexity_score": 5,
+            "time_estimate": "1–2 min",
+            "notes": "Requires Key Vault key; CMK rotation policy",
+        },
+        # ── Monitoring & Observability ─────────────────────────────────────────
+        "components": {
+            "time_score": 2, "complexity_score": 2,
+            "time_estimate": "1–2 min",
+            "notes": "Application Insights; workspace-based vs classic",
+        },
+        "workspaces": {
+            "time_score": 2, "complexity_score": 2,
+            "time_estimate": "1–2 min",
+            "notes": "Log Analytics; retention, capacity reservation, table config",
+        },
+        "dataCollectionRules": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Data sources and destinations; association with resources required",
+        },
+        "dataCollectionEndpoints": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Custom log ingestion endpoint",
+        },
+        "actiongroups": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Notification channels (email, webhook, ITSM, Azure Function)",
+        },
+        "metricalerts": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Dynamic vs static threshold, multi-resource scope",
+        },
+        "smartDetectorAlertRules": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "AI-powered anomaly detection; detector type selection",
+        },
+        "scheduledqueryrules": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "KQL query authoring required",
+        },
+        "prometheusRuleGroups": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Requires Azure Monitor workspace + AKS scraping config",
+        },
+        "monitorWorkspaces": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "Azure Monitor workspace for Prometheus metrics",
+        },
+        # ── Messaging & Events ─────────────────────────────────────────────────
+        "namespaces": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–3 min",
+            "notes": "Service Bus or Event Hub; SKU, geo-DR, private endpoint",
+        },
+        "eventGridTopics": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Event subscriptions and dead-letter configuration",
+        },
+        "systemTopics": {
+            "time_score": 1, "complexity_score": 2,
+            "time_estimate": "<1 min",
+            "notes": "System topic for Azure service events",
+        },
+        # ── Integration & Automation ───────────────────────────────────────────
+        "factories": {
+            "time_score": 2, "complexity_score": 6,
+            "time_estimate": "1–3 min",
+            "notes": "Data Factory; linked services, integration runtime, Git config",
+        },
+        "workflows": {
+            "time_score": 1, "complexity_score": 5,
+            "time_estimate": "<1 min",
+            "notes": "Logic Apps; connector auth, trigger design complexity",
+        },
+        "connections": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Logic App API connection; OAuth token refresh management",
+        },
+        "automationAccounts": {
+            "time_score": 2, "complexity_score": 4,
+            "time_estimate": "1–2 min",
+            "notes": "Runbook, DSC, modules, managed identity",
+        },
+        # ── Analytics ─────────────────────────────────────────────────────────
+        "clusters": {
+            "time_score": 9, "complexity_score": 8,
+            "time_estimate": "20+ min",
+            "notes": "HDInsight/Databricks; node types, networking, storage; very slow",
+        },
+        "capacities": {
+            "time_score": 6, "complexity_score": 4,
+            "time_estimate": "5–10 min",
+            "notes": "Power BI/Synapse capacity; SKU selection, workspace assignment",
+        },
+        "synapseWorkspaces": {
+            "time_score": 7, "complexity_score": 7,
+            "time_estimate": "5–15 min",
+            "notes": "Storage account required; managed VNet, Purview integration",
+        },
+        # ── AI / ML ────────────────────────────────────────────────────────────
+        "accounts": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–2 min",
+            "notes": "Cognitive Services/OpenAI; quota approval may gate deployment",
+        },
+        "accessConnectors": {
+            "time_score": 1, "complexity_score": 3,
+            "time_estimate": "<1 min",
+            "notes": "Databricks access connector for Unity Catalog",
+        },
+        # ── Backup & Recovery ──────────────────────────────────────────────────
+        "recoveryServicesVaults": {
+            "time_score": 3, "complexity_score": 6,
+            "time_estimate": "2–4 min",
+            "notes": "Backup policies, geo-redundancy, soft-delete, replication policies",
+        },
+        # ── Governance ─────────────────────────────────────────────────────────
+        "solutions": {
+            "time_score": 2, "complexity_score": 3,
+            "time_estimate": "1–3 min",
+            "notes": "Log Analytics solution; requires workspace",
+        },
+    }
+
+    # Score used for any resource type not in the table above
+    _DEFAULT_DEPLOYMENT_SCORE: Dict[str, Any] = {
+        "time_score": 3, "complexity_score": 3,
+        "time_estimate": "2–5 min (estimated)",
+        "notes": "Unknown resource type; using conservative defaults",
+    }
+
     def __init__(
         self,
         neo4j_uri: str,
@@ -383,14 +743,45 @@ class ArchitecturalPatternAnalyzer:
         )
         return aggregated_relationships
 
+    def fetch_all_resource_types(self) -> Dict[str, int]:
+        """
+        Query all distinct resource types from Neo4j, including those with no
+        relationships (orphan nodes that would otherwise be excluded from the
+        pattern graph).
+
+        Returns:
+            Dict mapping resource_type → count of resources of that type.
+        """
+        if not self.driver:
+            raise RuntimeError("Not connected to Neo4j. Call connect() first.")
+
+        query = """
+        MATCH (r:Resource:Original)
+        WHERE r.type IS NOT NULL
+        RETURN r.type AS resource_type, count(r) AS cnt
+        """
+        counts: Dict[str, int] = {}
+        with self.driver.session() as session:
+            for record in session.run(query):
+                rtype = record["resource_type"]
+                if rtype:
+                    counts[rtype] = record["cnt"]
+        logger.info(f"Fetched {len(counts)} distinct resource types (including orphans)")
+        return counts
+
     def build_networkx_graph(
-        self, aggregated_relationships: List[Dict[str, Any]]
+        self,
+        aggregated_relationships: List[Dict[str, Any]],
+        all_resource_types: Optional[Dict[str, int]] = None,
     ) -> Tuple[nx.MultiDiGraph[str], Dict[str, int], Dict[Tuple[str, str], int]]:
         """
         Build NetworkX graph from aggregated relationships.
 
         Args:
             aggregated_relationships: List of aggregated relationships
+            all_resource_types: Optional dict of resource_type → count for ALL
+                resource types in the tenant, including those with no relationships.
+                When provided, isolated resource types are added as orphan nodes.
 
         Returns:
             Tuple of (graph, resource_type_counts, edge_counts)
@@ -404,6 +795,12 @@ class ArchitecturalPatternAnalyzer:
         for rel in aggregated_relationships:
             resource_type_counts[rel["source_type"]] += rel["frequency"]
             resource_type_counts[rel["target_type"]] += rel["frequency"]
+
+        # Seed with all known resource types so orphans are represented
+        if all_resource_types:
+            for rtype, count in all_resource_types.items():
+                if rtype and rtype not in resource_type_counts:
+                    resource_type_counts[rtype] = count
 
         # Add nodes for all resource types
         for resource_type, count in resource_type_counts.items():
@@ -424,9 +821,10 @@ class ArchitecturalPatternAnalyzer:
             edge_key = (source, target)
             edge_counts[edge_key] += frequency
 
+        orphan_count = sum(1 for n in G.nodes() if G.degree(n) == 0)
         logger.info(
-            f"Graph constructed: {G.number_of_nodes()} nodes, "
-            f"{G.number_of_edges()} edges"
+            f"Graph constructed: {G.number_of_nodes()} nodes "
+            f"({orphan_count} orphans), {G.number_of_edges()} edges"
         )
         return G, dict(resource_type_counts), dict(edge_counts)
 
@@ -2182,3 +2580,236 @@ class ArchitecturalPatternAnalyzer:
         )
 
         return graph
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Deployment Complexity Scoring
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _resource_type_key(self, resource: Dict[str, Any]) -> str:
+        """
+        Extract the short resource type key used in RESOURCE_DEPLOYMENT_SCORES.
+
+        Accepts resources whose "type" field is either the full ARM type
+        (e.g. "Microsoft.Compute/virtualMachines") or already the short suffix
+        (e.g. "virtualMachines").
+        """
+        raw = resource.get("type", "")
+        return raw.split("/")[-1] if "/" in raw else raw
+
+    def score_instance_deployment(
+        self, instance: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Score a single architecture instance on deployment time and complexity.
+
+        The instance is a list of resource dicts, each with at minimum a
+        ``"type"`` key (full ARM type or short suffix).
+
+        Returns a dict with:
+        - ``combined_score``     (float 1–10): overall difficulty
+        - ``time_score``         (float 1–10): provisioning duration dimension
+        - ``complexity_score``   (float 1–10): configuration difficulty dimension
+        - ``resource_count``     (int): number of resources in the instance
+        - ``critical_resources`` (list[str]): resource types that dominate the score
+        - ``time_estimate``      (str): human-readable total time range
+        - ``per_resource``       (list[dict]): per-resource breakdown
+
+        Scoring rules
+        -------------
+        * Per resource: look up RESOURCE_DEPLOYMENT_SCORES; fall back to
+          _DEFAULT_DEPLOYMENT_SCORE for unknown types.
+        * Instance time_score  = max of individual time scores  (the longest
+          step gates the overall wall-clock time).
+        * Instance complexity_score = mean of individual complexity scores
+          plus a small co-ordination penalty (0.15 × log2(n)) for instances
+          with many resources, capped at 10.
+        * combined_score = 0.5 × time_score + 0.5 × complexity_score.
+        """
+        if not instance:
+            return {
+                "combined_score": 0.0,
+                "time_score": 0.0,
+                "complexity_score": 0.0,
+                "resource_count": 0,
+                "critical_resources": [],
+                "time_estimate": "0 min",
+                "per_resource": [],
+            }
+
+        import math
+
+        per_resource: List[Dict[str, Any]] = []
+        for resource in instance:
+            rtype = self._resource_type_key(resource)
+            scores = self.RESOURCE_DEPLOYMENT_SCORES.get(
+                rtype, self._DEFAULT_DEPLOYMENT_SCORE
+            )
+            per_resource.append(
+                {
+                    "type": rtype,
+                    "time_score": scores["time_score"],
+                    "complexity_score": scores["complexity_score"],
+                    "time_estimate": scores["time_estimate"],
+                    "notes": scores.get("notes", ""),
+                }
+            )
+
+        time_scores = [r["time_score"] for r in per_resource]
+        complexity_scores = [r["complexity_score"] for r in per_resource]
+
+        # Wall-clock time is gated by the slowest resource
+        inst_time_score = float(max(time_scores))
+
+        # Complexity is the mean plus a co-ordination penalty
+        n = len(per_resource)
+        mean_complexity = sum(complexity_scores) / n
+        coordination_penalty = 0.15 * math.log2(n) if n > 1 else 0.0
+        inst_complexity_score = min(mean_complexity + coordination_penalty, 10.0)
+
+        combined = round(0.5 * inst_time_score + 0.5 * inst_complexity_score, 2)
+
+        # Resources that most influence the score (above-average on both dims)
+        avg_time = sum(time_scores) / n
+        avg_complexity = sum(complexity_scores) / n
+        critical = [
+            r["type"]
+            for r in per_resource
+            if r["time_score"] >= avg_time and r["complexity_score"] >= avg_complexity
+        ]
+
+        # Human-readable time estimate from the bottleneck resource
+        bottleneck = max(per_resource, key=lambda r: r["time_score"])
+        time_estimate = bottleneck["time_estimate"]
+
+        return {
+            "combined_score": combined,
+            "time_score": round(inst_time_score, 2),
+            "complexity_score": round(inst_complexity_score, 2),
+            "resource_count": n,
+            "critical_resources": critical,
+            "time_estimate": time_estimate,
+            "per_resource": per_resource,
+        }
+
+    def score_pattern_instances(
+        self,
+        pattern_name: str,
+        instances: List[List[Dict[str, Any]]],
+    ) -> Dict[str, Any]:
+        """
+        Score all instances of one architectural pattern.
+
+        Returns a summary dict with:
+        - ``pattern_name``
+        - ``instance_count``
+        - ``mean_combined_score``   (float)
+        - ``max_combined_score``    (float)
+        - ``min_combined_score``    (float)
+        - ``mean_time_score``       (float)
+        - ``mean_complexity_score`` (float)
+        - ``difficulty_band``       (str): "Low" / "Medium" / "High" / "Critical"
+        - ``top_critical_resources``(list[str]): most-cited critical resource types
+        - ``instance_scores``       (list[dict]): per-instance results
+        """
+        if not instances:
+            return {
+                "pattern_name": pattern_name,
+                "instance_count": 0,
+                "mean_combined_score": 0.0,
+                "max_combined_score": 0.0,
+                "min_combined_score": 0.0,
+                "mean_time_score": 0.0,
+                "mean_complexity_score": 0.0,
+                "difficulty_band": "Unknown",
+                "top_critical_resources": [],
+                "instance_scores": [],
+            }
+
+        from collections import Counter
+
+        instance_scores = [
+            self.score_instance_deployment(inst) for inst in instances
+        ]
+
+        combined_scores = [s["combined_score"] for s in instance_scores]
+        mean_combined = round(sum(combined_scores) / len(combined_scores), 2)
+        mean_time = round(
+            sum(s["time_score"] for s in instance_scores) / len(instance_scores), 2
+        )
+        mean_complexity = round(
+            sum(s["complexity_score"] for s in instance_scores) / len(instance_scores), 2
+        )
+
+        if mean_combined < 3.0:
+            band = "Low"
+        elif mean_combined < 5.5:
+            band = "Medium"
+        elif mean_combined < 7.5:
+            band = "High"
+        else:
+            band = "Critical"
+
+        critical_counter: Counter = Counter()
+        for s in instance_scores:
+            critical_counter.update(s["critical_resources"])
+        top_critical = [rtype for rtype, _ in critical_counter.most_common(5)]
+
+        return {
+            "pattern_name": pattern_name,
+            "instance_count": len(instances),
+            "mean_combined_score": mean_combined,
+            "max_combined_score": round(max(combined_scores), 2),
+            "min_combined_score": round(min(combined_scores), 2),
+            "mean_time_score": mean_time,
+            "mean_complexity_score": mean_complexity,
+            "difficulty_band": band,
+            "top_critical_resources": top_critical,
+            "instance_scores": instance_scores,
+        }
+
+    def score_all_patterns(
+        self,
+        pattern_resources: Dict[str, List[List[Dict[str, Any]]]],
+    ) -> Dict[str, Any]:
+        """
+        Score every architectural pattern and return a ranked summary.
+
+        Args:
+            pattern_resources: mapping of pattern_name → list of instances,
+                               as returned by ArchitecturePatternReplicator or
+                               OrphanedResourceManager.
+
+        Returns:
+            {
+                "patterns": {pattern_name: score_summary, ...},   # full detail
+                "ranked":   [pattern_name, ...],                  # highest → lowest difficulty
+                "overall_mean_combined_score": float,
+            }
+        """
+        results: Dict[str, Any] = {}
+        for pattern_name, instances in pattern_resources.items():
+            results[pattern_name] = self.score_pattern_instances(
+                pattern_name, instances
+            )
+
+        ranked = sorted(
+            results.keys(),
+            key=lambda p: results[p]["mean_combined_score"],
+            reverse=True,
+        )
+
+        all_scores = [
+            results[p]["mean_combined_score"]
+            for p in results
+            if results[p]["instance_count"] > 0
+        ]
+        overall_mean = round(sum(all_scores) / len(all_scores), 2) if all_scores else 0.0
+
+        logger.info(
+            f"Scored {len(results)} patterns; overall mean combined score: {overall_mean}"
+        )
+        return {
+            "patterns": results,
+            "ranked": ranked,
+            "overall_mean_combined_score": overall_mean,
+        }

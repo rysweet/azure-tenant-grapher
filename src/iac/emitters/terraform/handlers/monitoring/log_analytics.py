@@ -134,10 +134,31 @@ class LogAnalyticsSolutionHandler(ResourceHandler):
                 )
                 return None
 
-        # Workspace resource ID
-        workspace_id = properties.get("workspaceResourceId")
+        # Workspace resource ID — skip solutions referencing a different subscription's
+        # workspace (cross-subscription references can't be resolved in the target tenant)
+        workspace_id = properties.get("workspaceResourceId", "")
         if workspace_id:
+            target_sub = context.target_subscription_id
+            source_sub = context.source_subscription_id
+            # If the workspace ID references the source subscription (not target), skip
+            if source_sub and source_sub.lower() in workspace_id.lower():
+                logger.debug(
+                    f"Skipping Log Analytics Solution '{resource_name}': "
+                    f"workspace_resource_id references source subscription"
+                )
+                return None
+            if target_sub and target_sub.lower() not in workspace_id.lower():
+                logger.debug(
+                    f"Skipping Log Analytics Solution '{resource_name}': "
+                    f"workspace_resource_id references unknown subscription"
+                )
+                return None
             config["workspace_resource_id"] = workspace_id
+        else:
+            logger.warning(
+                f"Log Analytics Solution '{resource_name}': no workspaceResourceId, skipping"
+            )
+            return None
 
         # Plan - REQUIRED
         plan = properties.get("plan", {})

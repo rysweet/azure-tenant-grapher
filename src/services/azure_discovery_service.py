@@ -129,7 +129,9 @@ class AzureDiscoveryService:
             logger.info("Token cleared from environment for security")
         else:
             # Fall back to provided credential or DefaultAzureCredential
-            self.credential = credential or DefaultAzureCredential()
+            self.credential = credential or DefaultAzureCredential(
+                additionally_allowed_tenants=["*"]
+            )
 
         self.subscription_client_factory = (
             subscription_client_factory or SubscriptionClient
@@ -1863,13 +1865,14 @@ class AzureDiscoveryService:
         """
         logger.info("🔄 Attempting to authenticate with AzureCliCredential fallback...")
         try:
-            cli_credential = AzureCliCredential()
+            _tid = self.config.tenant_id
+            cli_credential = AzureCliCredential(tenant_id=_tid) if _tid else AzureCliCredential()
             # Test the credential
             cli_credential.get_token("https://management.azure.com/.default")
             self.credential = cli_credential
             logger.info("✅ Successfully authenticated with AzureCliCredential")
             if discovery_func:
-                return await discovery_func(self.credential, *args, **kwargs)
+                return await discovery_func(*args, **kwargs)
             # Default: retry subscription discovery with new credential (skip fallback to avoid recursion)
             return await self.discover_subscriptions(_skip_fallback=True)
         except CredentialUnavailableError as exc:
