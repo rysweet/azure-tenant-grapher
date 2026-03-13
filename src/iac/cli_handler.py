@@ -1067,24 +1067,12 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 import os
 
                 from azure.identity import (
-                    ClientSecretCredential,  # type: ignore[import-untyped]
+                    DefaultAzureCredential,  # type: ignore[import-untyped]
                 )
 
-                target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
-                # Use target tenant credentials if different from source
-                use_target_creds = (
-                    resolved_target_tenant_id
-                    and resolved_target_tenant_id != resolved_source_tenant_id
-                )
-                credential = ClientSecretCredential(
-                    tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
-                    if use_target_creds
-                    else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
-                    if use_target_creds
-                    else os.getenv("AZURE_CLIENT_SECRET"),
-                )
+                # Use DefaultAzureCredential to support both service principal and Azure CLI auth
+                # Note: DefaultAzureCredential will automatically use the tenant from the current Azure CLI session
+                credential = DefaultAzureCredential()
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                     resource_group_prefix=resource_group_prefix,
@@ -1200,24 +1188,12 @@ async def generate_iac_command_handler(  # type: ignore[misc]
             import os
 
             from azure.identity import (
-                ClientSecretCredential,  # type: ignore[import-untyped]
+                DefaultAzureCredential,  # type: ignore[import-untyped]
             )
 
-            target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
-            # Use target tenant credentials if different from source
-            use_target_creds = (
-                resolved_target_tenant_id
-                and resolved_target_tenant_id != resolved_source_tenant_id
-            )
-            credential = ClientSecretCredential(
-                tenant_id=target_tenant,
-                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
-                if use_target_creds
-                else os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
-                if use_target_creds
-                else os.getenv("AZURE_CLIENT_SECRET"),
-            )
+            # Use DefaultAzureCredential to support both service principal and Azure CLI auth
+            # Note: DefaultAzureCredential will automatically use the tenant from the current Azure CLI session
+            credential = DefaultAzureCredential()
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                 resource_group_prefix=resource_group_prefix,

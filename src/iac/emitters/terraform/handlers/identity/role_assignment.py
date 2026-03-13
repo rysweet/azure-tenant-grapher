@@ -69,6 +69,31 @@ class RoleAssignmentHandler(ResourceHandler):
 
         principal_id = properties.get("principalId", resource.get("principalId", ""))
 
+        # Skip scopes that require elevated permissions beyond subscription level.
+        # Management group and root scopes require Owner/UAA at tenant root, which
+        # a standard service principal won't have — terraform apply returns 403.
+        if not scope or scope == "/":
+            logger.warning(
+                f"Skipping role assignment '{resource_name}': "
+                f"root or empty scope requires tenant-root Owner permissions"
+            )
+            return None
+        if "/providers/Microsoft.Management/managementGroups/" in scope:
+            logger.warning(
+                f"Skipping role assignment '{resource_name}': "
+                f"management group scope '{scope}' requires elevated permissions"
+            )
+            return None
+        # Skip subscription-scoped assignments: they require Owner/UAA at subscription
+        # level, Azure throttles them heavily (ARM limit ~36/hour), and source-tenant
+        # principals often don't exist in the target — causes apply to hang indefinitely.
+        if context.target_subscription_id and scope == f"/subscriptions/{context.target_subscription_id}":
+            logger.warning(
+                f"Skipping role assignment '{resource_name}': "
+                f"subscription-wide scope requires elevated permissions and causes throttling"
+            )
+            return None
+
         # Bug #18/#93: Skip role assignments without identity mapping in cross-tenant mode ONLY
         # Detect same-tenant deployment (source and target are the same tenant)
         is_same_tenant = (

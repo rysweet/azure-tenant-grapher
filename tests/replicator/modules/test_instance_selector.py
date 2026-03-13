@@ -30,6 +30,7 @@ class TestInstanceSelector:
         """Create a mock TargetGraphBuilder."""
         builder = MagicMock(spec=TargetGraphBuilder)
         builder.build_from_instances.return_value = nx.DiGraph([("A", "B")])
+        builder._relationship_cache = {}
         return builder
 
     @pytest.fixture

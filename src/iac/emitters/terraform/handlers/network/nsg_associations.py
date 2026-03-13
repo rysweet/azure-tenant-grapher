@@ -213,11 +213,14 @@ class NSGAssociationHandler(ResourceHandler):
                 )
                 return False
         else:  # nic
-            if not self.validate_resource_reference(
-                "azurerm_network_interface", resource_tf_name, context
-            ):
+            # Check directly in terraform config — available_resources can give false
+            # positives for sampled subsets where the NIC was not actually emitted.
+            nics_in_config = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_interface", {}
+            )
+            if resource_tf_name not in nics_in_config:
                 logger.warning(
-                    f"Skipping {resource_type}-NSG association: {resource_type} '{resource_name}' not found"
+                    f"Skipping {resource_type}-NSG association: {resource_type} '{resource_name}' not found in emitted config"
                 )
                 context.track_missing_reference(
                     resource_name=f"{resource_type}-nsg-association",
@@ -227,12 +230,13 @@ class NSGAssociationHandler(ResourceHandler):
                 )
                 return False
 
-        # Check NSG exists
-        if not self.validate_resource_reference(
-            "azurerm_network_security_group", nsg_tf_name, context
-        ):
+        # Check NSG exists directly in terraform config
+        nsgs_in_config = context.terraform_config.get("resource", {}).get(
+            "azurerm_network_security_group", {}
+        )
+        if nsg_tf_name not in nsgs_in_config:
             logger.warning(
-                f"Skipping {resource_type}-NSG association: NSG '{nsg_name}' not found"
+                f"Skipping {resource_type}-NSG association: NSG '{nsg_name}' not found in emitted config"
             )
             context.track_missing_reference(
                 resource_name=f"{resource_type}-nsg-association",

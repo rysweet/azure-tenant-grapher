@@ -47,6 +47,15 @@ class NetworkInterfaceHandler(ResourceHandler):
             Tuple of (terraform_type, resource_name, config) or None if skipped
         """
         resource_name = resource.get("name", "unknown")
+
+        # Private endpoint NICs (names like "resource.nic.<uuid>") are auto-managed
+        # by Azure when a private endpoint is created — they cannot be deployed directly.
+        if ".nic." in resource_name:
+            logger.info(
+                f"Skipping private endpoint NIC '{resource_name}' — PE NICs are auto-managed by Azure"
+            )
+            return None
+
         safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 

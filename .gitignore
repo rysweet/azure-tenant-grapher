@@ -298,3 +298,4 @@ bash-test-output/
 /test_*.py
 /src/**/test_*.py
 !tests/**/test_*.py
+.env
