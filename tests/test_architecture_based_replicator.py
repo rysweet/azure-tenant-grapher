@@ -744,12 +744,12 @@ class TestReplicationPlanGeneration:
             mock_dist.return_value = {
                 "Virtual Machine Workload": {
                     "distribution_score": 60.0,
-                    "instance_count": 2,
+                    "source_instances": 2,
                     "rank": 1,
                 },
                 "Web Application": {
                     "distribution_score": 40.0,
-                    "instance_count": 1,
+                    "source_instances": 1,
                     "rank": 2,
                 },
             }

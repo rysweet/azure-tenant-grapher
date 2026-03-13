@@ -115,6 +115,13 @@ class InstanceSelector:
         current_counts: dict[str, int] = dict.fromkeys(pattern_targets, 0)
         total_target = sum(pattern_targets.values())
 
+        # Warm cache for all patterns to avoid repeated Neo4j queries during spectral scoring
+        if use_spectral_guidance:
+            logger.info("Warming relationship cache for all candidate instances...")
+            all_candidates = [(name, resources) for name, resources in pattern_resources.items()]
+            self.graph_builder.warm_cache(all_candidates)
+            logger.info(f"Cache warmed with {len(self.graph_builder._relationship_cache)} resource IDs")
+
         for pattern_name, target_count in pattern_targets.items():
             if pattern_name not in pattern_resources:
                 logger.warning(
@@ -527,7 +534,14 @@ class InstanceSelector:
         for instance in instances:
             types_in_instance = set()
             for resource in instance:
-                resource_type = resource.get("type", "unknown")
+                # Handle both dict and string (resource ID) formats
+                if isinstance(resource, dict):
+                    resource_type = resource.get("type", "unknown")
+                elif isinstance(resource, str):
+                    # Resource is just an ID string - skip for type counting
+                    continue
+                else:
+                    resource_type = "unknown"
                 types_in_instance.add(resource_type)
                 type_counts[resource_type] = type_counts.get(resource_type, 0) + 1
             instance_types.append(types_in_instance)

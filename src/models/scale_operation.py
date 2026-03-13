@@ -10,8 +10,11 @@ Scale operations are tracked to enable:
 """
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+
+# Python 3.10 compatibility: UTC was added in 3.11
+UTC = timezone.utc
 
 
 @dataclass

@@ -26,6 +26,7 @@ from typing import Any, Dict, Optional, cast
 
 from src.deployment.format_detector import IaCFormat
 from src.deployment.orchestrator import deploy_iac
+from src.exceptions import AzureAuthenticationError
 
 logger = logging.getLogger(__name__)
 
@@ -283,12 +284,29 @@ class AgentDeployer:
                         self._log_error("Deployment attempt failed", e)
 
                         # Check for specific error types and handle programmatically
+                        # Use the exception type/class, not substring matching on the full
+                        # error string (which includes terraform debug output and can contain
+                        # "login" or "authentication" as suggestions, not as actual auth errors).
                         error_message = str(e).lower()
+                        # Cross-tenant 401s ("wrong issuer" / "InvalidAuthenticationTokenTenant")
+                        # are resource-level config errors, not token expiry — don't re-auth.
+                        is_cross_tenant_config_error = (
+                            "invalidauthenticationtokentenant" in error_message
+                            or "wrong issuer" in error_message
+                            or "access token is from the wrong issuer" in error_message
+                        )
+                        is_auth_error = (
+                            not is_cross_tenant_config_error
+                            and (
+                                isinstance(e, AzureAuthenticationError)
+                                or "unauthorized" in error_message
+                                or "credentials" in error_message
+                                or "authorizationfailed" in error_message
+                                or error_message.strip().startswith("authentication")
+                            )
+                        )
 
-                        if (
-                            "authentication" in error_message
-                            or "login" in error_message
-                        ):
+                        if is_auth_error:
                             await self._handle_authentication_error()
                         elif (
                             "provider" in error_message
