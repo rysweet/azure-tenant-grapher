@@ -17,9 +17,9 @@ from src.validation.resource_fidelity_calculator import (
     ResourceFidelityCalculator,
 )
 
-# ── Configuration ─────────────────────────────────────────────────────────────
-SOURCE_SUBSCRIPTION = "<source-subscription-id>"
-TARGET_SUBSCRIPTION = "<target-subscription-id>"
+# ── Configuration — set via environment variables or .env ─────────────────────
+SOURCE_SUBSCRIPTION = os.environ["SOURCE_SUBSCRIPTION"]
+TARGET_SUBSCRIPTION = os.environ["TARGET_SUBSCRIPTION"]
 MAPPINGS_FILE       = "output/iteration2_20260219_083319/03_resource_mappings.json"
 OUTPUT_CSV          = "output/fidelity_results.csv"
 

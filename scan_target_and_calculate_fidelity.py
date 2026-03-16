@@ -5,6 +5,7 @@ Scan target subscription into Neo4j and calculate fidelity score.
 
 import asyncio
 import json
+import os
 import sys
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.config_manager import AzureTenantGrapherConfig, Neo4jConfig
@@ -111,10 +112,10 @@ def calculate_fidelity(mappings_file: str, source_subscription: str, target_subs
         session_manager.disconnect()
 
 async def main():
-    # Configuration
-    tenant_id = "<tenant-id>"
-    source_subscription = "<source-subscription-id>"
-    target_subscription = "<target-subscription-id>"
+    # Configuration — set via environment variables or .env
+    tenant_id = os.environ["TENANT_ID"]
+    source_subscription = os.environ["SOURCE_SUBSCRIPTION"]
+    target_subscription = os.environ["TARGET_SUBSCRIPTION"]
     mappings_file = "output/deployment_test_20260218_132955/03_resource_mappings.json"
 
     neo4j_config = Neo4jConfig(
