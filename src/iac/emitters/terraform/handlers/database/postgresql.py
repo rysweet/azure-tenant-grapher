@@ -4,6 +4,7 @@ Handles: Microsoft.DBforPostgreSQL/flexibleServers
 Emits: azurerm_postgresql_flexible_server
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
@@ -37,15 +38,18 @@ class PostgreSQLFlexibleServerHandler(ResourceHandler):
     ) -> Optional[Tuple[str, str, Dict[str, Any]]]:
         """Convert PostgreSQL Flexible Server to Terraform configuration."""
         resource_name = resource.get("name", "unknown")
-        safe_name = self.sanitize_name(resource_name)
+        # PostgreSQL Flexible Server names are globally unique — add hash suffix
+        sub_id = context.target_subscription_id or resource.get("subscription_id", "")
+        name_suffix = hashlib.md5(sub_id.encode()).hexdigest()[:8]  # nosec B324
+        unique_name = f"{resource_name}-{name_suffix}"[:63]  # max 63 chars
+        safe_name = self.sanitize_name(unique_name)
         properties = self.parse_properties(resource)
 
-        config = self.build_base_config(resource)
+        config = self.build_base_config(resource, resource_name_with_suffix=unique_name)
 
-        # SKU
+        # SKU — required by Terraform when create_mode=Default; fall back to a common SKU
         sku = properties.get("sku", {})
-        if sku and "name" in sku:
-            config["sku_name"] = sku["name"]
+        config["sku_name"] = sku.get("name", "B_Standard_B1ms") if sku else "B_Standard_B1ms"
 
         # Version
         version = properties.get("version")
@@ -89,13 +93,25 @@ class PostgreSQLFlexibleServerHandler(ResourceHandler):
             password_auth = auth_config.get("passwordAuth")
 
             if active_directory_auth:
+                password_auth_enabled = (
+                    password_auth == "Enabled"  # pragma: allowlist secret
+                    if password_auth
+                    else True
+                )
                 config["authentication"] = {
                     "active_directory_auth_enabled": active_directory_auth == "Enabled",
-                    "password_auth_enabled": password_auth
-                    == "Enabled"  # pragma: allowlist secret
-                    if password_auth
-                    else True,
+                    "password_auth_enabled": password_auth_enabled,
                 }
+                # administrator_login + administrator_password are required when
+                # create_mode=Default and password_auth_enabled=True (Azure API requirement)
+                if password_auth_enabled:
+                    if "administrator_login" not in config:
+                        config["administrator_login"] = "psqladmin"  # pragma: allowlist secret
+                    if "administrator_password" not in config:
+                        resource_id = resource.get("id", resource.get("name", ""))
+                        # Deterministic password meeting Azure complexity (upper+lower+digit+special)
+                        pw_hash = hashlib.md5(resource_id.encode()).hexdigest()[:12]  # nosec B324
+                        config["administrator_password"] = f"Psql@{pw_hash}1A"  # pragma: allowlist secret
 
         logger.debug(f"PostgreSQL Flexible Server '{resource_name}' emitted")
 

@@ -4,6 +4,7 @@ Handles: Microsoft.DocumentDB/databaseAccounts
 Emits: azurerm_cosmosdb_account
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
@@ -37,10 +38,19 @@ class CosmosDBHandler(ResourceHandler):
     ) -> Optional[Tuple[str, str, Dict[str, Any]]]:
         """Convert Cosmos DB Account to Terraform configuration."""
         resource_name = resource.get("name", "unknown")
-        safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 
-        config = self.build_base_config(resource)
+        # CosmosDB account names are globally unique across all Azure tenants.
+        # Add a short hash suffix derived from the target subscription ID to avoid
+        # collisions when replicating from a source tenant.
+        sub_id = context.target_subscription_id or resource.get("subscription_id", "")
+        name_suffix = hashlib.md5(sub_id.encode()).hexdigest()[:8]  # nosec B324
+        unique_name = f"{resource_name}-{name_suffix}"
+        # CosmosDB names: 3-44 chars, lowercase alphanumeric and hyphens
+        unique_name = unique_name.lower()[:44]
+        safe_name = self.sanitize_name(unique_name)
+
+        config = self.build_base_config(resource, resource_name_with_suffix=unique_name)
 
         # Required: offer_type
         config["offer_type"] = "Standard"
