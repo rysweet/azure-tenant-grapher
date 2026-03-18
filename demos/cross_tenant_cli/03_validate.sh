@@ -10,7 +10,7 @@ echo "=========================================="
 echo ""
 
 # Example tenant IDs - replace with your actual tenant IDs
-SOURCE_TENANT_ID="${SOURCE_TENANT_ID:-3cd87a41-1f61-4aef-a212-cefdecd9a2d1}"
+SOURCE_TENANT_ID="${SOURCE_TENANT_ID:-<tenant-id-2>}"
 TARGET_TENANT_ID="${TARGET_TENANT_ID:-506f82b2-e2e7-40a2-b0be-ea6f8cb908f8}"
 
 echo "Source Tenant: $SOURCE_TENANT_ID"

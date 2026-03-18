@@ -55,14 +55,14 @@ graph = Graph('bolt://localhost:7688', auth=('neo4j', os.environ.get('NEO4J_PASS
 # Count source tenant resources
 source_count = graph.run('''
 MATCH (r:Resource)
-WHERE r.subscription_id = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
+WHERE r.subscription_id = "<source-subscription-id>"
 RETURN count(r) as count
 ''').evaluate()
 
 # Count target tenant resources
 target_count = graph.run('''
 MATCH (r:Resource)
-WHERE r.subscription_id = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+WHERE r.subscription_id = "<subscription-2-id>"
 RETURN count(r) as count
 ''').evaluate()
 

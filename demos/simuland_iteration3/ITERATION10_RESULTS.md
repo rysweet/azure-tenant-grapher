@@ -271,7 +271,7 @@ Achieve 70-85% deployment fidelity with properly cleaned environment
    az group delete --name atevet12-Lab --yes --no-wait
 
    # Verify clean state
-   az group list --subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+   az group list --subscription <subscription-2-id>
    ```
 
 2. **Regenerate IaC** (15 minutes)

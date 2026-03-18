@@ -79,13 +79,13 @@ g = Graph("bolt://localhost:7688", auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
 
 source = g.evaluate("""
 MATCH (r:Resource)
-WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+WHERE r.subscription_id = '<source-subscription-id>'
 RETURN count(r)
 """) or 0
 
 target = g.evaluate("""
 MATCH (r:Resource)
-WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
+WHERE r.subscription_id = '<subscription-2-id>'
 RETURN count(r)
 """) or 0
 
@@ -152,8 +152,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-SOURCE_SUBSCRIPTION = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUBSCRIPTION = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+SOURCE_SUBSCRIPTION = "<source-subscription-id>"
+TARGET_SUBSCRIPTION = "<subscription-2-id>"
 FIDELITY_TARGET = 95.0
 CONSECUTIVE_SUCCESSES_NEEDED = 3
 MAX_DEPLOYMENT_TIME = 3600  # 1 hour
@@ -802,13 +802,13 @@ g = Graph("bolt://localhost:7688", auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
 
 source = g.evaluate("""
 MATCH (r:Resource)
-WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+WHERE r.subscription_id = '<source-subscription-id>'
 RETURN count(r)
 """)
 
 target = g.evaluate("""
 MATCH (r:Resource)
-WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
+WHERE r.subscription_id = '<subscription-2-id>'
 RETURN count(r)
 """)
 

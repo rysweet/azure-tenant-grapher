@@ -10,8 +10,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Configuration
-SOURCE_SUB="9b00bc5e-9abc-45de-9958-02a9d9277b16"  # DefenderATEVET17
-TARGET_SUB="c190c55a-9ab2-4b1e-92c4-cc8b1a032285"  # DefenderATEVET12
+SOURCE_SUB="<source-subscription-id>"  # DefenderATEVET17
+TARGET_SUB="<subscription-2-id>"  # DefenderATEVET12
 DEMOS_DIR="$PROJECT_ROOT/demos"
 LOG_DIR="$PROJECT_ROOT/logs"
 IMESSAGE_CMD="$HOME/.local/bin/imessR"

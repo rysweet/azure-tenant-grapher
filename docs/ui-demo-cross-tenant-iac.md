@@ -19,7 +19,7 @@ This demo replicates resources from one Azure tenant (DefenderATEVET17) to anoth
 - Service principal credentials configured in `.env` file:
   ```bash
   # Source tenant (DefenderATEVET17)
-  AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+  AZURE_TENANT_ID=<tenant-id-2>
   AZURE_CLIENT_ID=c331f235-8306-4227-aef1-9d7e79d11c2b
   AZURE_CLIENT_SECRET=<secret>
 
@@ -70,7 +70,7 @@ The **Status** tab shows:
 Navigate to the **Generate IaC** tab:
 
 ### Configuration:
-1. **Tenant ID**: Select DefenderATEVET17 (or enter manually: `3cd87a41-1f61-4aef-a212-cefdecd9a2d1`)
+1. **Tenant ID**: Select DefenderATEVET17 (or enter manually: `<tenant-id-2>`)
 2. **Output Format**: Select `Terraform` (or Bicep/ARM)
 3. **Target Tenant**: Select "Tenant 2 (Simuland)"
 4. **Resource Filters**: Add filter `resourceGroup=SimuLand` to generate only SimuLand RG resources
@@ -168,7 +168,7 @@ Navigate to the **Validate** tab (⚠️ **NEW TAB** implemented in this PR):
 
 ### Configuration:
 1. **Source Tenant**: Select "Tenant 1 (DefenderATEVET17)"
-2. **Source Tenant ID**: Auto-filled `3cd87a41-1f61-4aef-a212-cefdecd9a2d1`
+2. **Source Tenant ID**: Auto-filled `<tenant-id-2>`
 3. **Target Tenant**: Select "Tenant 2 (Simuland)"
 4. **Target Tenant ID**: Auto-filled `506f82b2-e2e7-40a2-b0be-ea6f8cb908f8`
 5. **Source Filter**: Enter `resourceGroup=SimuLand`

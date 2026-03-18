@@ -686,7 +686,7 @@ def test_real_private_endpoint_data_from_neo4j(
     """Test with realistic Private Endpoint data from Neo4j."""
     # Realistic data as it would come from Azure API
     realistic_vnet = {
-        "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y",
+        "id": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y",
         "name": "vnet-ljio3xx7w6o6y",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "northcentralus",
@@ -703,7 +703,7 @@ def test_real_private_endpoint_data_from_neo4j(
     }
 
     realistic_pe = {
-        "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint",
+        "id": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint",
         "name": "simKV160224hpcp4rein6-keyvault-private-endpoint",
         "type": "Microsoft.Network/privateEndpoints",
         "location": "northcentralus",
@@ -715,10 +715,10 @@ def test_real_private_endpoint_data_from_neo4j(
                 "privateLinkServiceConnections": [
                     {
                         "name": "KeyVaultPrivateLinkConnection",
-                        "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint/privateLinkServiceConnections/KeyVaultPrivateLinkConnection",
+                        "id": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint/privateLinkServiceConnections/KeyVaultPrivateLinkConnection",
                         "properties": {
                             "provisioningState": "Succeeded",
-                            "privateLinkServiceId": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.KeyVault/vaults/simKV160224hpcp4rein6",
+                            "privateLinkServiceId": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.KeyVault/vaults/simKV160224hpcp4rein6",
                             "groupIds": ["vault"],
                             "privateLinkServiceConnectionState": {
                                 "status": "Approved",
@@ -729,14 +729,14 @@ def test_real_private_endpoint_data_from_neo4j(
                     }
                 ],
                 "subnet": {
-                    "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe"
+                    "id": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe"
                 },
             }
         ),
     }
 
     realistic_dns_zone = {
-        "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net",
+        "id": "/subscriptions/<source-subscription-id>/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net",
         "name": "privatelink.vaultcore.azure.net",
         "type": "Microsoft.Network/privateDnsZones",
         "location": "global",

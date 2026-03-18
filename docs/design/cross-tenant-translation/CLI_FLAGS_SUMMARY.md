@@ -98,14 +98,14 @@ if format_type.lower() == "terraform":
 ```bash
 # Auto-detects source tenant from Azure CLI
 uv run atg generate-iac \
-  --target-tenant-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --target-tenant-id <subscription-2-id> \
   --target-subscription TARGET_SUB_ID
 ```
 
 ### Example 2: With Identity Mappings
 ```bash
 uv run atg generate-iac \
-  --target-tenant-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --target-tenant-id <subscription-2-id> \
   --target-subscription TARGET_SUB_ID \
   --identity-mapping-file /path/to/identity_mappings.json
 ```
@@ -113,7 +113,7 @@ uv run atg generate-iac \
 ### Example 3: Strict Mode (Fail on Missing Mappings)
 ```bash
 uv run atg generate-iac \
-  --target-tenant-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --target-tenant-id <subscription-2-id> \
   --target-subscription TARGET_SUB_ID \
   --identity-mapping-file identity_mappings.json \
   --strict-translation
@@ -123,8 +123,8 @@ uv run atg generate-iac \
 ```bash
 # Override auto-detection
 uv run atg generate-iac \
-  --source-tenant-id 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-tenant-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-tenant-id <source-subscription-id> \
+  --target-tenant-id <subscription-2-id> \
   --target-subscription TARGET_SUB_ID
 ```
 

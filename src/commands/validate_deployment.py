@@ -108,25 +108,25 @@ def validate_deployment_command(
 
         # Basic validation
         atg validate-deployment \\
-            --source-tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \\
+            --source-tenant-id <tenant-id-2> \\
             --target-tenant-id 506f82b2-e2e7-40a2-b0be-ea6f8cb908f8
 
         # With filtering
         atg validate-deployment \\
-            --source-tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \\
+            --source-tenant-id <tenant-id-2> \\
             --target-tenant-id 506f82b2-e2e7-40a2-b0be-ea6f8cb908f8 \\
             --source-filter resourceGroup=RG1 \\
             --target-filter resourceGroup=RG2
 
         # Save to file
         atg validate-deployment \\
-            --source-tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \\
+            --source-tenant-id <tenant-id-2> \\
             --target-tenant-id 506f82b2-e2e7-40a2-b0be-ea6f8cb908f8 \\
             --output validation-report.md
 
         # JSON output
         atg validate-deployment \\
-            --source-tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \\
+            --source-tenant-id <tenant-id-2> \\
             --target-tenant-id 506f82b2-e2e7-40a2-b0be-ea6f8cb908f8 \\
             --format json \\
             --output validation.json

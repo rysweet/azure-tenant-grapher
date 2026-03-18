@@ -52,7 +52,7 @@ class TestSubscriptionIDAbstraction:
     ):
         """Test that role assignment properties have subscription IDs abstracted."""
         # Create role assignment with source subscription ID
-        source_subscription_id = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
+        source_subscription_id = "<source-subscription-id>"
         role_assignment = {
             "id": f"/subscriptions/{source_subscription_id}/resourceGroups/test-rg/providers/Microsoft.Authorization/roleAssignments/test-role",
             "type": "Microsoft.Authorization/roleAssignments",

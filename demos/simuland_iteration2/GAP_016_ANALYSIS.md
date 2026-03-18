@@ -51,14 +51,14 @@ The following VMs appear twice in Neo4j with different resource IDs (same name, 
 | Property | Value |
 |----------|-------|
 | **Status** | In Neo4j, NOT in Terraform |
-| **Azure ID** | `/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/sparta_attackbot/providers/Microsoft.Compute/virtualMachines/csiska-01` |
+| **Azure ID** | `/subscriptions/<source-subscription-id>/resourceGroups/sparta_attackbot/providers/Microsoft.Compute/virtualMachines/csiska-01` |
 | **Resource Group** | `sparta_attackbot` |
 | **OS Type** | Linux |
 | **VM Size** | Standard_D2s_v3 |
 | **Location** | westus |
 | **Referenced NIC** | `csiska-01654` |
 | **NIC Resource Group** | `Ballista_UCAScenario` (DIFFERENT from VM resource group) |
-| **NIC Azure ID** | `/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/Ballista_UCAScenario/providers/Microsoft.Network/networkInterfaces/csiska-01654` |
+| **NIC Azure ID** | `/subscriptions/<source-subscription-id>/resourceGroups/Ballista_UCAScenario/providers/Microsoft.Network/networkInterfaces/csiska-01654` |
 | **NIC Exists in Neo4j** | NO - Not discovered |
 | **Reason Not Generated** | Missing NIC dependency (cross-resource-group reference) |
 

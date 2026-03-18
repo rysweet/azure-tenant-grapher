@@ -46,12 +46,12 @@ class ContinuousReplicationEngine:
         self.imessage_tool = Path.home() / ".local" / "bin" / "imessR"
 
         # Tenant configuration from .env
-        self.source_tenant_id = "3cd87a41-1f61-4aef-a212-cefdecd9a2d1"
-        self.source_subscription_id = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
+        self.source_tenant_id = "<tenant-id-2>"
+        self.source_subscription_id = "<source-subscription-id>"
         self.source_tenant_name = "DefenderATEVET17"
 
         self.target_tenant_id = "c7674d41-af6c-46f5-89a5-d41495d2151e"
-        self.target_subscription_id = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+        self.target_subscription_id = "<subscription-2-id>"
         self.target_tenant_name = "DefenderATEVET12"
 
         self.state = self._load_state()

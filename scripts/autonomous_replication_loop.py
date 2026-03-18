@@ -120,13 +120,13 @@ class AutonomousReplicationLoop:
 
             graph = Graph("bolt://localhost:7688", auth=("neo4j", neo4j_password))
 
-            # Source tenant subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16 (DefenderATEVET17)
-            # Target tenant subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285 (DefenderATEVET12)
+            # Source tenant subscription: <source-subscription-id> (DefenderATEVET17)
+            # Target tenant subscription: <subscription-2-id> (DefenderATEVET12)
 
             # Query for source nodes (use subscription ID from resource IDs)
             source_query = """
             MATCH (r:Resource)
-            WHERE r.id CONTAINS '/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/'
+            WHERE r.id CONTAINS '/subscriptions/<source-subscription-id>/'
             RETURN count(r) as count
             """
             source_result = graph.run(source_query).data()
@@ -135,7 +135,7 @@ class AutonomousReplicationLoop:
             # Query for target nodes
             target_query = """
             MATCH (r:Resource)
-            WHERE r.id CONTAINS '/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/'
+            WHERE r.id CONTAINS '/subscriptions/<subscription-2-id>/'
             RETURN count(r) as count
             """
             target_result = graph.run(target_query).data()
@@ -246,7 +246,7 @@ class AutonomousReplicationLoop:
             # Query source tenant for resource types
             query = """
             MATCH (r:Resource)
-            WHERE r.id CONTAINS '/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/'
+            WHERE r.id CONTAINS '/subscriptions/<source-subscription-id>/'
             RETURN DISTINCT r.type as resource_type, count(*) as count
             ORDER BY count DESC
             """
@@ -429,7 +429,7 @@ Do not stop until the gap is fixed.
         self.send_imessage(f"🚀 Starting deployment of iteration {iteration_num}")
 
         # Switch to TARGET tenant subscription (DefenderATEVET12)
-        TARGET_SUBSCRIPTION = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+        TARGET_SUBSCRIPTION = "<subscription-2-id>"
 
         print(str(f"Switching to target subscription: {TARGET_SUBSCRIPTION}"))
         try:

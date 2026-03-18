@@ -107,7 +107,7 @@ While monitoring deployment:
 
 #### Credentials in Use
 - Target Tenant: DefenderATEVET12
-- Subscription ID: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+- Subscription ID: <subscription-2-id>
 - Service Principal: 2fe45864-c331-4c23-b5b1-440db7c8088a
 - Authentication: via ARM environment variables
 

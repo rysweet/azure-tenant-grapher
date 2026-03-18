@@ -95,7 +95,7 @@ Eventually, one of these will happen:
 1. **Increase timeout**: Change `timeout=3600` to `timeout=7200` (2 hours) in the script
 2. **Rescan target manually**: To get accurate fidelity metrics
    ```bash
-   uv run atg scan --subscription-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+   uv run atg scan --subscription-id <subscription-2-id>
    ```
 
 ### Medium-term
@@ -133,7 +133,7 @@ python3 -u /tmp/autonomous_loop.py 2>&1 | tee /tmp/autonomous_loop.log &
 ### Option 3: Rescan target manually
 ```bash
 # This will update Neo4j with the 396 deployed resources
-uv run atg scan --subscription-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+uv run atg scan --subscription-id <subscription-2-id>
 
 # Then check new fidelity
 uv run python3 << 'EOF'
@@ -145,8 +145,8 @@ load_dotenv()
 driver = GraphDatabase.driver(os.getenv("NEO4J_URI"), auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
 
 with driver.session() as session:
-    source = session.run("MATCH (r:Resource) WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16' RETURN count(r)").single()[0]
-    target = session.run("MATCH (r:Resource) WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285' RETURN count(r)").single()[0]
+    source = session.run("MATCH (r:Resource) WHERE r.subscription_id = '<source-subscription-id>' RETURN count(r)").single()[0]
+    target = session.run("MATCH (r:Resource) WHERE r.subscription_id = '<subscription-2-id>' RETURN count(r)").single()[0]
     print(f"Source: {source}, Target: {target}, Fidelity: {target/source*100:.1f}%")
 
 driver.close()

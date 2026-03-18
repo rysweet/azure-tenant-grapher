@@ -163,7 +163,7 @@ uv run azure-tenant-grapher generate-iac \
     --format terraform \
     --scan-target \
     --output ./test-deployment-verification \
-    --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+    --target-subscription <subscription-2-id>
 
 echo "  ✅ IaC generated"
 

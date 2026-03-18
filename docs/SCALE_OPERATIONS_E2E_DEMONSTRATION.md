@@ -51,7 +51,7 @@ uv run python -c "DETACH DELETE all nodes WHERE synthetic = true"
 **Command Executed:**
 ```bash
 uv run atg scale-up scenario \
-  --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+  --tenant-id <tenant-id-2> \
   --scenario hub-spoke \
   --spoke-count 5 \
   --scale-factor 2.0
@@ -95,7 +95,7 @@ All synthetic nodes properly marked with:
 ```bash
 # Attempt 1: Forest Fire sampling (FOUND BUG)
 uv run atg scale-down algorithm \
-  --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+  --tenant-id <tenant-id-2> \
   --algorithm forest-fire \
   --target-size 0.1 \
   --output-mode delete
@@ -228,7 +228,7 @@ uv run python -c "from neo4j import GraphDatabase; ..."
 
 # 2. Scale up
 uv run atg scale-up scenario \
-  --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+  --tenant-id <tenant-id-2> \
   --scenario hub-spoke \
   --spoke-count 5 \
   --scale-factor 2.0

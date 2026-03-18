@@ -96,7 +96,7 @@ class TestNeo4jQueryLabelFix:
             target_subscription_id="target-sub",
         )
 
-        test_subscription = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
+        test_subscription = "<source-subscription-id>"
         calculator._fetch_resources_from_neo4j(test_subscription)
 
         # Verify query parameters

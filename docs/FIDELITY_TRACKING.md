@@ -21,8 +21,8 @@ Calculate fidelity between two subscriptions:
 
 ```bash
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id>
 ```
 
 ### Track Fidelity Over Time
@@ -31,8 +31,8 @@ Append metrics to `demos/fidelity_history.jsonl` for time-series analysis:
 
 ```bash
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id> \
   --track
 ```
 
@@ -42,8 +42,8 @@ Export metrics to a JSON file:
 
 ```bash
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id> \
   --output fidelity_report_2025-10-17.json
 ```
 
@@ -53,8 +53,8 @@ Verify if fidelity meets the target specified in OBJECTIVE.md:
 
 ```bash
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id> \
   --check-objective demos/OBJECTIVE.md
 ```
 
@@ -64,8 +64,8 @@ Use multiple options together:
 
 ```bash
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id> \
   --track \
   --output current_fidelity.json \
   --check-objective demos/OBJECTIVE.md
@@ -83,14 +83,14 @@ Fidelity Report
 Timestamp: 2025-10-17T01:30:00Z
 
 📋 Source Subscription:
-  Subscription ID: 9b00bc5e-9abc-45de-9958-02a9d9277b16
+  Subscription ID: <source-subscription-id>
   Resources: 1674
   Relationships: 5614
   Resource Groups: 182
   Resource Types: 94
 
 🎯 Target Subscription:
-  Subscription ID: c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+  Subscription ID: <subscription-2-id>
   Resources: 516
   Relationships: 1823
   Resource Groups: 58
@@ -117,14 +117,14 @@ Timestamp: 2025-10-17T01:30:00Z
 {
   "timestamp": "2025-10-17T01:30:00Z",
   "source": {
-    "subscription_id": "9b00bc5e-9abc-45de-9958-02a9d9277b16",
+    "subscription_id": "<source-subscription-id>",
     "resources": 1674,
     "relationships": 5614,
     "resource_groups": 182,
     "resource_types": 94
   },
   "target": {
-    "subscription_id": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285",
+    "subscription_id": "<subscription-2-id>",
     "resources": 516,
     "relationships": 1823,
     "resource_groups": 58,
@@ -229,12 +229,12 @@ Example workflow:
 # Step 1-2: Generate and deploy (not shown)
 
 # Step 3: Scan target subscription
-uv run atg scan --filter-by-subscriptions c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+uv run atg scan --filter-by-subscriptions <subscription-2-id>
 
 # Step 4: Calculate fidelity
 uv run atg fidelity \
-  --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-  --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285 \
+  --source-subscription <source-subscription-id> \
+  --target-subscription <subscription-2-id> \
   --track \
   --check-objective demos/OBJECTIVE.md
 

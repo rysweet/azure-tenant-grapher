@@ -40,7 +40,7 @@ ITERATION 2 autonomous execution completed successfully with all phases executed
 **Command**:
 ```bash
 uv run atg generate-iac \
-  --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1 \
+  --tenant-id <tenant-id-2> \
   --format terraform \
   --output demos/simuland_iteration2
 ```

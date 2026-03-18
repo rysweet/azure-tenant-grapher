@@ -81,7 +81,7 @@ async def monitor(
         atg monitor
 
         # Single check for specific subscription
-        atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+        atg monitor --subscription-id <source-subscription-id>
 
         # Watch mode with 60 second interval
         atg monitor --watch --interval 60

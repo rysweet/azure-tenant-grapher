@@ -173,7 +173,7 @@ python3 -u /tmp/autonomous_loop.py 2>&1 | tee /tmp/autonomous_loop.log &
 ### Rescan Target Manually (to get accurate fidelity)
 ```bash
 cd /Users/ryan/src/msec/atg-0723/azure-tenant-grapher
-uv run atg scan --subscription-id c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+uv run atg scan --subscription-id <subscription-2-id>
 ```
 
 ### Check Progress
@@ -195,8 +195,8 @@ from neo4j import GraphDatabase
 load_dotenv()
 driver = GraphDatabase.driver(os.getenv("NEO4J_URI"), auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
 with driver.session() as session:
-    source = session.run("MATCH (r:Resource) WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16' RETURN count(r)").single()[0]
-    target = session.run("MATCH (r:Resource) WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285' RETURN count(r)").single()[0]
+    source = session.run("MATCH (r:Resource) WHERE r.subscription_id = '<source-subscription-id>' RETURN count(r)").single()[0]
+    target = session.run("MATCH (r:Resource) WHERE r.subscription_id = '<subscription-2-id>' RETURN count(r)").single()[0]
     print(f"Fidelity: {target/source*100:.1f}% ({target}/{source})")
 driver.close()
 EOF

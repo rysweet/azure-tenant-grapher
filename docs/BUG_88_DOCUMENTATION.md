@@ -17,7 +17,7 @@ Error: ID was missing the `actionGroups` element
   with azurerm_monitor_smart_detector_alert_rule.Failure_Anomalies___...,
   on main.tf.json line XXXX, in resource....action_group.ids:
 
-  "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourcegroups/artbas-160224hpcp4rein6/providers/microsoft.insights/actiongroups/application insights smart detection"
+  "/subscriptions/<subscription-2-id>/resourcegroups/artbas-160224hpcp4rein6/providers/microsoft.insights/actiongroups/application insights smart detection"
 ```
 
 The action group resource IDs had incorrect casing in three places:

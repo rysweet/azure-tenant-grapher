@@ -88,7 +88,7 @@ if not password:
                 break
 driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 with driver.session() as session:
-    result = session.run('MATCH (r:Resource) WHERE r.subscription_id = \$sub RETURN count(r) as count', sub='9b00bc5e-9abc-45de-9958-02a9d9277b16')
+    result = session.run('MATCH (r:Resource) WHERE r.subscription_id = \$sub RETURN count(r) as count', sub='<source-subscription-id>')
     print(result.single()['count'])
 driver.close()
 " 2>/dev/null || echo "0")
@@ -106,7 +106,7 @@ if not password:
                 break
 driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 with driver.session() as session:
-    result = session.run('MATCH (r:Resource) WHERE r.subscription_id = \$sub RETURN count(r) as count', sub='c190c55a-9ab2-4b1e-92c4-cc8b1a032285')
+    result = session.run('MATCH (r:Resource) WHERE r.subscription_id = \$sub RETURN count(r) as count', sub='<subscription-2-id>')
     print(result.single()['count'])
 driver.close()
 " 2>/dev/null || echo "0")

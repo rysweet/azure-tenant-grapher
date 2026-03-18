@@ -6,6 +6,7 @@ to calculate fidelity metrics: exact_match, drifted, missing.
 
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -13,9 +14,9 @@ from typing import Any, Dict, List, Optional, Tuple
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Configuration
-SOURCE_SUBSCRIPTION = "<source-subscription-id>"
-TARGET_SUBSCRIPTION = "<target-subscription-id>"
+# Configuration — set via environment variables or .env
+SOURCE_SUBSCRIPTION = os.environ["SOURCE_SUBSCRIPTION"]
+TARGET_SUBSCRIPTION = os.environ["TARGET_SUBSCRIPTION"]
 OUTPUT_DIR = "/Users/csiska/repos/azure-tenant-grapher/output/arch_replication_20260222_154009"
 TFSTATE_PATH = f"{OUTPUT_DIR}/terraform/terraform.tfstate"
 MAPPINGS_PATH = f"{OUTPUT_DIR}/03_resource_mappings.json"
