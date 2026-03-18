@@ -15,6 +15,9 @@ import {
   sanitizeOutput
 } from '../backend/src/security/input-validator';
 
+// Import platform utilities
+import { getPlatformPaths } from './platform-utils';
+
 interface ProcessInfo {
   id: string;
   command: string;
@@ -70,12 +73,9 @@ export class SecureProcessManager extends EventEmitter {
     const id = uuidv4();
     const projectRoot = path.resolve(__dirname, '../../../..');
 
-    // Use virtual environment Python instead of system Python
-    const pythonPath = process.env.PYTHON_PATH || (
-      process.platform === 'win32'
-        ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
-        : path.join(projectRoot, '.venv', 'bin', 'python')
-    );
+    // Use platform-utils for cross-platform Python path
+    const { pythonPath: relativePythonPath } = getPlatformPaths();
+    const pythonPath = process.env.PYTHON_PATH || path.join(projectRoot, relativePythonPath);
 
     const cliPath = path.resolve(__dirname, '../../../../scripts/cli.py');
 

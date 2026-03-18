@@ -9,6 +9,14 @@ from typing import Any, Dict, List, Optional
 import structlog  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 
+from src.utils.console_icons import (
+    ICON_ERROR,
+    ICON_FILE,
+    ICON_GEAR,
+    ICON_INFO,
+    ICON_SUCCESS,
+)
+
 # Load environment variables
 load_dotenv(override=True)
 
@@ -388,18 +396,18 @@ class AzureTenantGrapherConfig:
             if self.azure_openai.is_configured():
                 self.azure_openai.validate()
 
-            logger.info("✅ Configuration validation successful")
+            logger.info(f"{ICON_SUCCESS} Configuration validation successful")
 
         except Exception as e:
-            logger.exception(f"❌ Configuration validation failed: {e}")
+            logger.exception(f"{ICON_ERROR} Configuration validation failed: {e}")
             raise
 
     def log_configuration_summary(self) -> None:
         """Log a summary of the current configuration (without sensitive data)."""
         logger.info("=" * 60)
-        logger.info("🔧 AZURE TENANT GRAPHER CONFIGURATION")
+        logger.info(f"{ICON_GEAR} AZURE TENANT GRAPHER CONFIGURATION")
         logger.info("=" * 60)
-        logger.info(str(f"📋 Tenant ID: {self.tenant_id}"))
+        logger.info(f"{ICON_INFO} Tenant ID: {self.tenant_id}")
         if self.tenant:
             logger.info(str(f"   Display Name: {self.tenant.display_name}"))
             if self.tenant.subscription_ids:
@@ -408,7 +416,7 @@ class AzureTenantGrapherConfig:
                 )
         logger.info(str(f"🗄️  Neo4j: {self.neo4j.get_connection_string()}"))
         logger.info(str(f"🤖 Azure OpenAI: {self.azure_openai.get_safe_endpoint()}"))
-        logger.info("⚙️  Processing:")
+        logger.info(f"{ICON_GEAR} Processing:")
         logger.info(
             f"   - Resource Limit: {self.processing.resource_limit or 'Unlimited'}"
         )
@@ -420,7 +428,7 @@ class AzureTenantGrapherConfig:
         logger.info(
             f"   - Auto Start Container: {self.processing.auto_start_container}"
         )
-        logger.info("📄 Specification:")
+        logger.info(f"{ICON_FILE} Specification:")
         logger.info(
             str(f"   - Spec Resource Limit: {self.specification.resource_limit}")
         )
@@ -441,7 +449,7 @@ class AzureTenantGrapherConfig:
             logger.info(str(f"   - Timeout: {self.mcp.timeout}s"))
         logger.info(str(f"📝 Logging Level: {self.logging.level}"))
         if self.logging.file_output:
-            logger.info(str(f"📄 Log File: {self.logging.file_output}"))
+            logger.info(str(f"{ICON_FILE} Log File: {self.logging.file_output}"))
         logger.info("=" * 60)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -554,7 +562,7 @@ def setup_logging(config: LoggingConfig) -> None:
     )  # Suppress INFO level HTTP requests, only show warnings/errors
 
     logger.info(
-        f"📝 Logging configured: level={config.level}, file={config.file_output or 'console'}"
+        f"{ICON_INFO} Logging configured: level={config.level}, file={config.file_output or 'console'}"
     )
 
 
@@ -606,7 +614,7 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
         config.logging.__post_init__()
         # No __post_init__ for specification, but could add validation if needed
     except Exception as e:
-        logger.exception(f"❌ Neo4j-only configuration validation failed: {e}")
+        logger.exception(f"{ICON_ERROR} Neo4j-only configuration validation failed: {e}")
         raise
     return config
 
