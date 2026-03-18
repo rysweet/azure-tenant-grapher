@@ -42,6 +42,7 @@ class TerraformEmitter(IaCEmitter):
         auto_import_existing: bool = False,
         import_strategy: Optional[str] = None,
         credential: Optional[Any] = None,
+        resource_name_mappings: Optional[Dict[str, str]] = None,
     ):
         """Initialize the TerraformEmitter with configuration for IaC generation.
 
@@ -78,6 +79,10 @@ class TerraformEmitter(IaCEmitter):
                            - "selective": Import based on comparison_result
             credential: Azure credential for resource existence validation (Issue #422).
                       Required when auto_import_existing=True to query target tenant.
+            resource_name_mappings: Dictionary mapping source resource IDs to target resource names
+                                  for cross-subscription replication. Format: {"source_id": "target_name"}.
+                                  When provided, emitter uses target names from mappings instead of
+                                  original resource names, enabling "-replica" suffix or custom naming.
 
         Example:
             >>> emitter = TerraformEmitter(
@@ -150,6 +155,10 @@ class TerraformEmitter(IaCEmitter):
         self._available_subnets: set = set()
         self._vnet_id_to_terraform_name: Dict[str, str] = {}
         self._graph: Optional[Any] = None
+
+        # Resource name mappings for cross-subscription replication (Issue: Missing "-replica" suffix)
+        # Format: {source_resource_id: target_resource_name}
+        self.resource_name_mappings = resource_name_mappings or {}
 
     def _get_effective_subscription_id(self, resource: Dict[str, Any]) -> str:
         """Get the subscription ID to use for resource construction.
@@ -548,6 +557,9 @@ class TerraformEmitter(IaCEmitter):
                 azure_type = "Microsoft.Graph/servicePrincipals"
             elif azure_type.lower() == "managedidentity":
                 azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+            # Handle simplified child resource types
+            elif azure_type.lower() == "virtualnetworklinks":
+                azure_type = "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
 
             # Normalize casing before lookup (fixes case-sensitivity issues)
             azure_type = self._normalize_azure_type(azure_type)
@@ -571,7 +583,9 @@ class TerraformEmitter(IaCEmitter):
 
                 if terraform_type not in self._available_resources:
                     self._available_resources[terraform_type] = set()
-                safe_name = self._sanitize_terraform_name(resource_name)
+                # Use target name from mappings if available (for "-replica" suffix support)
+                target_name = self._get_target_resource_name(resource)
+                safe_name = self._sanitize_terraform_name(target_name)
                 self._available_resources[terraform_type].add(safe_name)
 
                 # For subnets, also track VNet-scoped names
@@ -591,7 +605,9 @@ class TerraformEmitter(IaCEmitter):
             if azure_type == "Microsoft.Network/virtualNetworks":
                 properties = self._parse_properties(resource)
                 subnets = properties.get("subnets", [])
-                vnet_safe_name = self._sanitize_terraform_name(resource_name)
+                # Use target name from mappings if available (for "-replica" suffix support)
+                vnet_target_name = self._get_target_resource_name(resource)
+                vnet_safe_name = self._sanitize_terraform_name(vnet_target_name)
                 for subnet in subnets:
                     subnet_name = subnet.get("name")
                     if subnet_name:
@@ -868,6 +884,13 @@ class TerraformEmitter(IaCEmitter):
                         f"Always emitting resource group (foundational): {resource_id}"
                     )
 
+            # Apply target resource name from mappings if available (for "-replica" suffix support)
+            target_name = self._get_target_resource_name(resource)
+            if target_name != resource.get("name"):
+                logger.info(f"Applying mapped name '{target_name}' to resource (original: '{resource.get('name')}')")
+                resource = dict(resource)  # Create a copy to avoid modifying original
+                resource["name"] = target_name
+
             terraform_resource = self._convert_resource(resource, terraform_config)
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
@@ -893,13 +916,30 @@ class TerraformEmitter(IaCEmitter):
                     )
                     continue
 
-                # Add depends_on if resource has dependencies
+                # Add depends_on if resource has dependencies, filtering out
+                # references to resources not present in the emitted config
+                # (e.g. when sampling a subset of resources).
                 if resource_dep.depends_on:
-                    resource_config["depends_on"] = sorted(resource_dep.depends_on)
-                    logger.debug(
-                        f"Added dependencies for {resource_type}.{resource_name}: "
-                        f"{resource_dep.depends_on}"
-                    )
+                    valid_deps = []
+                    for dep in sorted(resource_dep.depends_on):
+                        parts = dep.split(".", 1)
+                        if len(parts) == 2:
+                            dep_type, dep_name = parts
+                            if dep_name in terraform_config.get("resource", {}).get(dep_type, {}):
+                                valid_deps.append(dep)
+                            else:
+                                logger.debug(
+                                    f"Dropping depends_on '{dep}' for {resource_type}.{resource_name}: "
+                                    f"referenced resource not in emitted config"
+                                )
+                        else:
+                            valid_deps.append(dep)
+                    if valid_deps:
+                        resource_config["depends_on"] = valid_deps
+                        logger.debug(
+                            f"Added dependencies for {resource_type}.{resource_name}: "
+                            f"{valid_deps}"
+                        )
 
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
@@ -1014,6 +1054,18 @@ class TerraformEmitter(IaCEmitter):
                 nic_name,
                 nsg_name,
             ) in self._nic_nsg_associations:
+                # Validate NIC exists before creating association
+                nic_available = self._validate_resource_reference(
+                    "azurerm_network_interface", nic_tf_name, terraform_config
+                )
+
+                if not nic_available:
+                    logger.warning(
+                        f"Skipping NIC NSG association for '{nic_name}' - "
+                        f"NIC '{nic_name}' not emitted. Association cannot be created."
+                    )
+                    continue
+
                 # Validate NSG exists before creating association (Bug #58)
                 nsg_available = (
                     "azurerm_network_security_group" in self._available_resources
@@ -1167,6 +1219,13 @@ class TerraformEmitter(IaCEmitter):
                 split_by_community = False
 
         if not split_by_community:
+            # Remove empty resource type blocks (e.g. post_emit handlers that
+            # found no valid associations) to prevent terraform init failures.
+            terraform_config["resource"] = {
+                rt: res
+                for rt, res in terraform_config.get("resource", {}).items()
+                if res
+            }
             # Write single main.tf.json file
             output_file = out_dir / "main.tf.json"
             with open(output_file, "w") as f:
@@ -1233,10 +1292,11 @@ class TerraformEmitter(IaCEmitter):
                     )
                     # Show first subnet details
                     first_ref = refs[0]
+                    expected_tf_name = first_ref.get('expected_terraform_name', 'N/A')
                     logger.warning(
-                        f"    Missing subnet: {first_ref['missing_resource_name']}\n"
-                        f"    Expected Terraform name: {first_ref['expected_terraform_name']}\n"
-                        f"    Azure ID: {first_ref['missing_resource_id']}"
+                        f"    Missing subnet: {first_ref.get('missing_resource_name', 'unknown')}\n"
+                        f"    Expected Terraform name: {expected_tf_name}\n"
+                        f"    Azure ID: {first_ref.get('missing_resource_id', 'unknown')}"
                     )
                     # List all resources referencing this subnet
                     logger.warning("    Resources referencing this subnet:")
@@ -1907,6 +1967,19 @@ class TerraformEmitter(IaCEmitter):
         azure_type = resource.get("type", "")
         resource_name = resource.get("name", "unknown")
 
+        # Handle simplified type names before handler lookup
+        if azure_type.lower() in ("user", "aaduser"):
+            azure_type = "Microsoft.Graph/users"
+        elif azure_type.lower() in ("group", "aadgroup", "identitygroup"):
+            azure_type = "Microsoft.Graph/groups"
+        elif azure_type.lower() == "serviceprincipal":
+            azure_type = "Microsoft.Graph/servicePrincipals"
+        elif azure_type.lower() == "managedidentity":
+            azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+        # Handle simplified child resource types
+        elif azure_type.lower() == "virtualnetworklinks":
+            azure_type = "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
+
         # Ensure handlers are registered
         ensure_handlers_registered()
 
@@ -2197,6 +2270,30 @@ class TerraformEmitter(IaCEmitter):
             f"resource '{resource_name}' (type: {principal_type})"
         )
         return None
+
+    def _get_target_resource_name(self, resource: Dict[str, Any]) -> str:
+        """Get target resource name, checking mappings first.
+
+        For cross-subscription replication, checks if resource has a mapped target name
+        (e.g., with "-replica" suffix). Falls back to original name if no mapping exists.
+
+        Args:
+            resource: Resource dictionary with 'id' and 'name' fields
+
+        Returns:
+            Target resource name from mappings or original name
+        """
+        resource_id = resource.get("id", "")
+        resource_name = resource.get("name", "")
+
+        # Check if we have a mapped target name for this resource
+        if resource_id and resource_id in self.resource_name_mappings:
+            mapped_name = self.resource_name_mappings[resource_id]
+            logger.debug(f"Using mapped name '{mapped_name}' for resource '{resource_name}' (ID: {resource_id})")
+            return mapped_name
+
+        # No mapping found, use original name
+        return resource_name
 
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
@@ -2572,6 +2669,7 @@ class TerraformEmitter(IaCEmitter):
             """Recursively extract Terraform references from config object."""
             if isinstance(obj, str):
                 # Pattern: ${azurerm_type.name.field} or ${azuread_type.name.field}
+                # Also match data sources: ${data.azurerm_type.name.field}
                 pattern = r"\$\{(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
                 matches = re.findall(pattern, obj)
                 for terraform_type, ref_name in matches:
@@ -2586,6 +2684,15 @@ class TerraformEmitter(IaCEmitter):
                                 f"Resource '{resource_name}' references undeclared "
                                 f"resource: {ref_str}"
                             )
+
+                # Separately check for data source references (these are always valid - external)
+                # Pattern: ${data.azurerm_type.name.field} or ${data.azuread_type.name.field}
+                data_pattern = r"\$\{data\.(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
+                data_matches = re.findall(data_pattern, obj)
+                if data_matches:
+                    logger.debug(
+                        f"Resource '{resource_name}' uses {len(data_matches)} data source(s) (external references - not validated)"
+                    )
             elif isinstance(obj, dict):
                 for value in obj.values():
                     extract_references(value)

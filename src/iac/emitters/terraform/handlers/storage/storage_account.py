@@ -168,8 +168,18 @@ class StorageAccountHandler(ResourceHandler):
 
         # Optional: shared_access_key_enabled (security - CRITICAL for zero-trust)
         # Maps to Azure property: allowSharedKeyAccess
-        # Note: Disabling shared key access forces OAuth/Entra ID authentication
+        # Note: When shared key access is disabled (allowSharedKeyAccess=False), the
+        # azurerm provider (v4.x) cannot manage the storage account — it tries to read
+        # queue/blob/share properties via the storage key API and gets 403. Skip these
+        # accounts entirely so they don't block deployment.
         shared_key_access = properties.get("allowSharedKeyAccess")
+        if shared_key_access is False:
+            logger.warning(
+                f"Skipping storage account '{resource_name}': allowSharedKeyAccess=False "
+                f"(key-based auth disabled — azurerm provider v4.x cannot read storage "
+                f"properties without key access)"
+            )
+            return None
         if shared_key_access is not None:
             if not isinstance(shared_key_access, bool):
                 logger.warning(

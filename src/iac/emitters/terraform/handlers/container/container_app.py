@@ -84,7 +84,36 @@ class ContainerAppHandler(ResourceHandler):
                 f"Container App '{resource_name}' missing required managedEnvironmentId, skipping"
             )
             return None
-        config["container_app_environment_id"] = env_id
+
+        # Prefer a Terraform reference if the environment was emitted in this run.
+        # Otherwise translate the subscription ID so it points to the target subscription.
+        env_name = self.extract_name_from_id(env_id, "managedEnvironments")
+        if env_name and env_name != "unknown":
+            env_safe = self.sanitize_name(env_name)
+            emitted_envs = context.terraform_config.get("resource", {}).get(
+                "azurerm_container_app_environment", {}
+            )
+            if env_safe in emitted_envs:
+                config["container_app_environment_id"] = (
+                    f"${{azurerm_container_app_environment.{env_safe}.id}}"
+                )
+                logger.debug(
+                    f"Container App '{resource_name}' → environment ref: azurerm_container_app_environment.{env_safe}"
+                )
+            else:
+                # Fall back: translate source subscription ID to target so the
+                # Azure RM provider authenticates against the correct tenant.
+                if context.source_subscription_id and context.target_subscription_id:
+                    env_id = env_id.replace(
+                        context.source_subscription_id, context.target_subscription_id
+                    )
+                config["container_app_environment_id"] = env_id
+                logger.warning(
+                    f"Container App '{resource_name}' environment '{env_name}' not in emitted config; "
+                    f"using translated ID"
+                )
+        else:
+            config["container_app_environment_id"] = env_id
 
         # Revision mode
         config["revision_mode"] = properties.get("configuration", {}).get(
