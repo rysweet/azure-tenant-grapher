@@ -17,6 +17,7 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
 from ..config_manager import Neo4jConfig
 from ..exceptions import Neo4jConnectionError, wrap_neo4j_exception
 from ..timeout_config import Timeouts
+from .console_icons import ICON_GEAR, ICON_SUCCESS
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +131,7 @@ class Neo4jSessionManager:
                 session.run("RETURN 1")  # type: ignore[arg-type]
 
             self._is_connected = True
-            logger.info(str(f"✅ Connected to Neo4j at {self.config.uri}"))
+            logger.info(str(f"{ICON_SUCCESS} Connected to Neo4j at {self.config.uri}"))
 
         except Exception as e:
             self._is_connected = False
@@ -161,7 +162,7 @@ class Neo4jSessionManager:
         if self._driver:
             try:
                 self._driver.close()
-                logger.info("🔌 Neo4j connection closed")
+                logger.info(f"{ICON_GEAR} Neo4j connection closed")
             except Exception as e:
                 logger.warning(str(f"Error closing Neo4j connection: {e}"))
             finally:

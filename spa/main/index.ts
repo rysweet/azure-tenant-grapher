@@ -6,6 +6,7 @@ import { setupIPCHandlers } from './ipc-handlers';
 import { ProcessManager } from './process-manager';
 import { createApplicationMenu } from './menu';
 import * as dotenv from 'dotenv';
+import { getPlatformPaths, getPlatformCommands, getShellOptions } from './platform-utils';
 
 // Load .env file from the project root
 const envPath = path.join(__dirname, '../../../.env');
@@ -74,28 +75,19 @@ async function createWindow() {
 async function startMcpServer() {
   const projectRoot = path.join(__dirname, '../../../..');
 
-  // Platform-specific Python path (Windows vs Unix)
-  const pythonPath = process.platform === 'win32'
-    ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
-    : path.join(projectRoot, '.venv', 'bin', 'python');
+  // Use platform-utils for cross-platform Python path
+  const { pythonPath } = getPlatformPaths();
+  const fullPythonPath = path.join(projectRoot, pythonPath);
 
   const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
 
   console.log('Starting MCP server from:', projectRoot);
-  console.log('Python path:', pythonPath);
+  console.log('Python path:', fullPythonPath);
 
   // Check if Python exists
-  if (!fs.existsSync(pythonPath)) {
-    console.warn('Python virtual environment not found at:', pythonPath);
+  if (!fs.existsSync(fullPythonPath)) {
+    console.warn('Python virtual environment not found at:', fullPythonPath);
     console.warn('MCP server will not be started. App will continue without it.');
-    return;
-  }
-
-  // Verify Python exists before attempting to start MCP server
-  if (!fs.existsSync(pythonPath)) {
-    console.error(`Python not found at: ${pythonPath}`);
-    console.error('Please create a virtual environment: python -m venv .venv');
-    console.error('Then install dependencies: .venv/bin/pip install -e .');
     return;
   }
 
@@ -135,7 +127,7 @@ async function startMcpServer() {
 
   // Start MCP server as a persistent service with healthcheck
   // Use the mcp_service module that provides HTTP healthcheck
-  mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_service'], {
+  mcpServerProcess = spawn(fullPythonPath, ['-m', 'src.mcp_service'], {
     cwd: projectRoot,
     env: {
       ...process.env,
@@ -145,7 +137,8 @@ async function startMcpServer() {
       NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || require('crypto').randomBytes(16).toString('hex')
     },
     detached: false,
-    stdio: ['ignore', 'pipe', 'pipe']  // MCP service doesn't need stdin
+    stdio: ['ignore', 'pipe', 'pipe'],  // MCP service doesn't need stdin
+    ...getShellOptions()
   });
 
   if (!mcpServerProcess || !mcpServerProcess.pid) {
@@ -232,8 +225,8 @@ function startBackendServer() {
   // Since __dirname in compiled code is dist/main/main, go up to spa and then to backend
   const backendTsPath = path.join(__dirname, '../../../backend/src/server.ts');
 
-  // Check if npx is available (Windows needs .cmd extension)
-  const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  // Use platform-utils for cross-platform npx command
+  const { npxCommand } = getPlatformPaths();
 
   try {
     backendProcess = spawn(npxCommand, ['tsx', backendTsPath], {
@@ -245,7 +238,7 @@ function startBackendServer() {
         // Pass through all environment variables as-is from the parent process
       },
       stdio: ['pipe', 'pipe', 'pipe'],  // Properly set up pipes for stdout/stderr
-      shell: process.platform === 'win32'  // Use shell on Windows
+      ...getShellOptions()
     });
 
     if (!backendProcess) {
