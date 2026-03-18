@@ -36,7 +36,7 @@ class TestTargetGraphBuilder:
             analyzer=mock_analyzer,
             neo4j_uri="bolt://localhost:7687",
             neo4j_user="neo4j",
-            neo4j_password="password"
+            neo4j_password="password",  # pragma: allowlist secret
         )
 
     def test_build_from_instances_empty(self, builder):

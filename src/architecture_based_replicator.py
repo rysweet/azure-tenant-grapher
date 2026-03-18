@@ -485,6 +485,7 @@ class ArchitecturePatternReplicator:
             # Build final target graph
             final_target = self.target_builder.build_from_instances(selected_instances)
 
+
             # Compute final distance
             if use_spectral_guidance:
                 distance = self.graph_analyzer.compute_spectral_distance(
