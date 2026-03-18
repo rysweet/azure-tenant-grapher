@@ -28,6 +28,14 @@ from src.config_manager import (
 from src.logging_config import configure_logging
 from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
+from src.utils.console_icons import (
+    ICON_ERROR,
+    ICON_FILE,
+    ICON_INFO,
+    ICON_REFRESH,
+    ICON_ROCKET,
+    ICON_WARNING,
+)
 from src.utils.graph_id_resolver import split_and_detect_ids
 from src.utils.neo4j_startup import ensure_neo4j_running
 
@@ -83,23 +91,23 @@ async def build_command_handler(
 
         if mismatch:
             click.echo()
-            click.echo("⚠️  " + "=" * 70)
-            click.echo("⚠️  VERSION MISMATCH DETECTED")
-            click.echo("⚠️  " + "=" * 70)
+            click.echo(f"{ICON_WARNING}  " + "=" * 70)
+            click.echo(f"{ICON_WARNING}  VERSION MISMATCH DETECTED")
+            click.echo(f"{ICON_WARNING}  " + "=" * 70)
             click.echo(
-                f"⚠️  Semaphore version: {mismatch.get('semaphore_version', 'N/A')}"
+                f"{ICON_WARNING}  Semaphore version: {mismatch.get('semaphore_version', 'N/A')}"
             )
             click.echo(
-                f"⚠️  Metadata version:  {mismatch.get('metadata_version', 'N/A')}"
+                f"{ICON_WARNING}  Metadata version:  {mismatch.get('metadata_version', 'N/A')}"
             )
-            click.echo(f"⚠️  Reason: {mismatch.get('reason', 'Unknown')}")
+            click.echo(f"{ICON_WARNING}  Reason: {mismatch.get('reason', 'Unknown')}")
             click.echo()
             click.echo(
-                "⚠️  The graph will be updated with the current version after scanning."
+                f"{ICON_WARNING}  The graph will be updated with the current version after scanning."
             )
-            click.echo("⚠️  To rebuild the graph from scratch, run:")
-            click.echo("⚠️    atg rebuild-graph --tenant-id <YOUR_TENANT_ID>")
-            click.echo("⚠️  " + "=" * 70)
+            click.echo(f"{ICON_WARNING}  To rebuild the graph from scratch, run:")
+            click.echo(f"{ICON_WARNING}    atg rebuild-graph --tenant-id <YOUR_TENANT_ID>")
+            click.echo(f"{ICON_WARNING}  " + "=" * 70)
             click.echo()
     except Exception as e:
         if debug:
@@ -111,7 +119,7 @@ async def build_command_handler(
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
             click.echo(
-                "❌ No tenant ID provided and AZURE_TENANT_ID not set in environment.",
+                f"{ICON_ERROR} No tenant ID provided and AZURE_TENANT_ID not set in environment.",
                 err=True,
             )
             sys.exit(1)
@@ -150,7 +158,7 @@ async def build_command_handler(
                 subscription_ids = [
                     s.strip() for s in filter_by_subscriptions.split(",")
                 ]
-                logger.info(str(f"📋 Filtering by subscriptions: {subscription_ids}"))
+                logger.info(f"{ICON_INFO} Filtering by subscriptions: {subscription_ids}")
 
             if filter_by_rgs:
                 # Split and detect which values are graph IDs vs actual names
@@ -158,7 +166,7 @@ async def build_command_handler(
 
                 if graph_ids:
                     logger.warning(
-                        f"⚠️  Detected graph database IDs in resource group filter: {graph_ids}\n"
+                        f"{ICON_WARNING}  Detected graph database IDs in resource group filter: {graph_ids}\n"
                         f"   These appear to be internal database IDs rather than Azure resource group names.\n"
                         f"   Please use actual resource group names (e.g., 'Ballista_UCAScenario') instead.\n"
                         f"   You can find the actual names in the Neo4j database or Azure portal."
@@ -168,19 +176,19 @@ async def build_command_handler(
                     # In a future improvement, we could resolve these IDs to actual names
                     if regular_names:
                         logger.info(
-                            f"📋 Using valid resource group names: {regular_names}"
+                            f"Using valid resource group names: {regular_names}"
                         )
                         resource_group_names = regular_names
                     else:
                         logger.error(
-                            "❌ No valid resource group names found. All provided values appear to be graph IDs.\n"
+                            f"{ICON_ERROR} No valid resource group names found. All provided values appear to be graph IDs.\n"
                             "   Please provide actual Azure resource group names."
                         )
                         resource_group_names = []
                 else:
                     resource_group_names = regular_names
                     logger.info(
-                        f"📋 Filtering by resource groups: {resource_group_names}"
+                        f"{ICON_INFO} Filtering by resource groups: {resource_group_names}"
                     )
 
             try:
@@ -190,9 +198,9 @@ async def build_command_handler(
                     include_referenced_resources=not no_include_references,
                 )
             except ValueError as e:
-                logger.error(str(f"❌ Invalid filter configuration: {e}"))
+                logger.error(str(f"{ICON_ERROR} Invalid filter configuration: {e}"))
                 logger.info(
-                    "💡 Tip: Make sure you're using actual Azure resource names, not database IDs.\n"
+                    "Tip: Make sure you're using actual Azure resource names, not database IDs.\n"
                     "   Resource group names should only contain alphanumeric characters, hyphens, underscores, periods, and parentheses."
                 )
                 # Create an empty filter config to continue without filtering
@@ -262,7 +270,7 @@ async def build_command_handler(
     except Exception as e:
         print(f"[DEBUG][CLI] Exception in build_command_handler: {e}", flush=True)
         click.echo(
-            f"❌ Unexpected error: {e}\n"
+            f"{ICON_ERROR} Unexpected error: {e}\n"
             "If this is a Neo4j error, ensure Neo4j is running and credentials are correct.\n"
             "If this is an LLM error, check your Azure OpenAI environment variables and network connectivity.\n"
             "For troubleshooting, run with --log-level DEBUG and see the log file for details.",
@@ -361,12 +369,12 @@ async def _run_no_dashboard_mode(
     try:
         print("[DEBUG][CLI] Connecting to Neo4j...", flush=True)
         grapher.connect_to_neo4j()
-        logger.info("🚀 Starting Azure Tenant Graph building...")
+        logger.info(f"{ICON_ROCKET} Starting Azure Tenant Graph building...")
         print("[DEBUG][CLI] About to await grapher.build_graph()", flush=True)
         if hasattr(grapher, "build_graph"):
             if rebuild_edges:
                 click.echo(
-                    "🔄 Forcing re-evaluation of all relationships/edges for all resources."
+                    f"{ICON_REFRESH} Forcing re-evaluation of all relationships/edges for all resources."
                 )
                 result = await grapher.build_graph(
                     force_rebuild_edges=True, filter_config=filter_config
@@ -386,7 +394,7 @@ async def _run_no_dashboard_mode(
     except Exception as e:
         print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
         click.echo(
-            f"❌ Failed to connect to Neo4j: {e}\n"
+            f"{ICON_ERROR} Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
             "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.",
@@ -466,13 +474,13 @@ async def _run_dashboard_mode(
         grapher.connect_to_neo4j()
     except Exception as e:
         dashboard.add_error(
-            f"❌ Failed to connect to Neo4j: {e}\n"
+            f"{ICON_ERROR} Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
             "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'."
         )
         click.echo(
-            f"❌ Failed to connect to Neo4j: {e}\n"
+            f"{ICON_ERROR} Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
             "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.",
@@ -480,7 +488,7 @@ async def _run_dashboard_mode(
         )
         sys.exit(1)
 
-    logger.info("🚀 Starting Azure Tenant Graph building...")
+    logger.info(f"{ICON_ROCKET} Starting Azure Tenant Graph building...")
 
     # Define a progress callback for the dashboard
     def progress_callback(**kwargs: int) -> None:
@@ -512,7 +520,7 @@ async def _run_dashboard_mode(
             continue
         logging.getLogger(name).setLevel(logging.INFO)
 
-    dashboard.log_info(f"📄 Logs are being written to: {dashboard.log_file_path}")
+    dashboard.log_info(f"{ICON_FILE} Logs are being written to: {dashboard.log_file_path}")
 
     # Create dashboard manager with filter config
     dashboard_manager = CLIDashboardManager(dashboard, filter_config=filter_config)
