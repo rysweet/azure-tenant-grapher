@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import logging
 import random
+import re
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 from ...architecture_replication_constants import (
@@ -622,6 +624,188 @@ class InstanceSelector:
         union = len(types1 | types2)
 
         return intersection / union if union > 0 else 0.0
+
+    @staticmethod
+    def _instance_rgs(instance: list[dict[str, Any]]) -> set[str]:
+        """Return the set of ResourceGroup prefixes (lowercase) for all resources in an instance."""
+        rgs: set[str] = set()
+        for resource in instance:
+            rid = resource.get("id", "")
+            m = re.match(r"(.*?/resourceGroups/[^/]+)", rid, re.IGNORECASE)
+            if m:
+                rgs.add(m.group(1).lower())
+        return rgs
+
+    def select_by_resource_count(
+        self,
+        pattern_resources: dict[str, list[list[dict[str, Any]]]],
+        target_resource_count: int,
+        distribution_scores: dict[str, dict[str, Any]],
+        cross_rg_connections: set[tuple[str, str]] | None = None,
+    ) -> tuple[list[tuple[str, list[dict[str, Any]]]], list[int]]:
+        """
+        Select instances proportionally until the target resource count is reached.
+
+        Uses a Bresenham-style accumulator to maintain proportional balance across
+        patterns.  For each step the most-underrepresented pattern is chosen, then
+        the instance to add is decided via two affinity checks (in priority order):
+
+        1. **RG affinity** — the instance's source ResourceGroup is already in the
+           plan.  Strongest signal: same physical deployment group.
+        2. **Cross-RG connectivity** — one of the instance's resources is directly
+           connected (via a direct edge, shared AAD identity, or shared subnet) to
+           a resource already in the plan.  Supplied via ``cross_rg_connections``.
+
+        If neither signal matches, the next instance in the shuffled pool is used
+        and its ResourceGroup is added to ``plan_rgs``.
+
+        Args:
+            pattern_resources: Available instances per pattern.
+            target_resource_count: Stop when total resources >= this value.
+            distribution_scores: Per-pattern scores from
+                ``compute_architecture_distribution()``; each entry must contain a
+                ``"distribution_score"`` float key.
+            cross_rg_connections: Optional set of ``(resource_id_a, resource_id_b)``
+                pairs representing cross-RG connections (direct edges + shared
+                AAD/subnet nodes).  Built by
+                ``ArchitecturePatternReplicator._query_cross_rg_connections()``.
+
+        Returns:
+            Tuple of ``(selected_instances, resource_count_history)`` where:
+
+            - ``selected_instances``: ``(pattern_name, instance)`` pairs in the
+              order they were added.
+            - ``resource_count_history``: cumulative resource count after each
+              addition, starting from ``[0]``.  Length is
+              ``len(selected_instances) + 1``.
+        """
+        # Normalise: only keep patterns that have both a score and instances.
+        valid: dict[str, float] = {
+            name: info["distribution_score"]
+            for name, info in distribution_scores.items()
+            if pattern_resources.get(name)
+        }
+        total_score = sum(valid.values()) or 1.0
+        proportions = {name: score / total_score for name, score in valid.items()}
+
+        if not proportions:
+            logger.warning("select_by_resource_count: no patterns with instances, returning empty")
+            return [], [0]
+
+        # Build bidirectional cross-RG neighbor index.
+        cross_rg_neighbors: dict[str, set[str]] = defaultdict(set)
+        for a, b in (cross_rg_connections or set()):
+            cross_rg_neighbors[a].add(b)
+            cross_rg_neighbors[b].add(a)
+
+        # Mutable shuffled pools — instances are popped as they are chosen.
+        pools: dict[str, list[list[dict[str, Any]]]] = {
+            name: random.sample(insts, len(insts))
+            for name, insts in pattern_resources.items()
+            if name in proportions
+        }
+
+        # Precompute RG sets per instance so the inner loop is just set intersection.
+        pool_rgs: dict[str, list[set[str]]] = {
+            name: [self._instance_rgs(inst) for inst in pool]
+            for name, pool in pools.items()
+        }
+
+        accumulators: dict[str, float] = dict.fromkeys(proportions, 0.0)
+
+        # State tracked across selections.
+        plan_rgs: set[str] = set()           # RG prefixes of all selected instances
+        plan_resource_ids: set[str] = set()  # resource IDs of all selected instances
+        rg_affinity_picks = 0
+        cross_rg_affinity_picks = 0
+
+        selected: list[tuple[str, list[dict[str, Any]]]] = []
+        history: list[int] = [0]
+        total = 0
+
+        while total < target_resource_count:
+            # Advance every accumulator by its proportion (Bresenham step).
+            for name in proportions:
+                accumulators[name] += proportions[name]
+
+            # Pick the pattern with the highest accumulator that still has instances.
+            candidates = [
+                (name, accumulators[name])
+                for name in proportions
+                if pools[name]
+            ]
+            if not candidates:
+                logger.info(
+                    "select_by_resource_count: exhausted all instances at "
+                    f"{total} resources (target: {target_resource_count})"
+                )
+                break
+
+            chosen_name = max(candidates, key=lambda x: x[1])[0]
+            accumulators[chosen_name] -= 1.0
+
+            pool = pools[chosen_name]
+            rg_sets = pool_rgs[chosen_name]
+
+            # ── Priority 1: RG affinity ───────────────────────────────────────
+            affinity_idx: int | None = None
+            if plan_rgs:
+                affinity_idx = next(
+                    (i for i, rgs in enumerate(rg_sets) if rgs & plan_rgs),
+                    None,
+                )
+                if affinity_idx is not None:
+                    rg_affinity_picks += 1
+                    logger.debug(f"  RG-affinity pick: '{chosen_name}'")
+
+            # ── Priority 2: cross-RG connectivity ────────────────────────────
+            if affinity_idx is None and cross_rg_neighbors and plan_resource_ids:
+                affinity_idx = next(
+                    (
+                        i for i, inst in enumerate(pool)
+                        if any(
+                            cross_rg_neighbors[r["id"]] & plan_resource_ids
+                            for r in inst
+                            if r["id"] in cross_rg_neighbors
+                        )
+                    ),
+                    None,
+                )
+                if affinity_idx is not None:
+                    cross_rg_affinity_picks += 1
+                    logger.debug(f"  cross-RG-affinity pick: '{chosen_name}'")
+
+            # ── Fallback: next in shuffled pool ──────────────────────────────
+            if affinity_idx is not None:
+                instance = pool.pop(affinity_idx)
+                rg_sets.pop(affinity_idx)
+            else:
+                instance = pool.pop(0)
+                rg_sets.pop(0)
+
+            # Update plan state with this instance's RGs and resource IDs.
+            plan_rgs |= self._instance_rgs(instance)
+            for r in instance:
+                plan_resource_ids.add(r["id"])
+
+            selected.append((chosen_name, instance))
+            total += len(instance)
+            history.append(total)
+
+            logger.debug(
+                f"  +{len(instance)} resources from '{chosen_name}' "
+                f"→ total={total}/{target_resource_count}  "
+                f"plan_rgs={len(plan_rgs)}"
+            )
+
+        logger.info(
+            f"select_by_resource_count complete: {len(selected)} instances, "
+            f"{total} resources (target={target_resource_count}), "
+            f"{rg_affinity_picks} RG-affinity picks, "
+            f"{cross_rg_affinity_picks} cross-RG-affinity picks, "
+            f"{len(plan_rgs)} distinct ResourceGroups in plan"
+        )
+        return selected, history
 
 
 __all__ = ["InstanceSelector"]

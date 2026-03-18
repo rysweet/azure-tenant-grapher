@@ -17,9 +17,12 @@ Key approach:
 
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 import random
+import re
+from collections import defaultdict
 from typing import Any
 
 import networkx as nx
@@ -60,6 +63,7 @@ class ArchitecturePatternReplicator:
         neo4j_uri: str,
         neo4j_user: str,
         neo4j_password: str,
+        source_tenant_id: str | None = None,
     ):
         """
         Initialize the architecture-based replicator.
@@ -68,6 +72,9 @@ class ArchitecturePatternReplicator:
             neo4j_uri: Neo4j database URI
             neo4j_user: Neo4j username
             neo4j_password: Neo4j password
+            source_tenant_id: Azure tenant ID of the source scan.  Passed to
+                ``ArchitecturalPatternAnalyzer`` so that resources belonging to
+                other tenants are excluded from pattern analysis.
         """
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -75,7 +82,7 @@ class ArchitecturePatternReplicator:
 
         # Pattern analyzer for building generalized graphs
         self.analyzer = ArchitecturalPatternAnalyzer(
-            neo4j_uri, neo4j_user, neo4j_password
+            neo4j_uri, neo4j_user, neo4j_password, source_tenant_id=source_tenant_id
         )
 
         # Initialize brick modules
@@ -298,13 +305,12 @@ class ArchitecturePatternReplicator:
                     logger.info(
                         f"  Found {len(orphaned_instances)} orphaned resource instances"
                     )
-                    # find_orphaned_instances returns list[tuple[str, list[dict]]] —
-                    # strip the pseudo_pattern_names so pattern_resources holds
-                    # list[list[dict]] consistent with all other pattern entries.
-                    self.pattern_resources["orphaned_resources"] = [
-                        resource_list
-                        for _pseudo_name, resource_list in orphaned_instances
-                    ]
+                    # Group orphaned instances into named architectural patterns via
+                    # MS Learn lookup instead of the flat "orphaned_resources" key.
+                    named_orphan_patterns = (
+                        self.analyzer.group_orphans_into_named_patterns(orphaned_instances)
+                    )
+                    self.pattern_resources.update(named_orphan_patterns)
 
         finally:
             driver.close()
@@ -479,6 +485,7 @@ class ArchitecturePatternReplicator:
             # Build final target graph
             final_target = self.target_builder.build_from_instances(selected_instances)
 
+
             # Compute final distance
             if use_spectral_guidance:
                 distance = self.graph_analyzer.compute_spectral_distance(
@@ -604,6 +611,268 @@ class ArchitecturePatternReplicator:
             "target_orphaned_count": len(target_orphaned),
             "missing_count": len(missing_in_target),
         }
+
+    def _query_cross_rg_connections(self) -> set[tuple[str, str]]:
+        """
+        Query Neo4j for all resource pairs that are connected across ResourceGroup boundaries.
+
+        Two resources are considered cross-RG connected when:
+
+        - They have a **direct relationship** (any type except SCAN_SOURCE_NODE) and
+          belong to different ResourceGroups, OR
+        - They both connect to a **shared intermediate node** that is one of:
+            - AAD User (``User`` label)
+            - Service Principal (``ServicePrincipal`` label)
+            - AAD Group (``IdentityGroup`` label)
+            - Subnet (``Resource`` with type ``Microsoft.Network/subnets``)
+          and belong to different ResourceGroups.
+
+        Returns:
+            Set of ``(resource_id_a, resource_id_b)`` pairs, normalised so
+            ``resource_id_a < resource_id_b`` (each pair appears exactly once).
+        """
+        query = """
+        MATCH (a:Resource:Original)-[r]->(b:Resource:Original)
+        WHERE type(r) <> 'SCAN_SOURCE_NODE'
+          AND a.id CONTAINS '/resourceGroups/'
+          AND b.id CONTAINS '/resourceGroups/'
+          AND a.id < b.id
+        WITH a.id AS from_id, b.id AS to_id,
+             split(toLower(a.id), '/resourcegroups/')[1] AS rg_a_raw,
+             split(toLower(b.id), '/resourcegroups/')[1] AS rg_b_raw
+        WITH from_id, to_id,
+             split(rg_a_raw, '/')[0] AS rg_a,
+             split(rg_b_raw, '/')[0] AS rg_b
+        WHERE rg_a <> rg_b
+        RETURN from_id, to_id
+
+        UNION
+
+        MATCH (a:Resource:Original)-[]->(shared)<-[]-(b:Resource:Original)
+        WHERE (shared:User OR shared:ServicePrincipal OR shared:IdentityGroup
+               OR (shared:Resource AND shared.type = 'Microsoft.Network/subnets'))
+          AND a.id CONTAINS '/resourceGroups/'
+          AND b.id CONTAINS '/resourceGroups/'
+          AND a.id < b.id
+        WITH a.id AS from_id, b.id AS to_id,
+             split(toLower(a.id), '/resourcegroups/')[1] AS rg_a_raw,
+             split(toLower(b.id), '/resourcegroups/')[1] AS rg_b_raw
+        WITH from_id, to_id,
+             split(rg_a_raw, '/')[0] AS rg_a,
+             split(rg_b_raw, '/')[0] AS rg_b
+        WHERE rg_a <> rg_b
+        RETURN from_id, to_id
+        """
+
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        )
+        pairs: set[tuple[str, str]] = set()
+        try:
+            with driver.session() as session:
+                for record in session.run(query):
+                    pairs.add((record["from_id"], record["to_id"]))
+        finally:
+            driver.close()
+
+        logger.info(f"Found {len(pairs)} cross-RG resource connections")
+        return pairs
+
+    def generate_replication_plan_by_resource_count(
+        self,
+        target_resource_count: int,
+        use_architecture_distribution: bool = True,
+    ) -> tuple[
+        list[tuple[str, list[dict[str, Any]]]],
+        list[int],
+        dict[str, Any],
+    ]:
+        """
+        Generate a replication plan by adding instances until a resource count is met.
+
+        Unlike ``generate_replication_plan()`` which selects a fixed number of
+        *instances*, this method keeps adding architectural instances—proportionally
+        distributed across all detected patterns—until the cumulative *resource*
+        count reaches ``target_resource_count``.
+
+        Call ``analyze_source_tenant()`` first.
+
+        Args:
+            target_resource_count: Minimum total number of resources the plan
+                should contain.  The method stops as soon as this threshold is
+                crossed, so the actual count may be slightly higher (by at most
+                the size of the last instance added).
+            use_architecture_distribution: If ``True`` (default), weight pattern
+                proportions by their architecture distribution scores so the plan
+                mirrors the source tenant's pattern prevalence.  If ``False``,
+                all patterns are weighted equally.
+
+        Returns:
+            Tuple of ``(selected_instances, resource_count_history, metadata)``
+            where:
+
+            - ``selected_instances``: ``(pattern_name, instance)`` pairs in the
+              order they were added.
+            - ``resource_count_history``: cumulative resource count after each
+              instance was added, starting from ``[0]``.
+            - ``metadata``: dict with keys ``target_resource_count``,
+              ``actual_resource_count``, ``total_instances``,
+              ``instance_counts_by_pattern``, and optionally
+              ``distribution_scores``.
+
+        Raises:
+            RuntimeError: If ``analyze_source_tenant()`` was not called first.
+
+        Example:
+            >>> replicator = ArchitecturePatternReplicator(uri, user, pwd)
+            >>> replicator.analyze_source_tenant()
+            >>> selected, history, meta = replicator.generate_replication_plan_by_resource_count(500)
+            >>> print(f"{meta['actual_resource_count']} resources in {meta['total_instances']} instances")
+        """
+        if not self.source_pattern_graph:
+            raise RuntimeError("Must call analyze_source_tenant() first")
+        if not self.detected_patterns:
+            raise RuntimeError("No patterns detected in source tenant")
+
+        logger.info(
+            f"Generating replication plan for target_resource_count={target_resource_count}"
+        )
+
+        if use_architecture_distribution:
+            distribution_scores = self.analyzer.compute_architecture_distribution(
+                self.pattern_resources, self.source_pattern_graph
+            )
+        else:
+            # Uniform weights — every pattern gets equal priority.
+            distribution_scores = {
+                name: {"distribution_score": 1.0, "source_instances": len(insts)}
+                for name, insts in self.pattern_resources.items()
+            }
+
+        cross_rg_connections = self._query_cross_rg_connections()
+
+        selected_instances, resource_count_history = self.selector.select_by_resource_count(
+            pattern_resources=self.pattern_resources,
+            target_resource_count=target_resource_count,
+            distribution_scores=distribution_scores,
+            cross_rg_connections=cross_rg_connections,
+        )
+
+        actual = resource_count_history[-1] if resource_count_history else 0
+
+        metadata: dict[str, Any] = {
+            "target_resource_count": target_resource_count,
+            "actual_resource_count": actual,
+            "total_instances": len(selected_instances),
+            "instance_counts_by_pattern": {
+                name: sum(1 for n, _ in selected_instances if n == name)
+                for name in self.pattern_resources
+            },
+            "distribution_scores": distribution_scores,
+        }
+
+        logger.info(
+            f"Plan complete: {len(selected_instances)} instances, "
+            f"{actual} resources (target: {target_resource_count})"
+        )
+        return selected_instances, resource_count_history, metadata
+
+    def build_instance_cooccurrence_graph(
+        self,
+        selected_instances: list[tuple[str, list[dict[str, Any]]]],
+    ) -> tuple[nx.Graph, nx.Graph]:
+        """
+        Build graphs showing how architecture instances relate through shared ResourceGroups.
+
+        Two instances are connected when their resources live in the same Azure
+        ResourceGroup — meaning a single real-world RG contains resources that
+        belong to more than one architectural pattern (e.g., VMs + a Key Vault +
+        a Load Balancer deployed together).
+
+        The ResourceGroup of each resource is extracted directly from the Azure
+        resource ID path, so no Neo4j query is required.
+
+        Args:
+            selected_instances: ``(pattern_name, instance)`` pairs as returned by
+                ``generate_replication_plan_by_resource_count()`` or
+                ``generate_replication_plan()``.
+
+        Returns:
+            ``(instance_graph, pattern_graph)`` where:
+
+            - ``instance_graph``: nodes are individual instances (index-keyed),
+              edges connect instances that share at least one ResourceGroup.
+              Node attrs: ``pattern``, ``size`` (resource count).
+              Edge attrs: ``shared_rgs`` (count), ``rg_ids`` (list).
+
+            - ``pattern_graph``: nodes are pattern names, edges connect patterns
+              whose instances share ResourceGroups.
+              Node attrs: ``instance_count``, ``resource_count``.
+              Edge attrs: ``weight`` (total shared-RG count across all instance pairs),
+              ``instance_pairs`` (number of instance pairs sharing an RG).
+        """
+
+        def _rg_prefix(resource_id: str) -> str | None:
+            """Extract '/subscriptions/.../resourceGroups/NAME' from an Azure resource ID."""
+            m = re.match(r"(.*?/resourceGroups/[^/]+)", resource_id, re.IGNORECASE)
+            return m.group(1).lower() if m else None
+
+        # Map each instance index → its set of ResourceGroup IDs
+        instance_rgs: list[set[str]] = []
+        for _pname, inst in selected_instances:
+            rgs: set[str] = set()
+            for r in inst:
+                rg = _rg_prefix(r["id"])
+                if rg:
+                    rgs.add(rg)
+            instance_rgs.append(rgs)
+
+        # Build instance-level graph
+        G_inst: nx.Graph = nx.Graph()
+        for i, (pname, inst) in enumerate(selected_instances):
+            G_inst.add_node(i, pattern=pname, size=len(inst))
+
+        rg_to_instances: dict[str, list[int]] = defaultdict(list)
+        for i, rgs in enumerate(instance_rgs):
+            for rg in rgs:
+                rg_to_instances[rg].append(i)
+
+        for rg, indices in rg_to_instances.items():
+            for a, b in itertools.combinations(indices, 2):
+                if G_inst.has_edge(a, b):
+                    G_inst[a][b]["shared_rgs"] += 1
+                    G_inst[a][b]["rg_ids"].append(rg)
+                else:
+                    G_inst.add_edge(a, b, shared_rgs=1, rg_ids=[rg])
+
+        # Build pattern-level graph (aggregate over instances)
+        G_pattern: nx.Graph = nx.Graph()
+        for pname, inst in selected_instances:
+            if pname not in G_pattern:
+                G_pattern.add_node(pname, instance_count=0, resource_count=0)
+            G_pattern.nodes[pname]["instance_count"] += 1
+            G_pattern.nodes[pname]["resource_count"] += len(inst)
+
+        for a, b, data in G_inst.edges(data=True):
+            pa = selected_instances[a][0]
+            pb = selected_instances[b][0]
+            if G_pattern.has_edge(pa, pb):
+                G_pattern[pa][pb]["weight"] += data["shared_rgs"]
+                G_pattern[pa][pb]["instance_pairs"] += 1
+            else:
+                G_pattern.add_edge(pa, pb, weight=data["shared_rgs"], instance_pairs=1)
+
+        connected_instances = sum(1 for i in range(len(selected_instances)) if G_inst.degree(i) > 0)
+        logger.info(
+            f"Instance co-occurrence graph: {G_inst.number_of_nodes()} nodes, "
+            f"{G_inst.number_of_edges()} edges, "
+            f"{connected_instances} connected instances"
+        )
+        logger.info(
+            f"Pattern co-occurrence graph: {G_pattern.number_of_nodes()} nodes, "
+            f"{G_pattern.number_of_edges()} edges"
+        )
+        return G_inst, G_pattern
 
     def suggest_replication_improvements(
         self, orphaned_analysis: dict[str, Any]

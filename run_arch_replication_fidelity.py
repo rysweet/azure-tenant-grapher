@@ -5,7 +5,6 @@ to calculate fidelity metrics: exact_match, drifted, missing.
 """
 
 import json
-import os
 import logging
 import sys
 from datetime import datetime, timezone

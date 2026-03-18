@@ -4,7 +4,6 @@ Scan target subscription into Neo4j and calculate fidelity score.
 """
 
 import asyncio
-import os
 import json
 import sys
 from src.azure_tenant_grapher import AzureTenantGrapher
