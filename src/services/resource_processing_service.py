@@ -13,6 +13,7 @@ from src.resource_processor import (
 )
 from src.services.identity_collector import IdentityCollector
 from src.services.managed_identity_resolver import ManagedIdentityResolver
+from src.utils.console_icons import ICON_SUCCESS, ICON_WARNING
 from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,7 @@ class ResourceProcessingService:
                             service_principal_ids=service_principal_ids,
                             db_ops=processor.db_ops,
                         )
-                        logger.info("✅ Successfully imported referenced identities")
+                        logger.info(f"{ICON_SUCCESS} Successfully imported referenced identities")
                     else:
                         logger.info(
                             "No identity references found in filtered resources - skipping AAD import"
@@ -140,7 +141,7 @@ class ResourceProcessingService:
             max_workers = 5
         elif is_filtering and enable_aad and not self.aad_graph_service:
             logger.warning(
-                "⚠️  AAD import enabled with filtering but AADGraphService not available. "
+                f"{ICON_WARNING}  AAD import enabled with filtering but AADGraphService not available. "
                 "Identities referenced by filtered resources will not be imported."
             )
         logger.info(

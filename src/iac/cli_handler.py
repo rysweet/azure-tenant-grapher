@@ -17,6 +17,16 @@ from neo4j import Driver  # type: ignore
 
 from ..config_manager import create_neo4j_config_from_env
 from ..deployment_registry import DeploymentRegistry
+from ..utils.console_icons import (
+    ICON_ERROR,
+    ICON_FILE,
+    ICON_ITERATION,
+    ICON_LIGHTBULB,
+    ICON_ROCKET,
+    ICON_SEARCH,
+    ICON_SUCCESS,
+    ICON_WARNING,
+)
 from ..utils.session_manager import create_session_manager
 from .auto_identity_mapper import AutoIdentityMapper
 from .emitters import get_emitter
@@ -154,7 +164,7 @@ async def _handle_terraform_import(
                 "Install Terraform to enable auto-import functionality."
             )
             click.echo(
-                "⚠️  Warning: Terraform not found in PATH. "
+                f"{ICON_WARNING}  Warning: Terraform not found in PATH. "
                 "Skipping import of pre-existing resources."
             )
             return
@@ -172,7 +182,7 @@ async def _handle_terraform_import(
         logger.info(
             f"Starting Terraform import with strategy: {strategy.value} (Issue #412)"
         )
-        click.echo(f"\n🔄 Importing pre-existing Azure resources ({strategy.value})...")
+        click.echo(f"\n{ICON_ITERATION} Importing pre-existing Azure resources ({strategy.value})...")
 
         # Initialize importer
         importer = TerraformImporter(
@@ -202,7 +212,7 @@ async def _handle_terraform_import(
         # Non-blocking error - log and continue
         logger.error(f"Terraform import failed: {e}", exc_info=True)
         click.echo(
-            f"⚠️  Warning: Terraform import failed: {e}. "
+            f"{ICON_WARNING}  Warning: Terraform import failed: {e}. "
             f"IaC generation completed, but resources may need manual import.",
             err=True,
         )
@@ -304,7 +314,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
         # Initialize generation metrics (Issue #413)
         metrics = GenerationMetrics()
 
-        logger.info("🏗️ Starting IaC generation")
+        logger.info(f"{ICON_ROCKET} Starting IaC generation")
         logger.info(str(f"Format: {format_type}"))
 
         # Get Neo4j driver
@@ -562,7 +572,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                     "--scan-target-tenant-id required when --scan-target is enabled"
                 )
                 click.echo(
-                    "Error: --scan-target-tenant-id is required when using --scan-target",
+                    f"{ICON_ERROR} Error: --scan-target-tenant-id is required when using --scan-target",
                     err=True,
                 )
                 return 1
@@ -738,7 +748,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
         # This is critical for cross-tenant where Azure CLI might be logged into target tenant
         if not source_subscription_id and graph.resources:
             logger.info(
-                f"🔍 Extracting source subscription from {len(graph.resources)} resources..."
+                f"{ICON_SEARCH} Extracting source subscription from {len(graph.resources)} resources..."
             )
             for resource in graph.resources:
                 # Try original_id first (has real Azure subscription), fallback to id
@@ -751,13 +761,13 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                         1
                     ].split("/")[0]
                     logger.info(
-                        f"  ✅ Extracted source subscription from {'original_id' if original_id else 'id'}: {source_subscription_id}"
+                        f"  {ICON_SUCCESS} Extracted source subscription from {'original_id' if original_id else 'id'}: {source_subscription_id}"
                     )
                     break
 
             if not source_subscription_id:
                 logger.warning(
-                    "  ⚠️ Could not extract source subscription from any resource"
+                    f"  {ICON_WARNING} Could not extract source subscription from any resource"
                 )
 
         # Try to get defaults from Azure CLI if not explicitly provided
@@ -1114,9 +1124,9 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 subscription_id=subscription_id,
                 preserve_rg_structure=preserve_rg_structure,
             )
-            click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
+            click.echo(f"{ICON_SUCCESS} Wrote {len(paths)} files to {out_dir}")
             for path in paths:
-                click.echo(f"  📄 {path}")
+                click.echo(f"  {ICON_FILE} {path}")
 
             # Collect metrics for early return path (Issue #413)
             if format_type.lower() == "terraform" and hasattr(
@@ -1287,7 +1297,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
         elif format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
-            logger.info("🔍 Checking for global resource name conflicts...")
+            logger.info(f"{ICON_SEARCH} Checking for global resource name conflicts...")
 
             # Read generated Terraform config
             terraform_file = out_dir / "main.tf.json"
@@ -1323,7 +1333,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                     if preserve_names:
                         # In preserve-names mode, fail on conflicts
                         click.echo(
-                            f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
+                            f"{ICON_ERROR} Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
                         )
                         for conflict in validation_result.conflicts:
                             click.echo(
@@ -1331,14 +1341,14 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                             )
                             click.echo(f"     Reason: {conflict.conflict_reason}")
                         click.echo(
-                            "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
+                            f"\n{ICON_LIGHTBULB} Tip: Remove --preserve-names flag to auto-fix conflicts, "
                             "or use --naming-suffix to specify a custom suffix."
                         )
                         return 1
                     else:
                         # In auto-fix mode, show fixes
                         click.echo(
-                            f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
+                            f"{ICON_WARNING}  Found {len(validation_result.conflicts)} name conflicts:"
                         )
                         for conflict in validation_result.conflicts:
                             click.echo(
@@ -1359,17 +1369,17 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                         conflicts=validation_result.conflicts,
                     )
                     click.echo(
-                        f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
+                        f"{ICON_SUCCESS} Auto-fixed {len(validation_result.name_mappings)} conflicts"
                     )
                     click.echo(
                         f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
                     )
                 else:
-                    click.echo("✅ No global name conflicts detected")
+                    click.echo(f"{ICON_SUCCESS} No global name conflicts detected")
 
-        click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
+        click.echo(f"{ICON_SUCCESS} Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
-            click.echo(f"  📄 {path}")
+            click.echo(f"  {ICON_FILE} {path}")
 
         # Check Azure resource provider registration (before validation/deployment)
         # Use target_subscription if provided (cross-tenant), otherwise use source subscription
@@ -1431,14 +1441,14 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 # Warn if any providers failed to register
                 if provider_report.failed_providers:
                     click.echo(
-                        f"⚠️  Warning: {len(provider_report.failed_providers)} providers "
+                        f"{ICON_WARNING}  Warning: {len(provider_report.failed_providers)} providers "
                         f"failed to register. Deployment may fail."
                     )
 
             except Exception as e:
                 logger.warning(str(f"Provider check failed: {e}"))
                 click.echo(
-                    f"⚠️  Warning: Provider check failed: {e}. Proceeding anyway...",
+                    f"{ICON_WARNING}  Warning: Provider check failed: {e}. Proceeding anyway...",
                     err=True,
                 )
 
@@ -1461,7 +1471,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                     click.echo("🗑️  Removed invalid IaC files")
                     return 1
             else:
-                click.echo("✅ Terraform validation passed")
+                click.echo(f"{ICON_SUCCESS} Terraform validation passed")
 
         # Import pre-existing resources if requested (Issue #412)
         if (
@@ -1496,7 +1506,7 @@ async def generate_iac_command_handler(  # type: ignore[misc]
                 terraform_version=None,  # Could detect this
             )
 
-            click.echo(f"📝 Registered deployment: {deployment_id}")
+            click.echo(f"{ICON_FILE} Registered deployment: {deployment_id}")
             click.echo("   Use 'atg undeploy' to destroy these resources")
 
         # Generate and display generation report (Issue #413)
@@ -1521,6 +1531,6 @@ async def generate_iac_command_handler(  # type: ignore[misc]
         return 0
 
     except Exception as e:
-        logger.error(f"❌ IaC generation failed: {e}", exc_info=True)
-        click.echo(f"❌ Error: {e}", err=True)
+        logger.error(f"{ICON_ERROR} IaC generation failed: {e}", exc_info=True)
+        click.echo(f"{ICON_ERROR} Error: {e}", err=True)
         return 1
