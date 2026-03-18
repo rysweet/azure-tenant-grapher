@@ -312,6 +312,11 @@ category: <category>
 - **[Graph API Setup](GRAPH_API_SETUP.md)** - Microsoft Graph API configuration
 - **[MCP Integration](MCP_INTEGRATION.md)** - Model Context Protocol setup
 
+### Platform Compatibility
+- **[Windows Compatibility Setup](howto/windows-compatibility.md)** 🚀 - Run Electron app on Windows (Issue #920)
+- **[Platform-Specific Behavior Reference](reference/platform-behavior.md)** 🔧 - Cross-platform API reference
+- **[Windows Compatibility Concepts](concepts/windows-compatibility.md)** 📖 - Design rationale and architecture decisions
+
 ## Remote Mode
 
 - **[Remote Mode Overview](remote-mode/README.md)** - Remote execution architecture
