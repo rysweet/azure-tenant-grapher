@@ -92,7 +92,7 @@ class ArchitecturePatternReplicator:
         self.target_builder = TargetGraphBuilder(
             self.analyzer, neo4j_uri, neo4j_user, neo4j_password
         )
-        self.selector = InstanceSelector(self.graph_analyzer, self.config_similarity)
+        self.selector = InstanceSelector(self.graph_analyzer, self.target_builder)
 
         # Graphs
         self.source_pattern_graph: nx.MultiDiGraph | None = None
@@ -268,7 +268,9 @@ class ArchitecturePatternReplicator:
                         # Use PatternInstanceFinder brick for configuration-coherent instances
                         instances = self.instance_finder.find_configuration_coherent_instances(
                             session,
+                            pattern_name,
                             matched_resources,
+                            self.detected_patterns,
                             coherence_threshold,
                             include_colocated_orphaned_resources,
                         )
@@ -289,14 +291,20 @@ class ArchitecturePatternReplicator:
                 with driver.session() as session:
                     # Use OrphanedResourceManager brick
                     orphaned_instances = self.orphaned_manager.find_orphaned_instances(
-                        session, self.detected_patterns
+                        session, self.detected_patterns, self.source_resource_type_counts
                     )
 
                 if orphaned_instances:
                     logger.info(
                         f"  Found {len(orphaned_instances)} orphaned resource instances"
                     )
-                    self.pattern_resources["orphaned_resources"] = orphaned_instances
+                    # find_orphaned_instances returns list[tuple[str, list[dict]]] —
+                    # strip the pseudo_pattern_names so pattern_resources holds
+                    # list[list[dict]] consistent with all other pattern entries.
+                    self.pattern_resources["orphaned_resources"] = [
+                        resource_list
+                        for _pseudo_name, resource_list in orphaned_instances
+                    ]
 
         finally:
             driver.close()
@@ -424,7 +432,7 @@ class ArchitecturePatternReplicator:
             for pattern_name, score_info in distribution_scores.items():
                 logger.info(
                     f"  {pattern_name}: score={score_info['distribution_score']:.3f}, "
-                    f"count={score_info['instance_count']}"
+                    f"count={score_info['source_instances']}"
                 )
 
             distribution_metadata = {
@@ -438,12 +446,27 @@ class ArchitecturePatternReplicator:
             logger.info("=" * 80)
             logger.info("LAYER 2: Allocating instances proportionally...")
 
+            # If target_instance_count is None, select ALL instances
+            if target_instance_count is None:
+                logger.info("No target_instance_count specified - selecting ALL instances")
+                pattern_targets = {
+                    pattern_name: len(instances)
+                    for pattern_name, instances in self.pattern_resources.items()
+                }
+            else:
+                # Calculate pattern_targets from distribution_scores
+                total_score = sum(info['distribution_score'] for info in distribution_scores.values())
+                pattern_targets = {}
+                for pattern_name, info in distribution_scores.items():
+                    proportion = info['distribution_score'] / total_score if total_score > 0 else 0
+                    pattern_targets[pattern_name] = max(1, round(target_instance_count * proportion))
+
+            logger.info(f"Proportional allocation: {pattern_targets}")
+
             # Use InstanceSelector brick for proportional selection
             selected_instances = self.selector.select_proportionally(
+                pattern_targets=pattern_targets,
                 pattern_resources=self.pattern_resources,
-                distribution_scores=distribution_scores,
-                target_instance_count=target_instance_count,
-                include_orphaned=include_orphaned_node_patterns,
                 use_spectral_guidance=use_spectral_guidance,
                 spectral_weight=spectral_weight,
                 source_pattern_graph=self.source_pattern_graph,
