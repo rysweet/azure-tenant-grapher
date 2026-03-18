@@ -8,10 +8,13 @@ Main entry point for scale-down workflows.
 """
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
 import networkx as nx
+
+# Python 3.10 compatibility: UTC was added in 3.11
+UTC = timezone.utc
 
 from src.services.base_scale_service import BaseScaleService
 from src.services.scale_down.exporters.iac_exporter import IaCExporter
