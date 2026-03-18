@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { InputValidator } from '../backend/src/security/input-validator';
+import { getPlatformPaths } from './platform-utils';
 
 interface ProcessInfo {
   id: string;
@@ -39,12 +40,9 @@ export class ProcessManager extends EventEmitter {
     const id = uuidv4();
     const projectRoot = path.resolve(__dirname, '../../../..');
 
-    // Use virtual environment Python instead of system Python
-    const pythonPath = process.env.PYTHON_PATH || (
-      process.platform === 'win32'
-        ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
-        : path.join(projectRoot, '.venv', 'bin', 'python')
-    );
+    // Use platform-utils for cross-platform Python path
+    const { pythonPath: relativePythonPath } = getPlatformPaths();
+    const pythonPath = process.env.PYTHON_PATH || path.join(projectRoot, relativePythonPath);
 
     const cliPath = path.resolve(__dirname, '../../../../scripts/cli.py');
 

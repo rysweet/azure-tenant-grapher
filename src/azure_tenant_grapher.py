@@ -12,6 +12,17 @@ from typing import Any, Dict, List, Optional
 
 from .config_manager import AzureTenantGrapherConfig
 from .llm_descriptions import create_llm_generator
+from .utils.console_icons import (
+    ICON_ERROR,
+    ICON_FILE,
+    ICON_FOLDER,
+    ICON_ITERATION,
+    ICON_ROCKET,
+    ICON_SEARCH,
+    ICON_SUCCESS,
+    ICON_TRASH,
+    ICON_WARNING,
+)
 from .utils.neo4j_startup import ensure_neo4j_running
 
 logger = logging.getLogger(__name__)
@@ -149,7 +160,7 @@ class AzureTenantGrapher:
             await self.specification_service.generate_specification(
                 spec_path, domain_name=domain_name
             )
-            logger.info(str(f"✅ Tenant specification generated: {spec_path}"))
+            logger.info(f"{ICON_SUCCESS} Tenant specification generated: {spec_path}")
         except Exception:
             logger.exception("Error generating tenant specification")
 
@@ -172,7 +183,7 @@ class AzureTenantGrapher:
             Dict: Summary of the graph building process
         """
         logger.info(
-            "🚀 Starting Azure Tenant Graph building process (refactored coordinator)"
+            f"{ICON_ROCKET} Starting Azure Tenant Graph building process (refactored coordinator)"
         )
 
         try:
@@ -181,7 +192,7 @@ class AzureTenantGrapher:
                 filter_config=filter_config
             )
             if not subscriptions:
-                logger.warning("⚠️ No subscriptions found in tenant")
+                logger.warning(f"{ICON_WARNING} No subscriptions found in tenant")
                 return {"subscriptions": 0, "resources": 0, "success": False}
 
             # 2. Discover resources in all subscriptions
@@ -205,7 +216,7 @@ class AzureTenantGrapher:
                     continue
 
             # 2.1. Pre-run in-memory de-duplication (Phase 1 efficiency improvement)
-            logger.info(str(f"🗂️  Processing {len(all_resources)} discovered resources"))
+            logger.info(f"{ICON_FILE}  Processing {len(all_resources)} discovered resources")
             id_map: Dict[str, Dict[str, Any]] = {}
             for r in all_resources:
                 rid = r.get("id")
@@ -217,21 +228,21 @@ class AzureTenantGrapher:
             dedupe_count = original_count - len(all_resources)
             if dedupe_count > 0:
                 logger.info(
-                    f"🗂️  De-duplicated list → {len(all_resources)} unique IDs (removed {dedupe_count} duplicates)"
+                    f"{ICON_FILE}  De-duplicated list → {len(all_resources)} unique IDs (removed {dedupe_count} duplicates)"
                 )
             else:
                 logger.info(
-                    str(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+                    f"{ICON_FILE}  De-duplicated list → {len(all_resources)} unique IDs"
                 )
 
             # Apply global resource_limit as defensive check (primary limiting happens per-subscription)
             if resource_limit and len(all_resources) > resource_limit:
                 logger.info(
-                    f"🔢 Applying global resource_limit (defensive check): {resource_limit} (before: {len(all_resources)})"
+                    f"{ICON_SEARCH} Applying global resource_limit (defensive check): {resource_limit} (before: {len(all_resources)})"
                 )
                 all_resources = all_resources[:resource_limit]
                 logger.info(
-                    f"🔢 Global resource list truncated to {len(all_resources)} items"
+                    f"{ICON_SEARCH} Global resource list truncated to {len(all_resources)} items"
                 )
             logger.info(
                 f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"
@@ -269,7 +280,7 @@ class AzureTenantGrapher:
 
                     if referenced_resources:
                         logger.info(
-                            f"✅ Adding {len(referenced_resources)} referenced resources to filtered import"
+                            f"{ICON_SUCCESS} Adding {len(referenced_resources)} referenced resources to filtered import"
                         )
                         all_resources.extend(referenced_resources)
                         logger.info(
@@ -319,7 +330,7 @@ class AzureTenantGrapher:
 
                     if missing_dependencies:
                         logger.info(
-                            f"✅ Adding {len(missing_dependencies)} cross-RG dependency resources"
+                            f"{ICON_SUCCESS} Adding {len(missing_dependencies)} cross-RG dependency resources"
                         )
                         all_resources.extend(missing_dependencies)
                         logger.info(
@@ -391,11 +402,11 @@ class AzureTenantGrapher:
             with self.session_manager:
                 if force_rebuild_edges:
                     logger.info(
-                        "🔄 Forcing re-evaluation of all relationships/edges for existing resources in database."
+                        f"{ICON_ITERATION} Forcing re-evaluation of all relationships/edges for existing resources in database."
                     )
 
                     # Fetch existing resources from database (preserving LLM descriptions)
-                    logger.info("📂 Fetching existing resources from database...")
+                    logger.info(f"{ICON_FOLDER} Fetching existing resources from database...")
                     existing_resources = []
 
                     with self.session_manager.session() as session:
@@ -414,12 +425,12 @@ class AzureTenantGrapher:
 
                     if not existing_resources:
                         logger.warning(
-                            "⚠️ No existing resources found in database for edge rebuild"
+                            f"{ICON_WARNING} No existing resources found in database for edge rebuild"
                         )
                         return {"subscriptions": 0, "resources": 0, "success": False}
 
                     logger.info(
-                        f"📂 Found {len(existing_resources)} existing resources in database"
+                        f"{ICON_FOLDER} Found {len(existing_resources)} existing resources in database"
                     )
 
                     # Create a processor instance for database operations
@@ -432,7 +443,7 @@ class AzureTenantGrapher:
                     )
 
                     # Clear existing non-containment relationships first
-                    logger.info("🧹 Clearing existing non-containment relationships...")
+                    logger.info(f"{ICON_TRASH} Clearing existing non-containment relationships...")
                     with self.session_manager.session() as session:
                         # Keep CONTAINS relationships but remove others that will be rebuilt
                         session.run("""  # type: ignore[arg-type]
@@ -455,7 +466,7 @@ class AzureTenantGrapher:
                             )
 
                         logger.debug(
-                            f"🔄 Rebuilding edges for resource {i + 1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
+                            f"{ICON_ITERATION} Rebuilding edges for resource {i + 1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
                         )
 
                         # Re-emit relationships (but not containment - that's preserved)
@@ -471,7 +482,7 @@ class AzureTenantGrapher:
                                 )
 
                     logger.info(
-                        f"✅ Completed rebuilding edges for {len(existing_resources)} existing resources."
+                        f"{ICON_SUCCESS} Completed rebuilding edges for {len(existing_resources)} existing resources."
                     )
 
                     # Create a simple stats object for rebuild mode - don't run full processing
@@ -513,11 +524,11 @@ class AzureTenantGrapher:
                         version=current_version, last_scan_at=timestamp
                     )
                     logger.info(
-                        f"✅ Updated graph metadata: version={current_version}, last_scan={timestamp}"
+                        f"{ICON_SUCCESS} Updated graph metadata: version={current_version}, last_scan={timestamp}"
                     )
                 else:
                     logger.warning(
-                        "⚠️ Could not read version from semaphore file - metadata not updated"
+                        f"{ICON_WARNING} Could not read version from semaphore file - metadata not updated"
                     )
             except Exception as e:
                 logger.warning(f"Failed to update graph metadata: {e}")
