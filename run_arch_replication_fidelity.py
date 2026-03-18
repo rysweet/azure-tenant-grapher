@@ -14,8 +14,8 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # Configuration
-SOURCE_SUBSCRIPTION = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUBSCRIPTION = "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+SOURCE_SUBSCRIPTION = "<source-subscription-id>"
+TARGET_SUBSCRIPTION = "<target-subscription-id>"
 OUTPUT_DIR = "/Users/csiska/repos/azure-tenant-grapher/output/arch_replication_20260222_154009"
 TFSTATE_PATH = f"{OUTPUT_DIR}/terraform/terraform.tfstate"
 MAPPINGS_PATH = f"{OUTPUT_DIR}/03_resource_mappings.json"
@@ -23,7 +23,7 @@ OUTPUT_PATH = f"{OUTPUT_DIR}/05_fidelity_validation.json"
 
 NEO4J_URI = "bolt://localhost:7687"
 NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_PASSWORD = os.environ["NEO4J_PASSWORD"]
 
 # Resource group type - excluded from non-RG analysis
 RG_TYPE = "azurerm_resource_group"

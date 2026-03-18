@@ -170,12 +170,15 @@ class ArchitecturePatternReplicator:
             aggregated_relationships = self.analyzer.aggregate_relationships(
                 all_relationships
             )
+            all_resource_types = self.analyzer.fetch_all_resource_types()
 
             (
                 self.source_pattern_graph,
                 self.source_resource_type_counts,
                 _,
-            ) = self.analyzer.build_networkx_graph(aggregated_relationships)
+            ) = self.analyzer.build_networkx_graph(
+                aggregated_relationships, all_resource_types=all_resource_types
+            )
 
             # Step 2: Detect architectural patterns
             self.detected_patterns = self.analyzer.detect_patterns(

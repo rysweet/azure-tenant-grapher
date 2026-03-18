@@ -23,9 +23,9 @@ az account show
 
 # Output shows your active subscription:
 {
-  "id": "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78",  ← This is your target
+  "id": "<target-subscription-id>",  ← This is your target
   "name": "Subscription 1",
-  "tenantId": "3591aa9b-70e0-4a11-8a96-699d669c7a81",
+  "tenantId": "<tenant-id>",
   "user": { "name": "user@domain.com" }
 }
 ```
@@ -74,8 +74,8 @@ WARNING: TARGET TENANT CLEANUP
 ======================================================
 
 Current Azure Context:
-  Tenant ID:       3591aa9b-70e0-4a11-8a96-699d669c7a81
-  Subscription ID: ff7d97e0-db31-4969-9a0e-a1e6d19ccc78
+  Tenant ID:       <tenant-id>
+  Subscription ID: <target-subscription-id>
   Subscription:    Subscription 1
 
 Found:
@@ -104,7 +104,7 @@ az account show --query '{subscription:name, subscriptionId:id}'
 # Expected output:
 {
   "subscription": "Subscription 1",
-  "subscriptionId": "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+  "subscriptionId": "<target-subscription-id>"
 }
 ```
 
@@ -148,8 +148,8 @@ Architecture-Based Tenant Replication
 
 Available subscriptions in Neo4j:
 --------------------------------------------------------------------------------
-  1. 9b00bc5e-9abc-45de-9958-02a9d9277b16 (410 resources)
-  2. c190c55a-9ab2-4b1e-92c4-cc8b1a032285 (158 resources)
+  1. <source-subscription-id> (410 resources)
+  2. <subscription-2-id> (158 resources)
 --------------------------------------------------------------------------------
 
 ✓ Neo4j connection successful
@@ -157,12 +157,12 @@ Available subscriptions in Neo4j:
 [4/5] Configuring replication parameters...
 Enter source subscription ID (or number from list above): 1
 
-✓ Found current Azure subscription: ff7d97e0-db31-4969-9a0e-a1e6d19ccc78
+✓ Found current Azure subscription: <target-subscription-id>
 Use this as target subscription? (Y/n): Y
 
 Configuration:
-  Source Subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16
-  Target Subscription: ff7d97e0-db31-4969-9a0e-a1e6d19ccc78
+  Source Subscription: <source-subscription-id>
+  Target Subscription: <target-subscription-id>
   Instance Count: 10
 
 [5/5] Running replication orchestrator...
@@ -175,8 +175,8 @@ If you already know your source subscription ID:
 
 ```bash
 python3 scripts/architecture_replication_with_fidelity.py \
-    --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-    --target-subscription ff7d97e0-db31-4969-9a0e-a1e6d19ccc78 \
+    --source-subscription <source-subscription-id> \
+    --target-subscription <target-subscription-id> \
     --target-instance-count 10 \
     --output-dir ./output/test_run \
     --neo4j-password $NEO4J_PASSWORD
@@ -373,7 +373,7 @@ python3 scripts/architecture_replication_with_fidelity.py \
 az login
 
 # Set the subscription
-az account set --subscription "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+az account set --subscription "<target-subscription-id>"
 
 # Verify
 az account show

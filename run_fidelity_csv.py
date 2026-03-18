@@ -18,8 +18,8 @@ from src.validation.resource_fidelity_calculator import (
 )
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-SOURCE_SUBSCRIPTION = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUBSCRIPTION = "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+SOURCE_SUBSCRIPTION = "<source-subscription-id>"
+TARGET_SUBSCRIPTION = "<target-subscription-id>"
 MAPPINGS_FILE       = "output/iteration2_20260219_083319/03_resource_mappings.json"
 OUTPUT_CSV          = "output/fidelity_results.csv"
 

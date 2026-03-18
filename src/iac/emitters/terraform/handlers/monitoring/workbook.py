@@ -81,4 +81,6 @@ class WorkbooksHandler(ResourceHandler):
 
         logger.debug(f"Application Insights Workbook '{resource_name}' emitted")
 
-        return "azurerm_application_insights_workbook", config["name"], config
+        # Terraform resource label must start with a letter/underscore — sanitize the GUID
+        tf_label = self.sanitize_name(config["name"])
+        return "azurerm_application_insights_workbook", tf_label, config

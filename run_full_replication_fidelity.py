@@ -18,8 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from neo4j import GraphDatabase
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-SOURCE_SUBSCRIPTION = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-TARGET_SUBSCRIPTION = "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+SOURCE_SUBSCRIPTION = "<source-subscription-id>"
+TARGET_SUBSCRIPTION = "<target-subscription-id>"
 TERRAFORM_DIR       = "output/full_replication_20260219_091727/terraform"
 OUTPUT_CSV          = "output/full_replication_fidelity.csv"
 

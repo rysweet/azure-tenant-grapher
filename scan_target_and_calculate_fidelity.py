@@ -112,15 +112,15 @@ def calculate_fidelity(mappings_file: str, source_subscription: str, target_subs
 
 async def main():
     # Configuration
-    tenant_id = "3591aa9b-70e0-4a11-8a96-699d669c7a81"
-    source_subscription = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
-    target_subscription = "ff7d97e0-db31-4969-9a0e-a1e6d19ccc78"
+    tenant_id = "<tenant-id>"
+    source_subscription = "<source-subscription-id>"
+    target_subscription = "<target-subscription-id>"
     mappings_file = "output/deployment_test_20260218_132955/03_resource_mappings.json"
 
     neo4j_config = Neo4jConfig(
         uri="bolt://localhost:7687",
         user="neo4j",
-        password=os.getenv("NEO4J_PASSWORD")
+        password=os.environ["NEO4J_PASSWORD"]
     )
 
     print("\n" + "="*80)

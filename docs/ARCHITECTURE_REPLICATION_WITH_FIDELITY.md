@@ -51,8 +51,8 @@ This script will:
 
 ```bash
 python3 scripts/architecture_replication_with_fidelity.py \
-    --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \
-    --target-subscription ff7d97e0-db31-4969-9a0e-a1e6d19ccc78 \
+    --source-subscription <source-subscription-id> \
+    --target-subscription <target-subscription-id> \
     --target-instance-count 10 \
     --output-dir ./output/replication_run_001 \
     --neo4j-password <YOUR_PASSWORD>
