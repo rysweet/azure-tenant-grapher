@@ -1204,8 +1204,6 @@ CMD ["gunicorn", "--config", "gunicorn.conf.py", "src.app:app"]
 # Scan container image for vulnerabilities
 docker scan atg-service:latest
 
-# Use Trivy for comprehensive scanning
-trivy image --severity HIGH,CRITICAL atg-service:latest
 
 # Check for misconfigurations
 hadolint Dockerfile
