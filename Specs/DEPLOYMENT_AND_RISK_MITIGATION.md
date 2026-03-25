@@ -1065,7 +1065,6 @@ az container logs \
 - Non-root user in containers
 - Read-only filesystem where possible
 - Minimal base images (Alpine Linux)
-- Regular image scanning (Trivy)
 - No secrets in container images
 
 ### 8.2 Network Security
